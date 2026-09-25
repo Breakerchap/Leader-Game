@@ -249,6 +249,49 @@ public class PresentationBoundaryTests
     }
 
     [Fact]
+    public void EconomyHistory_PreservesReportedClaimInsteadOfHiddenCurrentValue()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var treasurer = country.GetOfficeHolder(Position.Treasurer)!;
+
+        state.AdvisorReports.Add(new AdvisorIntelligenceReport
+        {
+            Topic = InformationTopic.Economy,
+            Advisor = treasurer,
+            SubjectCountry = country,
+            ProducedOn = state.Date,
+            DataAsOf = state.Date,
+            WasRequested = true,
+            Title = "Test Treasury return",
+            Summary = "A deliberately fixed historical claim."
+        });
+
+        state.AdvisorReports[^1].Facts.Add(new KnownInformation
+        {
+            Key = new InformationKey(
+                InformationMetric.Treasury,
+                country.Id),
+            Estimate = 111_000,
+            Margin = 10_000,
+            ReportedConfidence = 70,
+            AsOf = state.Date,
+            ReceivedOn = state.Date,
+            SourceAdvisorId = treasurer.Id,
+            SourceAdvisorName = treasurer.FullName,
+            WasRequested = true
+        });
+
+        country.Treasury = 9_999_999m;
+
+        var session = new GameSession(new GameSimulation(state));
+        var snapshot = session.View.Economy.History.First();
+
+        Assert.Contains("111,000", snapshot.Treasury);
+        Assert.DoesNotContain("9,999,999", snapshot.Treasury);
+    }
+
+    [Fact]
     public void AdvancingMonth_RefreshesDesktopBriefing()
     {
         var state = DemoScenario.Create();
