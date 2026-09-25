@@ -174,12 +174,12 @@ static void QueueAppointmentOrder(GameSimulation simulation, Country country)
         _ => throw new InvalidOperationException()
     };
 
-    var candidate = candidates[candidateNumber - 1];
+    var selectedCandidate = candidates[candidateNumber - 1];
 
     simulation.SubmitOrder(new AppointAdvisorOrder
     {
         Issuer = simulation.State.Player.CurrentCharacter,
-        Recipient = candidate,
+        Recipient = selectedCandidate,
         IssuedOn = simulation.State.Date,
         Country = country,
         Position = position
@@ -191,7 +191,7 @@ static void QueueAppointmentOrder(GameSimulation simulation, Country country)
         : $"This will replace {currentHolder.FullName}.";
 
     Pause(
-        $"Appointment of {candidate.FullName} as {position} queued. " +
+        $"Appointment of {selectedCandidate.FullName} as {position} queued. " +
         $"{replacement} It will be processed when the month advances.");
 }
 
