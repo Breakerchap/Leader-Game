@@ -189,6 +189,24 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             }
         });
 
+        AcceptCabinetProposalCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is CabinetProposalView proposal)
+            {
+                RunAndRefresh(() =>
+                    _session.RespondToCabinetProposal(proposal.Id, accept: true));
+            }
+        });
+
+        RejectCabinetProposalCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is CabinetProposalView proposal)
+            {
+                RunAndRefresh(() =>
+                    _session.RespondToCabinetProposal(proposal.Id, accept: false));
+            }
+        });
+
         ApplyWarStanceCommand = new RelayCommand(_ =>
         {
             if (SelectedCampaign is null)
@@ -267,6 +285,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public ICommand AcceptProposalCommand { get; }
 
     public ICommand RejectProposalCommand { get; }
+
+    public ICommand AcceptCabinetProposalCommand { get; }
+
+    public ICommand RejectCabinetProposalCommand { get; }
 
     public ICommand ApplyWarStanceCommand { get; }
 
