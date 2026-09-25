@@ -1301,7 +1301,9 @@ public static class InformationSystem
 
         foreach (var metric in metrics)
         {
-            var relatedId = topic == InformationTopic.ForeignAffairs
+            var relatedId = metric is InformationMetric.DiplomaticRelations
+                or InformationMetric.DiplomaticTrust
+                or InformationMetric.DiplomaticTension
                 ? state.Player.Country.Id
                 : null;
 
