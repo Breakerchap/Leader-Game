@@ -46,7 +46,9 @@ internal static class DiplomacySystem
                 relation.ChangeRelations(-1);
                 relation.ChangeTrust(-1);
             }
-            else if (state.Date.Month % 6 == 0 &&
+            else if (!relation.HasTradeAgreement &&
+                     !relation.HasNonAggressionPact &&
+                     state.Date.Month % 6 == 0 &&
                      relation.Tension > 20 &&
                      relation.BorderDisputeSeverity == 0)
             {
