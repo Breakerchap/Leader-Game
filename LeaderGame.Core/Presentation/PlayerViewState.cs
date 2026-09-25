@@ -47,6 +47,35 @@ public sealed record ForeignCountryOptionView(
     string Id,
     string Name);
 
+public sealed record ForeignStateView(
+    string Id,
+    string Name,
+    string RulerName,
+    string Government,
+    string Relations,
+    string Trust,
+    string Tension,
+    string Gdp,
+    string Army,
+    string TradeStatus,
+    string WarStatus,
+    bool HasTradeAgreement,
+    bool AtWar,
+    bool CanDeclareWar);
+
+public sealed record DiplomaticProposalView(
+    Guid Id,
+    string SourceCountry,
+    string Type,
+    string Terms,
+    string Age);
+
+public sealed record ForeignAffairsView(
+    string ChancellorName,
+    string ChancellorObedience,
+    IReadOnlyList<ForeignStateView> Countries,
+    IReadOnlyList<DiplomaticProposalView> IncomingProposals);
+
 public sealed record GovernmentPolicyView(
     double TaxPercent,
     double ArmyFundingPercent,
@@ -101,4 +130,5 @@ public sealed record PlayerViewState(
     IReadOnlyList<ForeignCountryOptionView> ForeignCountries,
     GovernmentPolicyView Government,
     CourtPoliticsView Court,
+    ForeignAffairsView ForeignAffairs,
     string StatusMessage);
