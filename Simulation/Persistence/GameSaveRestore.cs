@@ -256,6 +256,7 @@ public static partial class GameSaveService
                     ? RequireWar(wars, warId)
                     : null,
                 TargetValue = saved.TargetValue,
+                Rationale = saved.Rationale,
                 CreatedOn = GameDate(saved.CreatedOn),
                 MonthsOpen = saved.MonthsOpen,
                 Status = saved.Status
