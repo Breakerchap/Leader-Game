@@ -51,6 +51,7 @@ public class GameSimulation
 
         State.Reports.AddRange(PlotSystem.ProcessMonth(State));
 
+        InformationSystem.CaptureTruthSnapshot(State);
         State.Reports.AddRange(InformationSystem.ProcessMonth(State));
 
         State.Date = State.Date.NextMonth();
