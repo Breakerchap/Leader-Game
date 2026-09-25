@@ -8,6 +8,7 @@
   <Application.Resources>
     <conv:CategoryBrushConverter x:Key="CategoryBrush" />
     <conv:MetricAccentBrushConverter x:Key="MetricAccentBrush" />
+    <conv:AdvisorRoleBrushConverter x:Key="AdvisorRoleBrush" />
     <conv:RiskBrushConverter x:Key="RiskBrush" />
     <conv:SemanticStatusBrushConverter x:Key="SemanticStatusBrush" />
     <conv:StaleBrushConverter x:Key="StaleBrush" />
