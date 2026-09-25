@@ -104,15 +104,15 @@ internal static class OppositionActionSystem
 
         foreach (var insider in insiders)
         {
-            var towardLeader = state.Relationships.GetOrCreate(
-                insider,
-                bloc.Leader);
             var towardRuler = state.Relationships.GetOrCreate(
                 insider,
                 country.Ruler);
 
             if (!ReferenceEquals(insider, bloc.Leader))
             {
+                var towardLeader = state.Relationships.GetOrCreate(
+                    insider,
+                    bloc.Leader);
                 towardLeader.ChangeTrust(1);
                 towardLeader.ChangeOpinion(1);
             }
