@@ -2,6 +2,7 @@ using LeaderGame.Presentation;
 using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Information;
+using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Scenarios;
 
@@ -170,6 +171,81 @@ public class PresentationBoundaryTests
             Assert.Single(state.PendingOrders));
 
         Assert.Equal(target.Id, order.TargetCountry.Id);
+    }
+
+    [Fact]
+    public void MilitaryView_UsesReportedEnemyStrengthInsteadOfHiddenArmy()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var enemy = state.Countries.First(other =>
+            !ReferenceEquals(other, country));
+
+        enemy.ArmySize = 25_000;
+
+        state.Knowledge.Update(new KnownInformation
+        {
+            Key = new InformationKey(
+                InformationMetric.ArmySize,
+                enemy.Id),
+            Estimate = 7_250,
+            Margin = 1_400,
+            ReportedConfidence = 60,
+            AsOf = state.Date,
+            ReceivedOn = state.Date,
+            SourceAdvisorId = country.Ruler.Id,
+            SourceAdvisorName = "Test Marshal",
+            WasRequested = false
+        });
+
+        state.Wars.Add(new War
+        {
+            Attacker = country,
+            Defender = enemy,
+            StartedOn = state.Date
+        });
+
+        var session = new GameSession(new GameSimulation(state));
+        var campaign = Assert.Single(session.View.Military.Campaigns);
+
+        Assert.Contains("7,250", campaign.EnemyArmy);
+        Assert.DoesNotContain("25,000", campaign.EnemyArmy);
+    }
+
+    [Fact]
+    public void MilitaryActions_QueueCampaignAndPeaceOrders()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var enemy = state.Countries.First(other =>
+            !ReferenceEquals(other, country));
+
+        var war = new War
+        {
+            Attacker = country,
+            Defender = enemy,
+            StartedOn = state.Date
+        };
+        state.Wars.Add(war);
+
+        var session = new GameSession(new GameSimulation(state));
+
+        session.SetWarStance(war.Id, "Aggressive");
+        session.OfferPeace(war.Id, "WhitePeace");
+
+        Assert.Contains(
+            state.PendingOrders,
+            order =>
+                order is SetWarStanceOrder stance &&
+                stance.War.Id == war.Id &&
+                stance.RequestedStance == WarStance.Aggressive);
+
+        Assert.Contains(
+            state.PendingOrders,
+            order =>
+                order is OfferPeaceOrder peace &&
+                peace.War.Id == war.Id &&
+                peace.Terms == PeaceOfferTerms.WhitePeace);
     }
 
     [Fact]
