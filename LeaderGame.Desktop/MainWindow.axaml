@@ -798,6 +798,233 @@
           </StackPanel>
         </ScrollViewer>
 
+        <!-- Military -->
+        <ScrollViewer IsVisible="{Binding IsMilitaryVisible}">
+          <StackPanel Spacing="20">
+            <StackPanel Spacing="5">
+              <TextBlock Text="MILITARY" Classes="eyebrow" Foreground="#E28585" />
+              <TextBlock Text="Command through reports, not omniscience" Classes="title" />
+              <TextBlock
+                  Text="You can issue campaign directives, but army strength, readiness and battlefield position remain reported estimates."
+                  TextWrapping="Wrap"
+                  Classes="muted" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+              <Border Classes="card" Padding="0">
+                <Grid RowDefinitions="5,*">
+                  <Border Background="#D96C6C" CornerRadius="8,8,0,0" />
+                  <StackPanel Grid.Row="1" Margin="14" Spacing="5">
+                    <TextBlock Text="OUR ARMY" Classes="eyebrow" Foreground="#E28585" />
+                    <TextBlock
+                        Text="{Binding View.Military.ArmyStrength}"
+                        FontSize="20"
+                        FontWeight="SemiBold" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+
+              <Border Grid.Column="1" Classes="card" Padding="0">
+                <Grid RowDefinitions="5,*">
+                  <Border Background="#D8A657" CornerRadius="8,8,0,0" />
+                  <StackPanel Grid.Row="1" Margin="14" Spacing="5">
+                    <TextBlock Text="READINESS" Classes="eyebrow" Foreground="#E1B66F" />
+                    <TextBlock
+                        Text="{Binding View.Military.ArmyReadiness}"
+                        FontSize="20"
+                        FontWeight="SemiBold" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+
+              <Border Grid.Column="2" Classes="card" Padding="0">
+                <Grid RowDefinitions="5,*">
+                  <Border Background="#A77BD7" CornerRadius="8,8,0,0" />
+                  <StackPanel Grid.Row="1" Margin="14" Spacing="5">
+                    <TextBlock Text="WAR EXHAUSTION" Classes="eyebrow" Foreground="#C096E2" />
+                    <TextBlock
+                        Text="{Binding View.Military.WarExhaustion}"
+                        FontSize="20"
+                        FontWeight="SemiBold" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </Grid>
+
+            <Border Classes="panel">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="HIGH COMMAND" Classes="eyebrow" Foreground="#E28585" />
+                  <TextBlock
+                      Text="{Binding View.Military.MarshalName}"
+                      FontSize="18"
+                      FontWeight="SemiBold" />
+                </StackPanel>
+                <Border Grid.Column="1" Classes="badge" Background="#211718" VerticalAlignment="Top">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="Obedience" Classes="muted" FontSize="11" />
+                    <TextBlock
+                        Text="{Binding View.Military.MarshalObedience}"
+                        FontWeight="SemiBold"
+                        FontSize="11"
+                        Foreground="{Binding View.Military.MarshalObedience, Converter={StaticResource SemanticStatusBrush}}" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </Border>
+
+            <Border Classes="card">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <StackPanel>
+                  <TextBlock Text="CAMPAIGNS" Classes="eyebrow" Foreground="#E28585" />
+                  <TextBlock
+                      Text="{Binding View.Military.Campaigns.Count, StringFormat='{}{0} active campaign(s)'}"
+                      FontSize="16"
+                      FontWeight="SemiBold" />
+                </StackPanel>
+                <Button
+                    Grid.Column="1"
+                    Classes="action military"
+                    Command="{Binding RequestOwnMilitaryReportCommand}"
+                    Content="⚑  Request own-army report" />
+              </Grid>
+            </Border>
+
+            <StackPanel IsVisible="{Binding HasActiveCampaigns}" Spacing="12">
+              <ComboBox
+                  ItemsSource="{Binding View.Military.Campaigns}"
+                  SelectedItem="{Binding SelectedCampaign}"
+                  HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                      <TextBlock Text="{Binding OpponentName}" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="1" Text="{Binding MonthsActive}" Classes="muted" />
+                    </Grid>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+
+              <Border Classes="card" Padding="0">
+                <Grid RowDefinitions="5,*">
+                  <Border Background="#D96C6C" CornerRadius="8,8,0,0" />
+                  <StackPanel Grid.Row="1" Margin="16" Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock
+                            Text="{Binding SelectedCampaign.OpponentName, StringFormat='Campaign against {0}'}"
+                            FontSize="20"
+                            FontWeight="SemiBold" />
+                        <TextBlock
+                            Text="{Binding SelectedCampaign.MonthsActive}"
+                            Classes="muted" />
+                      </StackPanel>
+                      <Border Grid.Column="1" Classes="badge" Background="#211718">
+                        <TextBlock
+                            Text="{Binding SelectedCampaign.Stance, StringFormat='Stance: {0}'}"
+                            Foreground="#E99B9B"
+                            FontSize="11" />
+                      </Border>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                      <Border Background="#0D141C" CornerRadius="7" Padding="10">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="CAMPAIGN POSITION" Classes="eyebrow" Foreground="#E1B66F" />
+                          <TextBlock
+                              Text="{Binding SelectedCampaign.CampaignPosition}"
+                              FontSize="16"
+                              FontWeight="SemiBold" />
+                        </StackPanel>
+                      </Border>
+
+                      <Border Grid.Column="1" Background="#0D141C" CornerRadius="7" Padding="10">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="OUR FORCE" Classes="eyebrow" Foreground="#8CBCE8" />
+                          <TextBlock Text="{Binding SelectedCampaign.OwnArmy}" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding SelectedCampaign.OwnReadiness, StringFormat='Readiness {0}'}"
+                                     FontSize="11" Classes="muted" />
+                        </StackPanel>
+                      </Border>
+
+                      <Border Grid.Column="2" Background="#0D141C" CornerRadius="7" Padding="10">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="ENEMY ESTIMATE" Classes="eyebrow" Foreground="#E28585" />
+                          <TextBlock Text="{Binding SelectedCampaign.EnemyArmy}" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding SelectedCampaign.EnemyReadiness, StringFormat='Readiness {0}'}"
+                                     FontSize="11" Classes="muted" />
+                        </StackPanel>
+                      </Border>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                      <Border Classes="panel" Background="#111821">
+                        <StackPanel Spacing="10">
+                          <TextBlock Text="CAMPAIGN DIRECTIVE" Classes="eyebrow" Foreground="#E28585" />
+                          <ComboBox
+                              ItemsSource="{Binding WarStanceOptions}"
+                              SelectedItem="{Binding SelectedWarStance}" />
+                          <Button
+                              Classes="action military"
+                              HorizontalAlignment="Left"
+                              Command="{Binding ApplyWarStanceCommand}"
+                              Content="Issue stance order" />
+                          <TextBlock
+                              Text="A reluctant Marshal may refuse or moderate an extreme order."
+                              TextWrapping="Wrap"
+                              FontSize="11"
+                              Classes="muted" />
+                        </StackPanel>
+                      </Border>
+
+                      <Border Grid.Column="1" Classes="panel" Background="#111821">
+                        <StackPanel Spacing="10">
+                          <TextBlock Text="PEACE CHANNEL" Classes="eyebrow" Foreground="#76B7E4" />
+                          <ComboBox
+                              ItemsSource="{Binding PeaceTermOptions}"
+                              SelectedItem="{Binding SelectedPeaceTerms}" />
+                          <Button
+                              Classes="action intelligence"
+                              HorizontalAlignment="Left"
+                              Command="{Binding OfferPeaceCommand}"
+                              Content="Send peace proposal" />
+                          <TextBlock
+                              Text="Foreign acceptance is not shown as a percentage. Your Chancellor must actually test the proposal."
+                              TextWrapping="Wrap"
+                              FontSize="11"
+                              Classes="muted" />
+                        </StackPanel>
+                      </Border>
+                    </Grid>
+
+                    <WrapPanel Orientation="Horizontal">
+                      <Button
+                          Classes="action military"
+                          Margin="0,0,8,0"
+                          Command="{Binding RequestCampaignIntelligenceCommand}"
+                          Content="⚑  Request fresh enemy intelligence" />
+                    </WrapPanel>
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </StackPanel>
+
+            <Border
+                IsVisible="{Binding HasActiveCampaigns}"
+                Background="#2A2115"
+                BorderBrush="#6D542D"
+                BorderThickness="1"
+                CornerRadius="7"
+                Padding="10">
+              <TextBlock
+                  Text="▲ Battlefield information can lag the real war. A sudden reinforcement, collapse or defeat may not appear until the Marshal's reports catch up."
+                  TextWrapping="Wrap"
+                  Foreground="#E0C28D"
+                  FontSize="12" />
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+
         <!-- Intelligence -->
         <ScrollViewer IsVisible="{Binding IsIntelligenceVisible}">
           <StackPanel Spacing="20">
