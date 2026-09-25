@@ -1,3 +1,4 @@
+using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Systems;
 
@@ -49,6 +50,8 @@ public class GameSimulation
         State.Reports.AddRange(ForeignPolicySystem.ProcessMonth(State));
 
         State.Reports.AddRange(PlotSystem.ProcessMonth(State));
+
+        State.Reports.AddRange(InformationSystem.ProcessMonth(State));
 
         State.Date = State.Date.NextMonth();
     }
