@@ -39,7 +39,10 @@ public sealed class DiplomaticGraph
         int trust,
         int tension,
         bool tradeAgreement = false,
-        GameDate? tradeAgreementStartedOn = null)
+        GameDate? tradeAgreementStartedOn = null,
+        bool nonAggressionPact = false,
+        GameDate? nonAggressionPactStartedOn = null,
+        int borderDisputeSeverity = 0)
     {
         var relation = GetOrCreate(first, second);
         relation.Relations = relations;
@@ -48,6 +51,10 @@ public sealed class DiplomaticGraph
         relation.HasTradeAgreement = tradeAgreement;
         relation.TradeAgreementStartedOn =
             tradeAgreement ? tradeAgreementStartedOn : null;
+        relation.HasNonAggressionPact = nonAggressionPact;
+        relation.NonAggressionPactStartedOn =
+            nonAggressionPact ? nonAggressionPactStartedOn : null;
+        relation.BorderDisputeSeverity = borderDisputeSeverity;
     }
 
     public IEnumerable<DiplomaticRelation> ForCountry(Country country) =>

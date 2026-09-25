@@ -4,7 +4,8 @@ namespace LeaderGame.Simulation.Diplomacy;
 
 public enum DiplomaticProposalType
 {
-    TradeAgreement
+    TradeAgreement,
+    NonAggressionPact
 }
 
 public enum DiplomaticProposalStatus

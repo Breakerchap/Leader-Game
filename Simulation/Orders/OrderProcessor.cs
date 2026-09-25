@@ -24,6 +24,8 @@ internal static class OrderProcessor
             ImproveRelationsOrder diplomacyOrder => ProcessImproveRelationsOrder(state, diplomacyOrder),
             NegotiateTradeAgreementOrder tradeOrder => ProcessTradeAgreementOrder(state, tradeOrder),
             EndTradeAgreementOrder endTradeOrder => ProcessEndTradeAgreementOrder(state, endTradeOrder),
+            NegotiateNonAggressionPactOrder pactOrder => ProcessNonAggressionPactOrder(state, pactOrder),
+            EndNonAggressionPactOrder endPactOrder => ProcessEndNonAggressionPactOrder(state, endPactOrder),
             RespondToDiplomaticProposalOrder responseOrder => ProcessDiplomaticProposalResponse(state, responseOrder),
             DeclareWarOrder warOrder => ProcessDeclareWarOrder(state, warOrder),
             SetWarStanceOrder stanceOrder => ProcessSetWarStanceOrder(state, stanceOrder),
@@ -835,6 +837,161 @@ internal static class OrderProcessor
             $"{order.TargetCountry.Name}. The decision damages trust and raises tension.");
     }
 
+    private static SimulationReport ProcessNonAggressionPactOrder(
+        GameState state,
+        NegotiateNonAggressionPactOrder order)
+    {
+        var chancellor = order.Recipient;
+
+        if (!IsServingChancellor(order.SourceCountry, chancellor) ||
+            ReferenceEquals(order.SourceCountry, order.TargetCountry) ||
+            !state.Countries.Contains(order.TargetCountry))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Pact negotiation rejected",
+                "An active Chancellor must negotiate with another simulated country.");
+        }
+
+        if (!order.SourceCountry.IsNeighbor(order.TargetCountry))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                "Pact negotiation rejected",
+                $"{order.TargetCountry.Name} is not an immediate neighbour.");
+        }
+
+        var relation = state.Diplomacy.GetOrCreate(
+            order.SourceCountry,
+            order.TargetCountry);
+
+        if (relation.HasNonAggressionPact)
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                "Pact negotiation rejected",
+                $"{order.SourceCountry.Name} and {order.TargetCountry.Name} already have a non-aggression pact.");
+        }
+
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.SourceCountry,
+            chancellor,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"{chancellor.FullName} refuses pact negotiations",
+                $"{chancellor.FullName} refuses to negotiate with {order.TargetCountry.Name}. " +
+                $"Their willingness to obey is only {willingness:F0}/100.");
+        }
+
+        var acceptance = Diplomacy.DiplomaticCalculations.GetNonAggressionAcceptanceScore(
+            state,
+            order.SourceCountry,
+            order.TargetCountry,
+            chancellor);
+
+        if (acceptance < 55)
+        {
+            order.Status = OrderStatus.Failed;
+            relation.ChangeRelations(-1);
+            relation.ChangeTension(2);
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"{order.TargetCountry.Name} rejects the non-aggression pact",
+                $"{chancellor.FullName} completes the negotiation, but the foreign government " +
+                "declines the pact. Relations cool slightly and tension increases.");
+        }
+
+        relation.HasNonAggressionPact = true;
+        relation.NonAggressionPactStartedOn = state.Date;
+        relation.ChangeRelations(3);
+        relation.ChangeTrust(6);
+        relation.ChangeTension(-8);
+
+        var foreignRulerToIssuer = state.Relationships.GetOrCreate(
+            order.TargetCountry.Ruler,
+            order.SourceCountry.Ruler);
+        foreignRulerToIssuer.ChangeOpinion(3);
+        foreignRulerToIssuer.ChangeTrust(5);
+
+        order.Status = OrderStatus.Completed;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Diplomacy,
+            $"Non-aggression pact with {order.TargetCountry.Name}",
+            $"{order.SourceCountry.Name} and {order.TargetCountry.Name} conclude a " +
+            "non-aggression pact. Strategic tension falls, but any underlying border " +
+            "dispute remains unresolved.");
+    }
+
+    private static SimulationReport ProcessEndNonAggressionPactOrder(
+        GameState state,
+        EndNonAggressionPactOrder order)
+    {
+        var chancellor = order.Recipient;
+
+        if (!IsServingChancellor(order.SourceCountry, chancellor) ||
+            ReferenceEquals(order.SourceCountry, order.TargetCountry))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Pact termination rejected",
+                "An active Chancellor must formally end a non-aggression pact.");
+        }
+
+        var relation = state.Diplomacy.GetOrCreate(
+            order.SourceCountry,
+            order.TargetCountry);
+
+        if (!relation.HasNonAggressionPact)
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                "No non-aggression pact to end",
+                $"{order.SourceCountry.Name} has no non-aggression pact with {order.TargetCountry.Name}.");
+        }
+
+        relation.HasNonAggressionPact = false;
+        relation.NonAggressionPactStartedOn = null;
+        relation.ChangeRelations(-5);
+        relation.ChangeTrust(-10);
+        relation.ChangeTension(12);
+
+        var foreignRulerToIssuer = state.Relationships.GetOrCreate(
+            order.TargetCountry.Ruler,
+            order.SourceCountry.Ruler);
+        foreignRulerToIssuer.ChangeOpinion(-6);
+        foreignRulerToIssuer.ChangeTrust(-10);
+
+        order.Status = OrderStatus.Completed;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Diplomacy,
+            $"Non-aggression pact with {order.TargetCountry.Name} ended",
+            $"{order.SourceCountry.Name} renounces its non-aggression pact with " +
+            $"{order.TargetCountry.Name}. Trust falls sharply and strategic tension rises.");
+    }
+
     private static SimulationReport ProcessSetWarStanceOrder(
         GameState state,
         SetWarStanceOrder order)
@@ -955,12 +1112,24 @@ internal static class OrderProcessor
             order.SourceCountry,
             order.TargetCountry);
         var preWarRelations = relation.Relations;
+        var brokeNonAggressionPact = relation.HasNonAggressionPact;
 
         relation.HasTradeAgreement = false;
         relation.TradeAgreementStartedOn = null;
+        relation.HasNonAggressionPact = false;
+        relation.NonAggressionPactStartedOn = null;
         relation.Relations = Math.Min(-70, relation.Relations - 30);
         relation.Trust = Math.Max(0, relation.Trust - 40);
         relation.Tension = 100;
+
+        if (brokeNonAggressionPact)
+        {
+            relation.ChangeRelations(-10);
+            relation.ChangeTrust(-20);
+            order.SourceCountry.Ruler.Legitimacy -= 8;
+            order.SourceCountry.Government.Stability -= 5;
+            order.SourceCountry.PublicUnrest += 5;
+        }
 
         var pendingProposals = state.DiplomaticProposals.Where(proposal =>
             proposal.Status == Diplomacy.DiplomaticProposalStatus.Pending &&
@@ -997,12 +1166,18 @@ internal static class OrderProcessor
         state.Wars.Add(war);
         order.Status = OrderStatus.Completed;
 
+        var treatyBreachText = brokeNonAggressionPact
+            ? " The declaration also breaks an active non-aggression pact, causing a " +
+              "major additional loss of trust and domestic legitimacy."
+            : string.Empty;
+
         return new SimulationReport(
             state.Date,
             ReportCategory.Military,
             $"{order.SourceCountry.Name} declares war on {order.TargetCountry.Name}",
             $"{chancellor.FullName} delivers the declaration. Trade and pending " +
-            $"diplomatic offers between the two states end immediately. War score begins at 0.");
+            $"diplomatic offers between the two states end immediately.{treatyBreachText} " +
+            "War score begins at 0.");
     }
 
     private static void ApplyWarDeclarationPoliticalCost(
@@ -1069,12 +1244,17 @@ internal static class OrderProcessor
             proposal.SourceCountry,
             proposal.TargetCountry);
 
+        var proposalName = proposal.Type == Diplomacy.DiplomaticProposalType.TradeAgreement
+            ? "trade agreement"
+            : "non-aggression pact";
+
         if (!order.Accept)
         {
             proposal.Status = Diplomacy.DiplomaticProposalStatus.Rejected;
             relation.ChangeRelations(-2);
             relation.ChangeTrust(-3);
-            relation.ChangeTension(2);
+            relation.ChangeTension(
+                proposal.Type == Diplomacy.DiplomaticProposalType.NonAggressionPact ? 3 : 2);
 
             var proposerToRuler = state.Relationships.GetOrCreate(
                 proposal.SourceCountry.Ruler,
@@ -1087,16 +1267,27 @@ internal static class OrderProcessor
             return new SimulationReport(
                 state.Date,
                 ReportCategory.Diplomacy,
-                $"Trade proposal from {proposal.SourceCountry.Name} rejected",
-                $"{order.Country.Name} rejects the proposed trade agreement. " +
+                $"{proposalName} proposal from {proposal.SourceCountry.Name} rejected",
+                $"{order.Country.Name} rejects the proposed {proposalName}. " +
                 "The refusal causes a small deterioration in relations.");
         }
 
-        relation.HasTradeAgreement = true;
-        relation.TradeAgreementStartedOn = state.Date;
-        relation.ChangeRelations(3);
-        relation.ChangeTrust(5);
-        relation.ChangeTension(-3);
+        if (proposal.Type == Diplomacy.DiplomaticProposalType.TradeAgreement)
+        {
+            relation.HasTradeAgreement = true;
+            relation.TradeAgreementStartedOn = state.Date;
+            relation.ChangeRelations(3);
+            relation.ChangeTrust(5);
+            relation.ChangeTension(-3);
+        }
+        else
+        {
+            relation.HasNonAggressionPact = true;
+            relation.NonAggressionPactStartedOn = state.Date;
+            relation.ChangeRelations(3);
+            relation.ChangeTrust(6);
+            relation.ChangeTension(-8);
+        }
 
         var sourceToTarget = state.Relationships.GetOrCreate(
             proposal.SourceCountry.Ruler,
@@ -1116,9 +1307,9 @@ internal static class OrderProcessor
         return new SimulationReport(
             state.Date,
             ReportCategory.Diplomacy,
-            $"Trade proposal from {proposal.SourceCountry.Name} accepted",
+            $"{proposalName} proposal from {proposal.SourceCountry.Name} accepted",
             $"{proposal.SourceCountry.Name} and {proposal.TargetCountry.Name} " +
-            "enter a trade agreement. Both countries begin receiving trade income this month.");
+            $"enter a {proposalName}.");
     }
 
     private static bool IsServingChancellor(

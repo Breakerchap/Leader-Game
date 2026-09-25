@@ -389,21 +389,24 @@ public static class DemoScenario
             nordmark,
             relations: 32,
             trust: 61,
-            tension: 14);
+            tension: 14,
+            borderDisputeSeverity: 0);
 
         state.Diplomacy.Set(
             falkenreich,
             valeria,
             relations: -26,
             trust: 31,
-            tension: 47);
+            tension: 47,
+            borderDisputeSeverity: 55);
 
         state.Diplomacy.Set(
             nordmark,
             valeria,
             relations: -12,
             trust: 42,
-            tension: 34);
+            tension: 34,
+            borderDisputeSeverity: 30);
 
         return state;
     }

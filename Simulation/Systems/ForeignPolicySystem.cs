@@ -34,9 +34,7 @@ internal static class ForeignPolicySystem
                 war.IsParticipant(playerCountry));
 
             if (atWar ||
-                relation.HasTradeAgreement ||
-                HasPendingProposal(state, foreignCountry, playerCountry) ||
-                HasRecentProposal(state, foreignCountry, playerCountry))
+                HasPendingProposal(state, foreignCountry, playerCountry))
             {
                 continue;
             }
@@ -47,19 +45,55 @@ internal static class ForeignPolicySystem
             if (chancellor is null)
                 continue;
 
-            var desirability =
-                DiplomaticCalculations.GetTradeDesirabilityScore(
+            DiplomaticProposalType? proposedType = null;
+
+            if (!relation.HasTradeAgreement &&
+                !HasRecentProposal(
                     state,
                     foreignCountry,
                     playerCountry,
-                    chancellor);
+                    DiplomaticProposalType.TradeAgreement))
+            {
+                var tradeDesirability =
+                    DiplomaticCalculations.GetTradeDesirabilityScore(
+                        state,
+                        foreignCountry,
+                        playerCountry,
+                        chancellor);
 
-            if (desirability < 65)
+                if (tradeDesirability >= 65)
+                    proposedType = DiplomaticProposalType.TradeAgreement;
+            }
+
+            if (proposedType is null &&
+                !relation.HasNonAggressionPact &&
+                !HasRecentProposal(
+                    state,
+                    foreignCountry,
+                    playerCountry,
+                    DiplomaticProposalType.NonAggressionPact))
+            {
+                var pactDesirability =
+                    DiplomaticCalculations.GetNonAggressionDesirabilityScore(
+                        state,
+                        foreignCountry,
+                        playerCountry,
+                        chancellor);
+
+                if (pactDesirability >= 65 &&
+                    (relation.Tension >= 20 ||
+                     relation.BorderDisputeSeverity >= 20))
+                {
+                    proposedType = DiplomaticProposalType.NonAggressionPact;
+                }
+            }
+
+            if (proposedType is null)
                 continue;
 
             var proposal = new DiplomaticProposal
             {
-                Type = DiplomaticProposalType.TradeAgreement,
+                Type = proposedType.Value,
                 SourceCountry = foreignCountry,
                 TargetCountry = playerCountry,
                 CreatedOn = state.Date
@@ -67,11 +101,15 @@ internal static class ForeignPolicySystem
 
             state.DiplomaticProposals.Add(proposal);
 
+            var proposalName = proposedType == DiplomaticProposalType.TradeAgreement
+                ? "trade agreement"
+                : "non-aggression pact";
+
             reports.Add(new SimulationReport(
                 state.Date,
                 ReportCategory.Diplomacy,
-                $"{foreignCountry.Name} proposes a trade agreement",
-                $"{foreignCountry.Ruler.FullName}'s government offers a trade agreement " +
+                $"{foreignCountry.Name} proposes a {proposalName}",
+                $"{foreignCountry.Ruler.FullName}'s government offers a {proposalName} " +
                 $"to {playerCountry.Name}. The proposal will not remain open indefinitely."));
         }
 
@@ -97,6 +135,9 @@ internal static class ForeignPolicySystem
                 proposal.TargetCountry);
             relation.ChangeRelations(-1);
             relation.ChangeTrust(-2);
+
+            if (proposal.Type == DiplomaticProposalType.NonAggressionPact)
+                relation.ChangeTension(1);
 
             if (ReferenceEquals(proposal.TargetCountry, state.Player.Country))
             {
@@ -124,9 +165,11 @@ internal static class ForeignPolicySystem
     private static bool HasRecentProposal(
         GameState state,
         Countries.Country source,
-        Countries.Country target)
+        Countries.Country target,
+        DiplomaticProposalType type)
     {
         return state.DiplomaticProposals.Any(proposal =>
+            proposal.Type == type &&
             ReferenceEquals(proposal.SourceCountry, source) &&
             ReferenceEquals(proposal.TargetCountry, target) &&
             MonthsBetween(proposal.CreatedOn, state.Date) < ProposalCooldownMonths);

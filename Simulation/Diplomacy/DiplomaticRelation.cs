@@ -47,6 +47,22 @@ public sealed class DiplomaticRelation
 
     public GameDate? TradeAgreementStartedOn { get; set; }
 
+    public bool HasNonAggressionPact { get; set; }
+
+    public GameDate? NonAggressionPactStartedOn { get; set; }
+
+    private int _borderDisputeSeverity;
+
+    /// <summary>
+    /// Persistent territorial or border grievance. Treaties can contain it,
+    /// but they do not erase the underlying dispute.
+    /// </summary>
+    public int BorderDisputeSeverity
+    {
+        get => _borderDisputeSeverity;
+        set => _borderDisputeSeverity = Math.Clamp(value, 0, 100);
+    }
+
     public bool Involves(Country country) =>
         CountryAId == country.Id || CountryBId == country.Id;
 

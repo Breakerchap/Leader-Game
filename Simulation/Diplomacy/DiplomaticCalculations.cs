@@ -117,4 +117,83 @@ public static class DiplomaticCalculations
             0,
             100);
     }
+
+    public static double GetNonAggressionAcceptanceScore(
+        GameState state,
+        Country sourceCountry,
+        Country targetCountry,
+        Character sourceChancellor)
+    {
+        var relation = state.Diplomacy.GetOrCreate(sourceCountry, targetCountry);
+        var missionEffectiveness = GetMissionEffectiveness(
+            state,
+            sourceCountry,
+            sourceChancellor);
+        var personalModifier = GetPersonalRulerModifier(
+            state,
+            sourceCountry,
+            targetCountry);
+
+        var sourcePower = GetMilitaryPower(sourceCountry);
+        var targetPower = GetMilitaryPower(targetCountry);
+        var strategicNeed = targetPower <= 0
+            ? 0
+            : Math.Clamp((sourcePower / targetPower - 1.0) * 12.0, -6, 10);
+
+        return Math.Clamp(
+            42 +
+            relation.Relations * 0.25 +
+            relation.Trust * 0.25 -
+            relation.Tension * 0.18 -
+            relation.BorderDisputeSeverity * 0.08 +
+            missionEffectiveness * 0.10 +
+            personalModifier +
+            strategicNeed,
+            0,
+            100);
+    }
+
+    public static double GetNonAggressionDesirabilityScore(
+        GameState state,
+        Country sourceCountry,
+        Country targetCountry,
+        Character sourceChancellor)
+    {
+        var relation = state.Diplomacy.GetOrCreate(sourceCountry, targetCountry);
+        var personalModifier = GetPersonalRulerModifier(
+            state,
+            targetCountry,
+            sourceCountry);
+
+        var sourcePower = GetMilitaryPower(sourceCountry);
+        var targetPower = GetMilitaryPower(targetCountry);
+        var vulnerability = sourcePower <= 0
+            ? 0
+            : Math.Clamp((targetPower / sourcePower - 1.0) * 14.0, -5, 12);
+
+        var strategicFriction =
+            Math.Min(15, relation.Tension * 0.08 +
+                         relation.BorderDisputeSeverity * 0.08);
+
+        return Math.Clamp(
+            40 +
+            relation.Relations * 0.22 +
+            relation.Trust * 0.22 -
+            relation.Tension * 0.10 -
+            relation.BorderDisputeSeverity * 0.05 +
+            sourceChancellor.Competence * 0.08 +
+            personalModifier +
+            vulnerability +
+            strategicFriction,
+            0,
+            100);
+    }
+
+    public static double GetMilitaryPower(Country country)
+    {
+        return country.ArmySize *
+               (0.50 + country.ArmyReadiness / 200.0);
+    }
+
+
 }
