@@ -133,6 +133,55 @@ public class InformationSystemTests
     }
 
     [Fact]
+    public void StaleForeignReport_UsesHistoricalTruthRatherThanCurrentTruth()
+    {
+        var state = DemoScenario.Create();
+        var simulation = new GameSimulation(state);
+        var country = state.Player.Country;
+        var marshal = country.GetOfficeHolder(Position.Marshal)!;
+        var nordmark = state.FindCountry("nordmark")!;
+        var historicalArmy = nordmark.ArmySize;
+
+        state.InformationRandom = new ConstantRandom(0.0);
+
+        simulation.SubmitOrder(new RequestReportOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = marshal,
+            IssuedOn = state.Date,
+            Country = country,
+            Topic = InformationTopic.Military,
+            SubjectCountry = nordmark,
+            RelatedCountry = country
+        });
+
+        // Request is accepted in January and the January truth is captured.
+        simulation.AdvanceMonth();
+
+        // February passes with the old army still in place.
+        simulation.AdvanceMonth();
+
+        // The army changes sharply just before the report is finally delivered
+        // in March. A one-month information lag should therefore use February.
+        nordmark.ArmySize = 20_000;
+        simulation.AdvanceMonth();
+
+        var report = state.AdvisorReports
+            .Last(candidate =>
+                candidate.WasRequested &&
+                candidate.Topic == InformationTopic.Military &&
+                ReferenceEquals(candidate.SubjectCountry, nordmark));
+
+        var armyFact = report.Facts.Single(fact =>
+            fact.Key.Metric == InformationMetric.ArmySize);
+
+        Assert.Equal(new GameDate(1450, 2), report.DataAsOf);
+        Assert.True(
+            Math.Abs(armyFact.Estimate - historicalArmy) <
+            Math.Abs(armyFact.Estimate - nordmark.ArmySize));
+    }
+
+    [Fact]
     public void InformationRandomness_DoesNotPerturbPhysicalRandomStream()
     {
         var first = DemoScenario.Create();
@@ -165,6 +214,18 @@ public class InformationSystemTests
         Assert.Equal(
             first.Random.NextDouble(),
             second.Random.NextDouble());
+    }
+
+    private sealed class ConstantRandom : IRandomSource
+    {
+        private readonly double _value;
+
+        public ConstantRandom(double value)
+        {
+            _value = value;
+        }
+
+        public double NextDouble() => _value;
     }
 
     private sealed class SequenceRandom : IRandomSource
