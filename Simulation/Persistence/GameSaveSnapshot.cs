@@ -1,3 +1,4 @@
+using LeaderGame.Simulation.Campaign;
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Diplomacy;
@@ -25,6 +26,8 @@ public sealed class GameSaveSnapshot
     public ulong InformationRandomState { get; init; }
 
     public required PlayerSnapshot Player { get; init; }
+
+    public CampaignSnapshot? Campaign { get; init; }
 
     public List<CharacterSnapshot> Characters { get; init; } = [];
 
@@ -61,6 +64,44 @@ public sealed class GameSaveSnapshot
 
 public sealed record DateSnapshot(int Year, int Month);
 
+public sealed class CampaignSnapshot
+{
+    public required string ScenarioId { get; init; }
+
+    public required string Title { get; init; }
+
+    public required string Summary { get; init; }
+
+    public required DateSnapshot StartedOn { get; init; }
+
+    public List<CampaignObjectiveSnapshot> Objectives { get; init; } = [];
+}
+
+public sealed class CampaignObjectiveSnapshot
+{
+    public required string Id { get; init; }
+
+    public required string Title { get; init; }
+
+    public required string Description { get; init; }
+
+    public CampaignObjectiveType Type { get; init; }
+
+    public double TargetValue { get; init; }
+
+    public double SecondaryTargetValue { get; init; }
+
+    public string? RelatedCountryId { get; init; }
+
+    public int RequiredMonths { get; init; }
+
+    public int ProgressMonths { get; init; }
+
+    public bool IsCompleted { get; init; }
+
+    public DateSnapshot? CompletedOn { get; init; }
+}
+
 public sealed class PlayerSnapshot
 {
     public required int CurrentCharacterId { get; init; }
@@ -78,6 +119,10 @@ public sealed class PlayerSnapshot
     public bool HasLost { get; init; }
 
     public string? LossReason { get; init; }
+
+    public bool HasWon { get; init; }
+
+    public string? WinReason { get; init; }
 }
 
 public sealed class CharacterSnapshot
