@@ -367,6 +367,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public bool HasActiveCampaigns => View.Military.Campaigns.Count > 0;
 
+    public bool HasCabinetProposals => View.CabinetProposals.Count > 0;
+
     public string SectionTitle => CurrentSection;
 
     public string SectionDescription => CurrentSection switch
@@ -672,6 +674,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(SelectedCourtFigure));
         OnPropertyChanged(nameof(HasPendingReports));
         OnPropertyChanged(nameof(HasActiveCampaigns));
+        OnPropertyChanged(nameof(HasCabinetProposals));
         OnPropertyChanged(nameof(ArchiveEntries));
         OnPropertyChanged(nameof(SaveLocation));
         _advanceMonthCommand.RaiseCanExecuteChanged();
