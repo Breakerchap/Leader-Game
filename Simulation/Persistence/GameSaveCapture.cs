@@ -91,6 +91,21 @@ public static partial class GameSaveService
                     IsActive = bloc.IsActive
                 })
                 .ToList(),
+            CabinetProposals = state.CabinetProposals
+                .Select(proposal => new CabinetProposalSnapshot
+                {
+                    Id = proposal.Id,
+                    CountryId = proposal.Country.Id,
+                    AdvisorId = proposal.Advisor.Id,
+                    Type = proposal.Type,
+                    TargetCountryId = proposal.TargetCountry?.Id,
+                    WarId = proposal.War?.Id,
+                    TargetValue = proposal.TargetValue,
+                    CreatedOn = Date(proposal.CreatedOn),
+                    MonthsOpen = proposal.MonthsOpen,
+                    Status = proposal.Status
+                })
+                .ToList(),
             DiplomaticProposals = state.DiplomaticProposals
                 .Select(CaptureProposal)
                 .ToList(),
