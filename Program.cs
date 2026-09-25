@@ -849,8 +849,9 @@ static void ReviewDiplomaticProposals(
             $"[{i + 1}] {proposal.SourceCountry.Name,-12} " +
             $"{description}  open {proposal.MonthsOpen} month(s)");
         Console.WriteLine(
-            $"    Relations {relation.Relations}, trust {relation.Trust}, " +
-            $"tension {relation.Tension}");
+            $"    Reported relations {FormatKnownShort(simulation.State, InformationMetric.DiplomaticRelations, proposal.SourceCountry.Id, country.Id)}, " +
+            $"trust {FormatKnownShort(simulation.State, InformationMetric.DiplomaticTrust, proposal.SourceCountry.Id, country.Id)}, " +
+            $"tension {FormatKnownShort(simulation.State, InformationMetric.DiplomaticTension, proposal.SourceCountry.Id, country.Id)}");
     }
 
     Console.WriteLine();
