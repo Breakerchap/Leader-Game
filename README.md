@@ -37,12 +37,16 @@ The prototype now links court politics and state capacity rather than treating t
 - natural ruler death flowing directly into the succession system in the same monthly tick;
 - player lineage continuity, succession and usurpation;
 - three fully simulated countries in the prototype world, each with its own ruler, court, economy and succession;
-- bilateral state relations tracking relations, trust, tension, borders and trade agreements;
-- Chancellor-mediated diplomatic outreach and trade negotiation;
+- bilateral state relations tracking relations, trust, tension, borders and treaties;
+- persistent border disputes that generate strategic tension over time;
+- Chancellor-mediated diplomatic outreach, trade negotiation and non-aggression pacts;
 - trade agreements that generate bilateral monthly income and slowly build trust;
+- non-aggression pacts that suppress escalation without erasing underlying territorial disputes;
 - ruler-to-ruler personal relationships that influence diplomacy and change with succession;
-- autonomous foreign governments that can initiate trade proposals without deciding for the player;
+- autonomous foreign governments that can initiate trade or non-aggression proposals without deciding for the player;
 - pending proposals that can be accepted, rejected or allowed to expire through the Foreign Affairs screen;
+- explicit treaty-breaking costs: declaring war through a non-aggression pact damages trust, legitimacy and domestic stability;
+- a first abstract war model with declarations, Marshal-mediated campaign stances, monthly losses, readiness and war exhaustion;
 - monthly taxes and recurring government expenditure;
 - army, administration and court/patronage budgets;
 - Treasurer-mediated budget changes rather than direct sliders;
@@ -81,6 +85,10 @@ Characters do not relate only to the ruler. Friendship, trust and shared hostili
 
 Illness and mortality use a seeded simulation random source rather than ad-hoc random calls. The same state and RNG state reproduce the same future, and tests can inject exact random sequences.
 
+### Treaties contain conflict; they do not erase it
+
+A border dispute is a structural grievance, while a non-aggression pact is a political commitment. A pact can lower tension and build trust without deleting the dispute. Breaking that commitment later should be remembered and costly.
+
 ### State capacity costs money
 
 Army readiness and administrative effectiveness require sustained funding. Cutting expenditure solves a fiscal problem now by creating a capability problem later. Debt preserves capacity temporarily, but eventually damages political stability.
@@ -97,10 +105,10 @@ The simulation continues to model a country even if the player's political linea
 
 The next systems should continue to grow from the same model:
 
-1. diplomacy mediated through the Chancellor and diplomats;
-2. mortality, illness, abdication and other causes of succession;
-3. imprisonment, exile, pardons and legal/political consequences for conspirators;
-4. succession laws and institutions that derive candidates instead of using a fixed list;
-5. larger factions and interest groups built from the relationship network;
-6. trade and economic shocks that make fiscal policy react to the outside world;
-7. only then, a first minimal war system.
+1. war goals, peace negotiations and political/economic consequences of settlements;
+2. defensive alliances and third-country responses to wars;
+3. abdication and other non-medical causes of succession;
+4. exile, pardons and more formal legal institutions around political repression;
+5. succession laws and institutions that derive candidates instead of using a fixed list;
+6. larger factions and interest groups built from the relationship network;
+7. trade and economic shocks that make fiscal policy react to the outside world.
