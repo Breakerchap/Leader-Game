@@ -1032,6 +1032,61 @@ public sealed class GameSession
             economySummary,
             economyHistory);
 
+        var archiveEntries = new List<(int SortKey, int Priority, ArchiveEntryView View)>();
+
+        foreach (var report in state.AdvisorReports)
+        {
+            var details = report.Summary;
+
+            if (report.Caveats.Count > 0)
+            {
+                details += "  Visible caveats: " +
+                           string.Join(" ", report.Caveats);
+            }
+
+            archiveEntries.Add((
+                DateKey(report.ProducedOn),
+                2,
+                new ArchiveEntryView(
+                    report.ProducedOn.ToString(),
+                    "ADVISER REPORT",
+                    report.Title,
+                    details,
+                    $"{report.Advisor.FullName} · {InformationSystem.FormatTopic(report.Topic)}",
+                    report.Caveats.Count > 0)));
+        }
+
+        foreach (var report in state.Reports)
+        {
+            var duplicatesAdvisorReport = state.AdvisorReports.Any(advisorReport =>
+                advisorReport.ProducedOn == report.Date &&
+                advisorReport.Title == report.Title);
+
+            if (duplicatesAdvisorReport)
+                continue;
+
+            archiveEntries.Add((
+                DateKey(report.Date),
+                1,
+                new ArchiveEntryView(
+                    report.Date.ToString(),
+                    report.Category.ToString().ToUpperInvariant(),
+                    report.Title,
+                    report.Details,
+                    "Government record",
+                    report.Category is ReportCategory.Military
+                        or ReportCategory.Politics
+                        or ReportCategory.Personal)));
+        }
+
+        var archive = new ArchiveView(
+            archiveEntries
+                .OrderByDescending(entry => entry.SortKey)
+                .ThenByDescending(entry => entry.Priority)
+                .Take(200)
+                .Select(entry => entry.View)
+                .ToList());
+
         return new PlayerViewState(
             country.Name,
             state.Date.ToString(),
@@ -1053,6 +1108,7 @@ public sealed class GameSession
             foreignAffairs,
             military,
             economy,
+            archive,
             _statusMessage);
     }
 
