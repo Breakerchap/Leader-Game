@@ -2,6 +2,7 @@ using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Orders;
+using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Randomness;
 using LeaderGame.Simulation.Scenarios;
 
@@ -105,7 +106,7 @@ public class InformationSystemTests
         relationship.Fear = 0;
         treasurer.Ambition = 100;
         treasurer.SetAllegiance(
-            Politics.PoliticalKeys.Country(country.Id),
+            PoliticalKeys.Country(country.Id),
             0);
 
         state.InformationRandom = new SequenceRandom(0.0);
