@@ -639,7 +639,9 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
     Console.WriteLine("===============");
     Console.WriteLine();
     Console.WriteLine(
-        $"Chancellor: {chancellor.FullName} — competence {chancellor.Competence}/100");
+        $"Chancellor: {chancellor.FullName} — assessed ability {DescribeLevel(chancellor.Competence)}");
+    Console.WriteLine(
+        "Diplomatic figures below are your Chancellor's latest estimates, not live hidden state.");
 
     var incoming = simulation.State.DiplomaticProposals
         .Where(proposal =>
@@ -657,14 +659,16 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
 
     for (var i = 0; i < foreignCountries.Count; i++)
     {
-        var foreign = foreignCountries[i];
-        var relation = simulation.State.Diplomacy.GetOrCreate(country, foreign);
+        var foreignCountry = foreignCountries[i];
+        var relation = simulation.State.Diplomacy.GetOrCreate(country, foreignCountry);
         var trade = relation.HasTradeAgreement ? "trade" : "no trade";
 
         Console.WriteLine(
-            $"[{i + 1}] {foreign.Name,-12} " +
-            $"Relations {relation.Relations,4}  Trust {relation.Trust,3}  " +
-            $"Tension {relation.Tension,3}  {trade}");
+            $"[{i + 1}] {foreignCountry.Name,-12} " +
+            $"relations {FormatKnownShort(simulation.State, InformationMetric.DiplomaticRelations, foreignCountry.Id, country.Id),-18} " +
+            $"trust {FormatKnownShort(simulation.State, InformationMetric.DiplomaticTrust, foreignCountry.Id, country.Id),-16} " +
+            $"tension {FormatKnownShort(simulation.State, InformationMetric.DiplomaticTension, foreignCountry.Id, country.Id),-16} " +
+            $"{trade}");
     }
 
     Console.WriteLine();
@@ -739,8 +743,8 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
     {
         Console.WriteLine();
         Console.WriteLine(
-            $"Declaring war will destroy trade, drive tension to its maximum, " +
-            "and may carry a serious domestic political cost.");
+            "You do not have direct access to the target's true military strength. " +
+            "Request military intelligence from your Marshal if the current estimate is stale.");
         Console.Write("Type DECLARE to confirm: ");
 
         if (!string.Equals(
@@ -918,16 +922,22 @@ static void ShowForeignCountry(
     Console.WriteLine(target.Name);
     Console.WriteLine(new string('=', target.Name.Length));
     Console.WriteLine();
-    Console.WriteLine(
-        $"Ruler: {target.Ruler.FullName} — age {target.Ruler.Age}, " +
-        $"health {target.Ruler.Health}/100");
+    Console.WriteLine($"Ruler: {target.Ruler.FullName}");
     Console.WriteLine($"Government: {target.Government.Type}");
-    Console.WriteLine($"Population: {target.Population:N0}");
-    Console.WriteLine($"GDP: {target.Gdp:N0}");
     Console.WriteLine(
-        $"Army: {target.ArmySize:N0} — readiness {target.ArmyReadiness:F0}/100");
+        $"Population: {FormatKnown(state, InformationMetric.Population, target.Id)}");
     Console.WriteLine(
-        $"Relations {relation.Relations}, trust {relation.Trust}, tension {relation.Tension}");
+        $"GDP: {FormatKnown(state, InformationMetric.Gdp, target.Id)}");
+    Console.WriteLine(
+        $"Army strength: {FormatKnown(state, InformationMetric.ArmySize, target.Id)}");
+    Console.WriteLine(
+        $"Army readiness: {FormatKnown(state, InformationMetric.ArmyReadiness, target.Id)}");
+    Console.WriteLine(
+        $"Relations: {FormatKnown(state, InformationMetric.DiplomaticRelations, target.Id, country.Id)}");
+    Console.WriteLine(
+        $"Trust: {FormatKnown(state, InformationMetric.DiplomaticTrust, target.Id, country.Id)}");
+    Console.WriteLine(
+        $"Tension: {FormatKnown(state, InformationMetric.DiplomaticTension, target.Id, country.Id)}");
     Console.WriteLine(
         $"Trade agreement: {(relation.HasTradeAgreement ? "active" : "none")}");
 
@@ -948,7 +958,8 @@ static void ShowForeignCountry(
         };
 
         Console.WriteLine(
-            $"Chancellor's assessment of a trade proposal: {assessment}.");
+            $"Chancellor's judgement on a trade proposal: {assessment}. " +
+            "This is an assessment, not a guaranteed foreign response.");
     }
 }
 
