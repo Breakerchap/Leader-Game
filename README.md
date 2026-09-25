@@ -35,8 +35,11 @@ Implemented systems include:
 - campaign objectives that require sustained conditions and produce an actual win state;
 - autonomous domestic demands from dissatisfied power bases;
 - named political spokespeople who gain or lose influence, constituency standing and trust as demands are satisfied or ignored;
+- explicit political-demand responses: concede by queuing real policy orders, reject with immediate backlash, or ignore and risk escalation;
+- rejected demands receiving a temporary cooldown rather than instantly respawning;
 - multiple power bases able to maintain simultaneous grievances and demands;
 - organised opposition blocs that form around shared rival leaders when major groups become alienated;
+- organised opposition taking periodic actions through public pressure, insider obstruction or political recruitment;
 - bloc cohesion and membership feeding back into political threat, conspiracy co-operation and willingness to obey the ruler;
 - escalating political pressure when important groups are ignored, including rivals gaining support;
 - material conditions such as underfunding, high taxes, unrest and war exhaustion changing political backing over time;
@@ -51,6 +54,8 @@ Implemented systems include:
 - accepted adviser recommendations entering the world as normal orders rather than direct state edits;
 - political threat calculations and court coalitions;
 - investigations and discoverable coup plots;
+- player-facing Court actions for investigation, arrest and prisoner release, all routed through the real order system;
+- conspiracy evidence shown only after the government has actually discovered it;
 - arrests, political imprisonment and prisoner release;
 - failed or arbitrary repression producing political consequences;
 - deterministic coups and usurpation;
