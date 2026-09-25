@@ -341,6 +341,23 @@ public class PresentationBoundaryTests
     }
 
     [Fact]
+    public void StartingScenario_RebuildsDesktopAroundChosenCountry()
+    {
+        var session = new GameSession();
+
+        Assert.True(GameSession.AvailableScenarios.Count >= 2);
+
+        session.StartNewCampaign(ScenarioCatalog.ValeriaId);
+
+        Assert.Equal("Valeria", session.View.CountryName);
+        Assert.Equal("Vieri Coalition", session.View.LineageName);
+        Assert.Equal(
+            "The Valerian Republic",
+            session.View.Campaign.ScenarioName);
+        Assert.Equal(3, session.View.Campaign.TotalObjectives);
+    }
+
+    [Fact]
     public void AdvancingMonth_RefreshesDesktopBriefing()
     {
         var state = DemoScenario.Create();
