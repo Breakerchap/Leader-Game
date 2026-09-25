@@ -224,6 +224,7 @@ internal static class ElectionSystem
             winner,
             oldRuler,
             ranked.Select(result => result.Candidate).ToList(),
+            runnerUp?.Candidate,
             margin);
 
         var continuityText = BuildPlayerContinuityText(
@@ -257,6 +258,7 @@ internal static class ElectionSystem
         Character winner,
         Character oldRuler,
         IReadOnlyList<Character> candidates,
+        Character? runnerUp,
         double margin)
     {
         foreach (var candidate in candidates)
@@ -291,6 +293,34 @@ internal static class ElectionSystem
         else if (margin >= 13)
         {
             country.Government.Stability += 1;
+        }
+
+        if (runnerUp is not null)
+        {
+            var loserToWinner = state.Relationships.GetOrCreate(
+                runnerUp,
+                winner);
+
+            loserToWinner.ChangeOpinion(
+                margin < 3
+                    ? -12
+                    : margin < 7
+                        ? -8
+                        : -4);
+            loserToWinner.ChangeTrust(
+                margin < 7
+                    ? -5
+                    : -2);
+
+            if (margin < 7)
+            {
+                runnerUp.Influence = Math.Min(
+                    100,
+                    runnerUp.Influence + 4);
+                runnerUp.ChangePowerBaseStanding(
+                    PowerBaseType.Party,
+                    3);
+            }
         }
 
         if (!ReferenceEquals(country, state.Player.Country))
