@@ -1516,8 +1516,8 @@ static void PrintCourt(GameState state)
     Console.WriteLine(new string('=', 9 + country.Name.Length));
     Console.WriteLine();
     Console.WriteLine(
-        "Opinion is personal feeling; trust is reliability; fear can force obedience. " +
-        "Threat is political danger, not a coup probability.");
+        "These are the ruler's political impressions. Personality, loyalty and threat " +
+        "are deliberately qualitative rather than exact hidden-state meters.");
     Console.WriteLine();
 
     var knownPlots = state.Plots
@@ -1572,11 +1572,11 @@ static void PrintCourt(GameState state)
 
         Console.WriteLine($"{character.FullName} — {role}");
         Console.WriteLine(
-            $"  Age {character.Age,3}   Health {character.Health,3}   " +
-            $"Competence {character.Competence,3}   Ambition {character.Ambition,3}");
+            $"  Age {character.Age}   health {DescribeHealth(character.Health)}   " +
+            $"ability {DescribeLevel(character.Competence)}   ambition {DescribeAmbition(character.Ambition)}");
         Console.WriteLine(
-            $"  Influence {character.Influence,3}   Legitimacy {character.Legitimacy,3}   " +
-            $"Status {character.Status}");
+            $"  Influence {DescribeLevel(character.Influence)}   " +
+            $"legitimacy {DescribeLevel(character.Legitimacy)}");
 
         if (!ReferenceEquals(character, country.Ruler))
         {
@@ -1589,19 +1589,28 @@ static void PrintCourt(GameState state)
             var threat = PoliticalCalculations.GetThreatScore(state, country, character);
 
             Console.WriteLine(
-                $"  Toward ruler: opinion {relationship.Opinion,4}   trust {relationship.Trust,3}   " +
-                $"fear {relationship.Fear,3}   willingness {willingness,5:F0}");
+                $"  Toward ruler: {DescribeOpinion(relationship.Opinion)}, " +
+                $"trust {DescribeTrust(relationship.Trust)}, fear {DescribeFear(relationship.Fear)}, " +
+                $"obedience {DescribeWillingness(willingness)}");
             Console.WriteLine(
-                $"  Allegiance: country {character.GetAllegiance(countryKey),3}   " +
-                $"{state.Player.Lineage.Name} {character.GetAllegiance(lineageKey),3}   " +
-                $"threat {threat,5:F0}");
+                $"  Allegiance: country {DescribeBacking(character.GetAllegiance(countryKey))}, " +
+                $"{state.Player.Lineage.Name} {DescribeBacking(character.GetAllegiance(lineageKey))}; " +
+                $"political risk {DescribeThreat(threat)}");
         }
 
+        var strongestBases = Enum.GetValues<PowerBaseType>()
+            .OrderByDescending(character.GetPowerBaseStanding)
+            .Take(2)
+            .Select(powerBase =>
+                $"{FormatPowerBase(powerBase)} ({DescribeBacking(character.GetPowerBaseStanding(powerBase))})");
+
+        Console.WriteLine($"  Strongest apparent constituencies: {string.Join(", ", strongestBases)}");
         Console.WriteLine();
     }
 
     Pause();
 }
+
 
 static void ManageInformation(GameSimulation simulation, Country country)
 {
@@ -1985,6 +1994,54 @@ static string FormatAge(int months)
         <= 0 => "current-ish",
         1 => "1 month old",
         _ => $"{months} months old"
+    };
+}
+
+static string DescribeHealth(int health)
+{
+    return health switch
+    {
+        >= 90 => "good",
+        >= 70 => "fair",
+        >= 45 => "poor",
+        >= 20 => "very poor",
+        _ => "critical"
+    };
+}
+
+static string DescribeAmbition(int ambition)
+{
+    return ambition switch
+    {
+        >= 85 => "extreme",
+        >= 70 => "high",
+        >= 50 => "noticeable",
+        >= 30 => "modest",
+        _ => "low"
+    };
+}
+
+static string DescribeOpinion(int opinion)
+{
+    return opinion switch
+    {
+        >= 60 => "warm",
+        >= 20 => "favourable",
+        > -20 => "neutral",
+        > -60 => "hostile",
+        _ => "bitterly hostile"
+    };
+}
+
+static string DescribeFear(int fear)
+{
+    return fear switch
+    {
+        >= 75 => "very high",
+        >= 50 => "high",
+        >= 25 => "noticeable",
+        > 0 => "slight",
+        _ => "none"
     };
 }
 
