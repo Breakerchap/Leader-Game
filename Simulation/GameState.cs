@@ -25,6 +25,8 @@ public class GameState
 
     public List<PoliticalBloc> PoliticalBlocs { get; } = [];
 
+    public List<CabinetProposal> CabinetProposals { get; } = [];
+
     public PlayerKnowledge Knowledge { get; } = new();
 
     public List<AdvisorIntelligenceReport> AdvisorReports { get; } = [];
