@@ -288,6 +288,82 @@
               </StackPanel>
             </Grid>
 
+            <StackPanel IsVisible="{Binding HasCabinetProposals}" Spacing="8">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel>
+                  <TextBlock Text="CABINET DECISIONS" Classes="eyebrow" Foreground="#C096E2" />
+                  <TextBlock Text="Recommendations awaiting your answer" Classes="section" />
+                </StackPanel>
+                <Border Grid.Column="1" Classes="badge" Background="#211827" VerticalAlignment="Center">
+                  <TextBlock
+                      Text="{Binding View.CabinetProposals.Count, StringFormat='{}{0} awaiting'}"
+                      Foreground="#C8ACE1"
+                      FontSize="11" />
+                </Border>
+              </Grid>
+
+              <ItemsControl ItemsSource="{Binding View.CabinetProposals}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="card" Margin="0,0,0,8" Padding="0">
+                      <Grid ColumnDefinitions="5,*">
+                        <Border
+                            Background="{Binding Office, Converter={StaticResource AdvisorRoleBrush}}"
+                            CornerRadius="8,0,0,8" />
+                        <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="14" Margin="14">
+                          <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                              <Border
+                                  Classes="badge"
+                                  Background="{Binding Office, Converter={StaticResource AdvisorRoleBrush}}">
+                                <TextBlock
+                                    Text="{Binding Office}"
+                                    FontSize="9"
+                                    FontWeight="Bold"
+                                    Foreground="#081016" />
+                              </Border>
+                              <TextBlock
+                                  Text="{Binding Advisor}"
+                                  VerticalAlignment="Center"
+                                  FontSize="11"
+                                  Classes="muted" />
+                              <TextBlock
+                                  Text="{Binding Age}"
+                                  VerticalAlignment="Center"
+                                  FontSize="10"
+                                  Foreground="#D8A657" />
+                            </StackPanel>
+                            <TextBlock
+                                Text="{Binding Title}"
+                                FontSize="17"
+                                FontWeight="SemiBold"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                Text="{Binding Description}"
+                                TextWrapping="Wrap"
+                                Foreground="#C8D2DD" />
+                          </StackPanel>
+
+                          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                            <Button
+                                Classes="action politics"
+                                Command="{Binding #Root.DataContext.AcceptCabinetProposalCommand}"
+                                CommandParameter="{Binding}"
+                                Content="Accept" />
+                            <Button
+                                Classes="action"
+                                Command="{Binding #Root.DataContext.RejectCabinetProposalCommand}"
+                                CommandParameter="{Binding}"
+                                Content="Reject" />
+                          </StackPanel>
+                        </Grid>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+
             <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
               <Border Classes="card" Background="#141A22">
                 <StackPanel Spacing="9">
