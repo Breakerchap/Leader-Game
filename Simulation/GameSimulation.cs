@@ -51,6 +51,8 @@ public class GameSimulation
 
         State.Reports.AddRange(DomesticPoliticsSystem.ProcessMonth(State));
 
+        State.Reports.AddRange(OppositionActionSystem.ProcessMonth(State));
+
         DiplomacySystem.ProcessMonth(State);
 
         MilitaryAiSystem.ProcessMonth(State);
