@@ -38,6 +38,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             _ =>
             {
                 _session.AdvanceMonth();
+                CurrentSection = "Briefing";
                 SyncPolicyTargets();
                 RefreshBindings();
             },
@@ -54,6 +55,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             _ =>
             {
                 _session.LoadDefault();
+                CurrentSection = "Briefing";
                 SyncPolicyTargets();
                 RefreshBindings();
                 _advanceMonthCommand.RaiseCanExecuteChanged();
