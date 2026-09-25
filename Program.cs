@@ -1370,9 +1370,8 @@ static void PrintPoliticalGroups(GameState state)
     Console.WriteLine(new string('=', 20 + country.Name.Length));
     Console.WriteLine();
     Console.WriteLine(
-        "Strength is how structurally important a group is. Backing is its current " +
-        "support for the ruler. A powerful hostile group can destabilise the regime " +
-        "or strengthen a rival.");
+        "This is a political reading, not a census of hidden simulation values. " +
+        "Group importance and loyalty are shown qualitatively.");
     Console.WriteLine();
 
     foreach (var powerBase in Enum.GetValues<PowerBaseType>()
@@ -1391,13 +1390,22 @@ static void PrintPoliticalGroups(GameState state)
             .FirstOrDefault();
 
         var rivalText = rival is null
-            ? "none"
-            : $"{rival.FullName} ({rival.GetPowerBaseStanding(powerBase)})";
+            ? "no obvious alternative"
+            : $"best-known alternative: {rival.FullName}";
 
         Console.WriteLine(
             $"{FormatPowerBase(powerBase),-18} " +
-            $"Strength {strength,3}  Backing {backing,3}  Best rival: {rivalText}");
+            $"{DescribeStructuralImportance(strength),-10}  " +
+            $"ruler backing {DescribeBacking(backing),-12}  {rivalText}");
     }
+
+    Console.WriteLine();
+    Console.WriteLine(
+        $"Overall political backing: {FormatKnown(state, InformationMetric.PoliticalBacking, country.Id)}");
+    Console.WriteLine(
+        $"Reported unrest: {FormatKnown(state, InformationMetric.PublicUnrest, country.Id)}");
+    Console.WriteLine(
+        $"Reported stability: {FormatKnown(state, InformationMetric.GovernmentStability, country.Id)}");
 
     var demands = state.PowerBaseDemands
         .Where(candidate =>
@@ -1410,18 +1418,15 @@ static void PrintPoliticalGroups(GameState state)
     if (demands.Count > 0)
     {
         Console.WriteLine();
-        Console.WriteLine("Active demands:");
+        Console.WriteLine("Known active demands:");
 
         foreach (var demand in demands)
         {
             Console.WriteLine(
                 $"  {FormatPowerBase(demand.PowerBase),-18} " +
-                $"{DescribeDemandBrief(demand)} — open {demand.MonthsOpen} month(s), " +
-                $"escalation {demand.EscalationLevel}");
+                $"{DescribeDemandBrief(demand)} — " +
+                $"{DescribeEscalation(demand.EscalationLevel)} pressure");
         }
-
-        Console.WriteLine(
-            "  Meet demands through the normal tax, budget, diplomacy or war controls.");
     }
 
     var bloc = state.PoliticalBlocs.FirstOrDefault(candidate =>
@@ -1436,23 +1441,23 @@ static void PrintPoliticalGroups(GameState state)
             .ToList();
 
         Console.WriteLine();
-        Console.WriteLine("Organised opposition:");
+        Console.WriteLine("Known organised opposition:");
         Console.WriteLine(
-            $"  Leader: {bloc.Leader.FullName}   Cohesion {bloc.Cohesion:F0}/100   " +
-            $"Active {bloc.MonthsActive} month(s)");
+            $"  Leader: {bloc.Leader.FullName}   cohesion appears {DescribeLevel(bloc.Cohesion)}");
         Console.WriteLine(
             $"  Backed by: {FormatPowerBaseList(bloc.PowerBases)}");
         Console.WriteLine(
             members.Count == 0
-                ? "  No other major political figures are openly aligned with the bloc."
-                : $"  Aligned figures: {string.Join(", ", members)}");
-        Console.WriteLine(
-            "  A bloc is organised opposition, not automatically a coup, but it raises " +
-            "the leader's political threat and makes coordinated action easier.");
+                ? "  No other major political figures are clearly aligned."
+                : $"  Known aligned figures: {string.Join(", ", members)}");
     }
 
+    Console.WriteLine();
+    Console.WriteLine(
+        "For a fresher overall domestic assessment, request a report from the Chancellor with K.");
     Pause();
 }
+
 
 static string FormatPowerBase(PowerBaseType powerBase)
 {
@@ -1858,6 +1863,26 @@ static string FormatKnown(
            $"[{stale}{known.SourceAdvisorName}, {FormatAge(age)}]";
 }
 
+static string FormatKnownShort(
+    GameState state,
+    InformationMetric metric,
+    string subjectCountryId,
+    string? relatedCountryId = null)
+{
+    var known = state.Knowledge.Get(
+        metric,
+        subjectCountryId,
+        relatedCountryId);
+
+    if (known is null)
+        return "unknown";
+
+    var age = known.AgeInMonths(state.Date);
+    var stale = age >= 6 ? " stale" : string.Empty;
+
+    return $"~{FormatKnownValue(metric, known.Estimate)} ({FormatAge(age)}{stale})";
+}
+
 static string FormatKnownValue(
     InformationMetric metric,
     double value)
@@ -1960,6 +1985,42 @@ static string FormatAge(int months)
         <= 0 => "current-ish",
         1 => "1 month old",
         _ => $"{months} months old"
+    };
+}
+
+static string DescribeStructuralImportance(int strength)
+{
+    return strength switch
+    {
+        >= 80 => "dominant",
+        >= 60 => "major",
+        >= 40 => "important",
+        >= 20 => "secondary",
+        _ => "minor"
+    };
+}
+
+static string DescribeBacking(int backing)
+{
+    return backing switch
+    {
+        >= 75 => "strong",
+        >= 60 => "supportive",
+        >= 45 => "uncertain",
+        >= 30 => "hostile",
+        _ => "very hostile"
+    };
+}
+
+static string DescribeEscalation(int escalation)
+{
+    return escalation switch
+    {
+        <= 0 => "initial",
+        1 => "growing",
+        2 => "serious",
+        3 => "severe",
+        _ => "critical"
     };
 }
 
