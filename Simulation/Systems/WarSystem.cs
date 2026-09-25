@@ -29,6 +29,80 @@ internal static class WarSystem
         return reports;
     }
 
+    public static double GetPeaceAcceptanceScore(
+        War war,
+        Country proposer,
+        PeaceSettlementType settlement)
+    {
+        if (!war.IsParticipant(proposer))
+            throw new ArgumentException("The proposer is not participating in this war.");
+
+        var target = war.OpponentOf(proposer);
+        var targetIsAttacker = ReferenceEquals(target, war.Attacker);
+        var targetPerspectiveScore =
+            targetIsAttacker ? war.WarScore : -war.WarScore;
+
+        var score = settlement switch
+        {
+            PeaceSettlementType.WhitePeace =>
+                48 +
+                target.WarExhaustion * 0.45 -
+                targetPerspectiveScore * 0.45 +
+                Math.Min(12, war.MonthsActive * 0.30),
+
+            PeaceSettlementType.AttackerWarGoal when targetIsAttacker =>
+                95,
+
+            PeaceSettlementType.AttackerWarGoal =>
+                20 +
+                target.WarExhaustion * 0.45 +
+                war.WarScore * 0.55 +
+                Math.Min(10, war.MonthsActive * 0.20),
+
+            PeaceSettlementType.DefenderTerms when !targetIsAttacker =>
+                95,
+
+            PeaceSettlementType.DefenderTerms =>
+                20 +
+                target.WarExhaustion * 0.45 -
+                war.WarScore * 0.55 +
+                Math.Min(10, war.MonthsActive * 0.20),
+
+            _ => 0
+        };
+
+        return Math.Clamp(score, 0, 100);
+    }
+
+    public static SimulationReport ResolveNegotiatedPeace(
+        GameState state,
+        War war,
+        PeaceSettlementType settlement)
+    {
+        if (war.Status != WarStatus.Active)
+        {
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Military,
+                "Peace settlement ignored",
+                "The war has already ended.");
+        }
+
+        return settlement switch
+        {
+            PeaceSettlementType.WhitePeace =>
+                EndWhitePeace(state, war, negotiated: true),
+
+            PeaceSettlementType.AttackerWarGoal =>
+                EndWar(state, war, attackerWon: true, negotiated: true),
+
+            PeaceSettlementType.DefenderTerms =>
+                EndWar(state, war, attackerWon: false, negotiated: true),
+
+            _ => throw new ArgumentOutOfRangeException(nameof(settlement))
+        };
+    }
+
     private static IEnumerable<SimulationReport> ProcessWarMonth(
         GameState state,
         War war)
@@ -261,34 +335,47 @@ internal static class WarSystem
         GameState state,
         War war)
     {
-        if (war.Attacker.ArmySize <= 0 || war.WarScore >= 100)
-            return EndWar(state, war, attackerWon: true);
+        if (war.Defender.ArmySize <= 0 || war.WarScore >= 100)
+            return EndWar(state, war, attackerWon: true, negotiated: false);
 
-        if (war.Defender.ArmySize <= 0 || war.WarScore <= -100)
-            return EndWar(state, war, attackerWon: false);
+        if (war.Attacker.ArmySize <= 0 || war.WarScore <= -100)
+            return EndWar(state, war, attackerWon: false, negotiated: false);
 
         if (war.MonthsActive >= 48 && Math.Abs(war.WarScore) < 15)
-        {
-            war.Status = WarStatus.WhitePeace;
-
-            var relation = state.Diplomacy.GetOrCreate(war.Attacker, war.Defender);
-            relation.Tension = Math.Max(65, relation.Tension - 20);
-
-            return PlayerRelevantReport(
-                state,
-                war,
-                "The war ends in white peace",
-                $"{war.Attacker.Name} and {war.Defender.Name} end an inconclusive " +
-                $"war after {war.MonthsActive} months.");
-        }
+            return EndWhitePeace(state, war, negotiated: false);
 
         return null;
     }
 
-    private static SimulationReport? EndWar(
+    private static SimulationReport EndWhitePeace(
         GameState state,
         War war,
-        bool attackerWon)
+        bool negotiated)
+    {
+        war.Status = WarStatus.WhitePeace;
+        war.Settlement = PeaceSettlementType.WhitePeace;
+
+        var relation = state.Diplomacy.GetOrCreate(war.Attacker, war.Defender);
+        relation.Tension = Math.Max(60, relation.Tension - 25);
+
+        war.Attacker.WarExhaustion -= 8;
+        war.Defender.WarExhaustion -= 8;
+
+        var method = negotiated ? "negotiate" : "eventually accept";
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Military,
+            "The war ends in white peace",
+            $"{war.Attacker.Name} and {war.Defender.Name} {method} an inconclusive " +
+            $"peace after {war.MonthsActive} months. Neither side enforces its war aims.");
+    }
+
+    private static SimulationReport EndWar(
+        GameState state,
+        War war,
+        bool attackerWon,
+        bool negotiated)
     {
         var winner = attackerWon ? war.Attacker : war.Defender;
         var loser = attackerWon ? war.Defender : war.Attacker;
@@ -296,43 +383,121 @@ internal static class WarSystem
         war.Status = attackerWon
             ? WarStatus.AttackerVictory
             : WarStatus.DefenderVictory;
+        war.Settlement = attackerWon
+            ? PeaceSettlementType.AttackerWarGoal
+            : PeaceSettlementType.DefenderTerms;
 
-        var reparations = Math.Min(
-            loser.Treasury,
-            loser.Gdp * 0.01m);
-
-        loser.Treasury -= reparations;
-        winner.Treasury += reparations;
+        var settlementDetails = attackerWon
+            ? ApplyAttackerWarGoal(state, war)
+            : ApplyDefenderTerms(war);
 
         winner.Government.Stability += 2;
         loser.Government.Stability -= 3;
         loser.PublicUnrest += 3;
 
+        winner.WarExhaustion -= 10;
+        loser.WarExhaustion -= 6;
+
         var relation = state.Diplomacy.GetOrCreate(winner, loser);
         relation.Relations = Math.Min(relation.Relations, -75);
         relation.Trust = Math.Min(relation.Trust, 10);
-        relation.Tension = 80;
+        relation.Tension = attackerWon &&
+                           war.AttackerGoal == WarGoalType.SettleBorderDispute
+            ? 65
+            : 80;
 
-        return PlayerRelevantReport(
-            state,
-            war,
+        var method = negotiated ? "accepts a negotiated settlement" : "is decisively defeated";
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Military,
             $"{winner.Name} wins the war",
-            $"{winner.Name} defeats {loser.Name} after {war.MonthsActive} months. " +
-            $"The victor receives {reparations:N0} in reparations.");
+            $"{loser.Name} {method} after {war.MonthsActive} months. {settlementDetails}");
     }
 
-    private static SimulationReport? PlayerRelevantReport(
+    private static string ApplyAttackerWarGoal(
         GameState state,
-        War war,
-        string title,
-        string details)
+        War war)
     {
-        return war.IsParticipant(state.Player.Country)
-            ? new SimulationReport(
-                state.Date,
-                ReportCategory.Military,
-                title,
-                details)
-            : null;
+        return war.AttackerGoal switch
+        {
+            WarGoalType.Reparations =>
+                ApplyReparations(
+                    war.Attacker,
+                    war.Defender,
+                    war.Defender.Gdp * 0.02m,
+                    "The attacker enforces its reparations demand."),
+
+            WarGoalType.SettleBorderDispute =>
+                ApplyBorderSettlement(state, war),
+
+            WarGoalType.HumiliateRival =>
+                ApplyHumiliation(war),
+
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+
+    private static string ApplyDefenderTerms(War war)
+    {
+        var details = ApplyReparations(
+            war.Defender,
+            war.Attacker,
+            war.Attacker.Gdp * 0.01m,
+            "The defender extracts limited reparations.");
+
+        war.Attacker.Ruler.Legitimacy -= 6;
+        war.Defender.Ruler.Legitimacy += 3;
+
+        return details +
+               $" {war.Attacker.Ruler.FullName}'s legitimacy falls after the failed war.";
+    }
+
+    private static string ApplyBorderSettlement(
+        GameState state,
+        War war)
+    {
+        var relation = state.Diplomacy.GetOrCreate(war.Attacker, war.Defender);
+        var oldSeverity = relation.BorderDisputeSeverity;
+        relation.BorderDisputeSeverity =
+            Math.Max(0, relation.BorderDisputeSeverity - 70);
+
+        war.Attacker.Ruler.Legitimacy += 4;
+        war.Defender.Ruler.Legitimacy -= 5;
+        war.Defender.Government.Stability -= 2;
+
+        return $"The defender concedes on the disputed frontier. Border-dispute severity " +
+               $"falls from {oldSeverity} to {relation.BorderDisputeSeverity}.";
+    }
+
+    private static string ApplyHumiliation(War war)
+    {
+        war.Attacker.Ruler.Legitimacy += 4;
+        war.Defender.Ruler.Legitimacy -= 10;
+        war.Defender.Ruler.Influence -= 10;
+        war.Defender.Government.Stability -= 4;
+
+        return $"{war.Defender.Ruler.FullName} is publicly humiliated by the settlement, " +
+               "damaging legitimacy, influence and government stability.";
+    }
+
+    private static string ApplyReparations(
+        Country recipient,
+        Country payer,
+        decimal amount,
+        string description)
+    {
+        amount = Math.Max(0, amount);
+
+        var available = payer.Treasury;
+        var paidFromTreasury = Math.Min(available, amount);
+        var financed = amount - paidFromTreasury;
+
+        payer.Treasury -= paidFromTreasury;
+        payer.Debt += financed;
+        recipient.Treasury += amount;
+
+        return $"{description} {amount:N0} is transferred; " +
+               $"{financed:N0} of it is financed through new debt.";
     }
 }

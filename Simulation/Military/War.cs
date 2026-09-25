@@ -17,6 +17,20 @@ public enum WarStance
     Aggressive
 }
 
+public enum WarGoalType
+{
+    Reparations,
+    SettleBorderDispute,
+    HumiliateRival
+}
+
+public enum PeaceSettlementType
+{
+    WhitePeace,
+    AttackerWarGoal,
+    DefenderTerms
+}
+
 public sealed class War
 {
     private double _warScore;
@@ -28,6 +42,10 @@ public sealed class War
     public required Country Defender { get; init; }
 
     public required GameDate StartedOn { get; init; }
+
+    public WarGoalType AttackerGoal { get; init; } = WarGoalType.Reparations;
+
+    public PeaceSettlementType? Settlement { get; internal set; }
 
     /// <summary>
     /// -100 means decisive defender advantage; +100 means decisive attacker advantage.

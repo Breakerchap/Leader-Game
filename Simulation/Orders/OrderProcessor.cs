@@ -29,6 +29,7 @@ internal static class OrderProcessor
             RespondToDiplomaticProposalOrder responseOrder => ProcessDiplomaticProposalResponse(state, responseOrder),
             DeclareWarOrder warOrder => ProcessDeclareWarOrder(state, warOrder),
             SetWarStanceOrder stanceOrder => ProcessSetWarStanceOrder(state, stanceOrder),
+            OfferPeaceOrder peaceOrder => ProcessOfferPeaceOrder(state, peaceOrder),
             AppointAdvisorOrder appointmentOrder => ProcessAppointAdvisorOrder(state, appointmentOrder),
             DismissAdvisorOrder dismissalOrder => ProcessDismissAdvisorOrder(state, dismissalOrder),
             InvestigateCharacterOrder investigationOrder => ProcessInvestigationOrder(state, investigationOrder),
@@ -1049,6 +1050,68 @@ internal static class OrderProcessor
             $"campaign and implements it {interpretation}. Current stance: {enactedStance}.");
     }
 
+    private static SimulationReport ProcessOfferPeaceOrder(
+        GameState state,
+        OfferPeaceOrder order)
+    {
+        var chancellor = order.Recipient;
+
+        if (order.War.Status != Military.WarStatus.Active ||
+            !order.War.IsParticipant(order.Country) ||
+            !ReferenceEquals(order.Issuer, order.Country.Ruler) ||
+            !IsServingChancellor(order.Country, chancellor))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Peace offer rejected",
+                "An active Chancellor may negotiate peace only in a war their country is fighting.");
+        }
+
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.Country,
+            chancellor,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"{chancellor.FullName} refuses peace negotiations",
+                $"{chancellor.FullName} refuses to carry the proposed settlement to the enemy. " +
+                $"Their willingness to obey is only {willingness:F0}/100.");
+        }
+
+        var acceptance = Systems.WarSystem.GetPeaceAcceptanceScore(
+            order.War,
+            order.Country,
+            order.RequestedSettlement);
+
+        if (acceptance < 55)
+        {
+            order.Status = OrderStatus.Failed;
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Military,
+                $"{order.War.OpponentOf(order.Country).Name} rejects the peace offer",
+                $"The proposed {order.RequestedSettlement} settlement is rejected. " +
+                $"Estimated acceptance was {acceptance:F0}/100, so the war continues.");
+        }
+
+        order.Status = OrderStatus.Completed;
+
+        return Systems.WarSystem.ResolveNegotiatedPeace(
+            state,
+            order.War,
+            order.RequestedSettlement);
+    }
+
+
     private static SimulationReport ProcessDeclareWarOrder(
         GameState state,
         DeclareWarOrder order)
@@ -1160,7 +1223,8 @@ internal static class OrderProcessor
         {
             Attacker = order.SourceCountry,
             Defender = order.TargetCountry,
-            StartedOn = state.Date
+            StartedOn = state.Date,
+            AttackerGoal = order.Goal
         };
 
         state.Wars.Add(war);
@@ -1177,7 +1241,7 @@ internal static class OrderProcessor
             $"{order.SourceCountry.Name} declares war on {order.TargetCountry.Name}",
             $"{chancellor.FullName} delivers the declaration. Trade and pending " +
             $"diplomatic offers between the two states end immediately.{treatyBreachText} " +
-            "War score begins at 0.");
+            $"Declared war goal: {order.Goal}. War score begins at 0.");
     }
 
     private static void ApplyWarDeclarationPoliticalCost(
