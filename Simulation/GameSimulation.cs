@@ -49,6 +49,8 @@ public class GameSimulation
 
         State.Reports.AddRange(ForeignPolicySystem.ProcessMonth(State));
 
+        State.Reports.AddRange(CabinetProposalSystem.ProcessMonth(State));
+
         State.Reports.AddRange(PlotSystem.ProcessMonth(State));
 
         InformationSystem.CaptureTruthSnapshot(State);
