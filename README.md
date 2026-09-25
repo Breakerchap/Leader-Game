@@ -39,6 +39,8 @@ Implemented systems include:
 - calculated willingness to obey orders;
 - advisers and offices including Treasurer, Marshal and Chancellor;
 - appointment and dismissal of advisers, with patronage and dismissal reshaping power-base support;
+- condition-driven cabinet recommendations from Treasurer, Marshal and Chancellor, with acceptance, rejection, expiry and relationship consequences;
+- accepted adviser recommendations entering the world as normal orders rather than direct state edits;
 - political threat calculations and court coalitions;
 - investigations and discoverable coup plots;
 - arrests, political imprisonment and prisoner release;
@@ -72,6 +74,8 @@ Implemented systems include:
 - visible contradictions between reports without revealing which source is correct;
 - hidden historical truth snapshots so stale reports are genuinely based on older world state;
 - a separate deterministic information RNG so reporting uncertainty does not perturb physical simulation outcomes;
+- versioned JSON campaign save/load preserving object references, pending orders, information history and exact RNG state;
+- separate manual and per-turn autosave slots;
 - deterministic/random-source injection for reproducible simulation tests.
 
 ## How the simulation advances
