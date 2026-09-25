@@ -153,6 +153,7 @@ public class SaveGameTests
             Advisor = chancellor,
             Type = CabinetProposalType.ImproveRelations,
             TargetCountry = target,
+            Rationale = "Election-season diplomatic positioning.",
             CreatedOn = state.Date,
             MonthsOpen = 2
         });
@@ -169,6 +170,9 @@ public class SaveGameTests
             loaded.Player.Country.GetOfficeHolder(Position.Chancellor),
             proposal.Advisor);
         Assert.Same(loaded.FindCountry("valeria"), proposal.TargetCountry);
+        Assert.Equal(
+            "Election-season diplomatic positioning.",
+            proposal.Rationale);
     }
 
     [Fact]
