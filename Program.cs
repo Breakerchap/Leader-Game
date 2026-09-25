@@ -11,6 +11,18 @@ while (true)
 {
     var country = state.Player.Country;
 
+    if (state.Player.HasLost)
+    {
+        Console.Clear();
+        Console.WriteLine("Political lineage lost");
+        Console.WriteLine("======================");
+        Console.WriteLine();
+        Console.WriteLine(state.Player.LossReason ?? "Your political lineage has lost power.");
+        Console.WriteLine();
+        Console.WriteLine($"{country.Name} continues under {country.Ruler.FullName}.");
+        break;
+    }
+
     Console.Clear();
     PrintDashboard(state);
 
@@ -52,6 +64,7 @@ static void PrintDashboard(GameState state)
     var country = state.Player.Country;
 
     Console.WriteLine($"{country.Name} — {state.Date}");
+    Console.WriteLine($"Lineage: {state.Player.Lineage.Name}");
     Console.WriteLine();
     Console.WriteLine($"Ruler: {country.Ruler.FullName}");
     Console.WriteLine($"Population: {country.Population:N0}");

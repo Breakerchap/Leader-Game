@@ -77,7 +77,20 @@ public static class DemoScenario
             Age = 45,
             Competence = 94,
             Ambition = 87,
-            Loyalty = 33
+            Loyalty = 33,
+            Legitimacy = 28
+        };
+
+        var heir = new Character
+        {
+            Id = 7,
+            FirstName = "Heinrich",
+            LastName = "von Falken",
+            Age = 19,
+            Competence = 55,
+            Ambition = 58,
+            Loyalty = 88,
+            Legitimacy = 72
         };
 
         var country = new Country
@@ -100,12 +113,25 @@ public static class DemoScenario
         };
 
         country.PoliticalFigures.AddRange(
-            [king, treasurer, marshal, chancellor, marta, lukas]);
+            [king, treasurer, marshal, chancellor, marta, lukas, heir]);
+
+        // For the prototype this ordering is explicit. Later it should be derived
+        // from laws, family relationships, claims, elections, coups and other systems.
+        country.SuccessionOrder.AddRange([heir, lukas]);
+
+        var lineage = new PoliticalLineage
+        {
+            Id = "house_von_falken",
+            Name = "House von Falken",
+            Type = PoliticalLineageType.Dynasty
+        };
+        lineage.Members.AddRange([king, heir]);
 
         var player = new PlayerState
         {
             CurrentCharacter = king,
-            Country = country
+            Country = country,
+            Lineage = lineage
         };
 
         var state = new GameState

@@ -47,6 +47,13 @@ public class Country
     public required Character Ruler { get; set; }
 
     /// <summary>
+    /// Ordered candidates for rulership. The first living candidate becomes ruler
+    /// when the current ruler dies. Government-specific succession rules will
+    /// eventually construct and modify this ordering.
+    /// </summary>
+    public List<Character> SuccessionOrder { get; } = [];
+
+    /// <summary>
     /// Characters currently participating in this country's political world:
     /// ruler, office-holders and people who could plausibly enter government.
     /// </summary>

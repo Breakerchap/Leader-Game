@@ -9,5 +9,9 @@ public class PlayerState
 
     public required Country Country { get; set; }
 
+    public required PoliticalLineage Lineage { get; set; }
+
     public bool HasLost { get; set; }
+
+    public string? LossReason { get; set; }
 }
