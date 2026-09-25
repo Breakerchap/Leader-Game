@@ -42,7 +42,8 @@ A save currently stores:
 - player knowledge / last-known information;
 - adviser report history and caveats;
 - pending information requests;
-- hidden historical information snapshots.
+- hidden historical information snapshots;
+- pending, accepted, rejected and expired cabinet recommendations.
 
 Object relationships are persisted through stable IDs and rebuilt during loading. The loader rejects broken references rather than attempting to continue with a partially corrupted state.
 
@@ -95,13 +96,15 @@ This is one reason the save file is versioned now, before variable-time work beg
 
 ## Desktop behaviour
 
-The desktop currently exposes one manual campaign slot:
+The desktop currently exposes a manual campaign slot plus a separate recovery autosave:
 
-- **Save** writes the current campaign to the default slot.
-- **Load** is enabled when that slot exists and reconstructs a new `GameSimulation` from the saved state.
-- Loading rebuilds the entire `PlayerViewState` from the restored world.
+- **Save** writes the current campaign to `campaign.json`.
+- **Load** reconstructs the manual campaign slot.
+- every completed turn writes `autosave.json` separately;
+- **Auto** recovers that autosave without overwriting the manual slot;
+- loading rebuilds the entire `PlayerViewState` from the restored world.
 
-Autosave and multiple named slots are intentionally separate future work.
+Multiple named slots and a file-picker UI remain future work.
 
 ## Tests
 
