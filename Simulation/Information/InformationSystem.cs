@@ -556,10 +556,6 @@ internal static class InformationSystem
                 InformationMetric.Gdp,
                 InformationMetric.Treasury,
                 InformationMetric.Debt,
-                InformationMetric.MonthlyTaxRevenue,
-                InformationMetric.MonthlyTradeIncome,
-                InformationMetric.MonthlyExpenses,
-                InformationMetric.MonthlyBalance,
                 InformationMetric.AdministrativeEfficiency
             ],
 
