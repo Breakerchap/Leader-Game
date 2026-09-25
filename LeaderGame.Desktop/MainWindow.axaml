@@ -305,7 +305,7 @@
               </StackPanel>
             </Border>
 
-            <StackPanel IsVisible="{Binding View.PendingReports}">
+            <StackPanel IsVisible="{Binding HasPendingReports}">
               <TextBlock Text="PENDING INQUIRIES" Classes="eyebrow" />
               <ItemsControl ItemsSource="{Binding View.PendingInquiries}">
                 <ItemsControl.ItemTemplate>
