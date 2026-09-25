@@ -23,6 +23,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private double _targetCourtFundingPercent;
 
     private readonly RelayCommand _advanceMonthCommand;
+    private readonly RelayCommand _loadCommand;
 
     public MainWindowViewModel()
     {
@@ -41,6 +42,23 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 RefreshBindings();
             },
             _ => !View.HasLost);
+
+        SaveCommand = new RelayCommand(_ =>
+        {
+            _session.SaveDefault();
+            RefreshBindings();
+            _loadCommand.RaiseCanExecuteChanged();
+        });
+
+        _loadCommand = new RelayCommand(
+            _ =>
+            {
+                _session.LoadDefault();
+                SyncPolicyTargets();
+                RefreshBindings();
+                _advanceMonthCommand.RaiseCanExecuteChanged();
+            },
+            _ => _session.DefaultSaveExists);
 
         NavigateCommand = new RelayCommand(parameter =>
         {
@@ -195,6 +213,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public PlayerViewState View => _session.View;
 
     public ICommand AdvanceMonthCommand => _advanceMonthCommand;
+
+    public ICommand SaveCommand { get; }
+
+    public ICommand LoadCommand => _loadCommand;
+
+    public string SaveLocation => GameSession.DefaultSavePath;
 
     public ICommand NavigateCommand { get; }
 
@@ -609,7 +633,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(HasPendingReports));
         OnPropertyChanged(nameof(HasActiveCampaigns));
         OnPropertyChanged(nameof(ArchiveEntries));
+        OnPropertyChanged(nameof(SaveLocation));
         _advanceMonthCommand.RaiseCanExecuteChanged();
+        _loadCommand.RaiseCanExecuteChanged();
     }
 
     private void SyncPolicyTargets()
