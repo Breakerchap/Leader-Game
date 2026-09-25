@@ -43,6 +43,10 @@ public class GameSimulation
 
         State.Reports.AddRange(EconomySystem.ProcessMonth(State));
 
+        WorldDynamicsSystem.ProcessMonth(State);
+
+        ForeignGovernmentSystem.ProcessMonth(State);
+
         PoliticalSystem.ProcessMonth(State);
 
         State.Reports.AddRange(DomesticPoliticsSystem.ProcessMonth(State));
