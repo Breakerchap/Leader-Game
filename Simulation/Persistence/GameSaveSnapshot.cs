@@ -353,6 +353,8 @@ public sealed class CabinetProposalSnapshot
 
     public decimal TargetValue { get; init; }
 
+    public string? Rationale { get; init; }
+
     public required DateSnapshot CreatedOn { get; init; }
 
     public int MonthsOpen { get; init; }
