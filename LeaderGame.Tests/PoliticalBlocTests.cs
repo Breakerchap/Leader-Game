@@ -84,6 +84,39 @@ public class PoliticalBlocTests
     }
 
     [Fact]
+    public void OppositionBloc_ReducesLeadersWillingnessToObeyRuler()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var lukas = country.PoliticalFigures.Single(character =>
+            character.FullName == "Lukas Hartmann");
+
+        var before = PoliticalCalculations.GetOrderWillingness(
+            state,
+            country,
+            lukas,
+            country.Ruler);
+
+        var bloc = new PoliticalBloc
+        {
+            Country = country,
+            Leader = lukas,
+            Cohesion = 80
+        };
+        bloc.PowerBases.UnionWith(
+            [PowerBaseType.Military, PowerBaseType.Aristocracy]);
+        state.PoliticalBlocs.Add(bloc);
+
+        var after = PoliticalCalculations.GetOrderWillingness(
+            state,
+            country,
+            lukas,
+            country.Ruler);
+
+        Assert.True(after < before);
+    }
+
+    [Fact]
     public void RepairedBacking_DissolvesOppositionBloc()
     {
         var state = DemoScenario.Create();
