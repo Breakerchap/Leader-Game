@@ -8,6 +8,7 @@ using LeaderGame.Simulation.Persistence;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Reports;
 using LeaderGame.Simulation.Scenarios;
+using LeaderGame.Simulation.Systems;
 
 namespace LeaderGame.Presentation;
 
@@ -526,6 +527,35 @@ public sealed class GameSession
         Refresh($"{terms} peace proposal queued through {chancellor.FullName}.");
     }
 
+    public void RespondToCabinetProposal(Guid proposalId, bool accept)
+    {
+        var proposal = _simulation.State.CabinetProposals.FirstOrDefault(candidate =>
+            candidate.Id == proposalId &&
+            candidate.Status == CabinetProposalStatus.Pending);
+
+        if (proposal is null)
+        {
+            Refresh("That cabinet recommendation is no longer awaiting a decision.");
+            return;
+        }
+
+        var response = CabinetProposalSystem.Respond(
+            _simulation.State,
+            proposal,
+            accept);
+
+        if (response.Order is not null)
+            _simulation.SubmitOrder(response.Order);
+
+        _simulation.State.Reports.Add(response.Report);
+
+        _statusMessage = accept
+            ? $"{proposal.Advisor.FullName}'s recommendation accepted."
+            : $"{proposal.Advisor.FullName}'s recommendation rejected.";
+
+        Refresh();
+    }
+
     public void Refresh(string? statusMessage = null)
     {
         if (!string.IsNullOrWhiteSpace(statusMessage))
@@ -706,6 +736,25 @@ public sealed class GameSession
                 report.Title,
                 report.Details,
                 IsAttentionOrderOutcome(report)))
+            .ToList();
+
+        var cabinetProposals = state.CabinetProposals
+            .Where(proposal =>
+                proposal.Status == CabinetProposalStatus.Pending &&
+                ReferenceEquals(proposal.Country, country))
+            .OrderByDescending(proposal => proposal.MonthsOpen)
+            .ThenBy(proposal => proposal.Advisor.Position)
+            .Select(proposal => new CabinetProposalView(
+                proposal.Id,
+                proposal.Advisor.FullName,
+                proposal.Advisor.Position?.ToString() ?? "Adviser",
+                CabinetProposalSystem.ProposalTitle(proposal),
+                CabinetProposalSystem.ProposalDescription(proposal),
+                proposal.MonthsOpen == 0
+                    ? "New"
+                    : proposal.MonthsOpen == 1
+                        ? "1 month awaiting decision"
+                        : $"{proposal.MonthsOpen} months awaiting decision"))
             .ToList();
 
         var intelligenceReports = state.AdvisorReports
@@ -1226,6 +1275,7 @@ public sealed class GameSession
             pending.Count,
             pendingOrderDetails,
             recentOrderOutcomes,
+            cabinetProposals,
             metrics,
             advisors,
             briefings,
