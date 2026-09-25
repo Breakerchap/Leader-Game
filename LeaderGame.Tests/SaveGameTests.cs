@@ -202,6 +202,46 @@ public class SaveGameTests
     }
 
     [Fact]
+    public void SaveRoundTrip_PreservesPoliticalDemandDecisionState()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var spokesperson = country.GetOfficeHolder(Position.Marshal)!;
+
+        state.PowerBaseDemands.Add(new PowerBaseDemand
+        {
+            Country = country,
+            PowerBase = PowerBaseType.Military,
+            Type = PowerBaseDemandType.RaiseArmyFunding,
+            TargetValue = 1.30m,
+            Spokesperson = spokesperson,
+            MonthsOpen = 4,
+            EscalationLevel = 1,
+            AcknowledgedByRuler = true,
+            IsRejected = true,
+            ResolvedOn = state.Date,
+            IsResolved = true
+        });
+
+        var original = Assert.Single(state.PowerBaseDemands);
+
+        var loaded = GameSaveService.Deserialize(
+            GameSaveService.Serialize(state));
+
+        var restored = Assert.Single(loaded.PowerBaseDemands);
+
+        Assert.Equal(original.Id, restored.Id);
+        Assert.Equal(original.PowerBase, restored.PowerBase);
+        Assert.True(restored.AcknowledgedByRuler);
+        Assert.True(restored.IsRejected);
+        Assert.True(restored.IsResolved);
+        Assert.Equal(state.Date, restored.ResolvedOn);
+        Assert.Equal(
+            spokesperson.Id,
+            restored.Spokesperson!.Id);
+    }
+
+    [Fact]
     public void SaveToFile_WritesAndReloadsAtomicSlot()
     {
         var state = DemoScenario.Create();
