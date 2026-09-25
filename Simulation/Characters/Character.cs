@@ -1,3 +1,5 @@
+using LeaderGame.Simulation.Politics;
+
 namespace LeaderGame.Simulation.Characters;
 
 public class Character
@@ -9,6 +11,7 @@ public class Character
     private int _health = 100;
     private readonly Dictionary<string, int> _allegiances =
         new(StringComparer.Ordinal);
+    private readonly Dictionary<PowerBaseType, int> _powerBaseStanding = new();
 
     public required int Id { get; init; }
 
@@ -66,6 +69,29 @@ public class Character
     public string FullName => $"{FirstName} {LastName}";
 
     public IReadOnlyDictionary<string, int> Allegiances => _allegiances;
+
+    /// <summary>
+    /// How strongly each political power base backs this character, from 0 to 100.
+    /// Missing values are neutral (50) so scenarios can add detail incrementally.
+    /// </summary>
+    public IReadOnlyDictionary<PowerBaseType, int> PowerBaseStanding => _powerBaseStanding;
+
+    public int GetPowerBaseStanding(PowerBaseType powerBase, int defaultValue = 50)
+    {
+        return _powerBaseStanding.TryGetValue(powerBase, out var value)
+            ? value
+            : Math.Clamp(defaultValue, 0, 100);
+    }
+
+    public void SetPowerBaseStanding(PowerBaseType powerBase, int value)
+    {
+        _powerBaseStanding[powerBase] = Math.Clamp(value, 0, 100);
+    }
+
+    public void ChangePowerBaseStanding(PowerBaseType powerBase, int delta)
+    {
+        SetPowerBaseStanding(powerBase, GetPowerBaseStanding(powerBase) + delta);
+    }
 
     public int GetAllegiance(string key, int defaultValue = 50)
     {
