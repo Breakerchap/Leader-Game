@@ -36,7 +36,7 @@ public sealed class GameSession
 
     public PlayerViewState View { get; private set; }
 
-    public static string DefaultSavePath
+    private static string SaveDirectory
     {
         get
         {
@@ -46,15 +46,19 @@ public sealed class GameSession
             if (string.IsNullOrWhiteSpace(root))
                 root = AppContext.BaseDirectory;
 
-            return Path.Combine(
-                root,
-                "LeaderGame",
-                "saves",
-                "campaign.json");
+            return Path.Combine(root, "LeaderGame", "saves");
         }
     }
 
+    public static string DefaultSavePath =>
+        Path.Combine(SaveDirectory, "campaign.json");
+
+    public static string AutosavePath =>
+        Path.Combine(SaveDirectory, "autosave.json");
+
     public bool DefaultSaveExists => File.Exists(DefaultSavePath);
+
+    public bool AutosaveExists => File.Exists(AutosavePath);
 
     public void SaveDefault()
     {
@@ -97,13 +101,52 @@ public sealed class GameSession
         }
     }
 
+    public void LoadAutosave()
+    {
+        if (!AutosaveExists)
+        {
+            Refresh("No autosave exists yet.");
+            return;
+        }
+
+        try
+        {
+            var state = GameSaveService.LoadFromFile(
+                AutosavePath);
+
+            _simulation = new GameSimulation(state);
+            _statusMessage =
+                $"Autosave recovered from {state.Date}.";
+            View = BuildView();
+        }
+        catch (Exception exception)
+        {
+            Refresh($"Autosave recovery failed: {exception.Message}");
+        }
+    }
+
     public void AdvanceMonth()
     {
         if (_simulation.State.Player.HasLost)
             return;
 
         _simulation.AdvanceMonth();
-        _statusMessage = $"Time advanced to {_simulation.State.Date}.";
+
+        try
+        {
+            GameSaveService.SaveToFile(
+                _simulation.State,
+                AutosavePath);
+
+            _statusMessage =
+                $"Time advanced to {_simulation.State.Date}. Autosaved.";
+        }
+        catch (Exception exception)
+        {
+            _statusMessage =
+                $"Time advanced to {_simulation.State.Date}. Autosave failed: {exception.Message}";
+        }
+
         Refresh();
     }
 
