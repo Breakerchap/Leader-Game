@@ -1,6 +1,8 @@
 using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Diplomacy;
 using LeaderGame.Simulation.Information;
+using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Reports;
@@ -174,6 +176,167 @@ public sealed class GameSession
         });
 
         Refresh($"Dismissal of {holder.FullName} from {position} queued.");
+    }
+
+    public void ImproveRelations(string countryId)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var target = state.FindCountry(countryId);
+        var chancellor = country.GetOfficeHolder(Position.Chancellor);
+
+        if (target is null || ReferenceEquals(target, country))
+        {
+            Refresh("Choose another country for diplomatic outreach.");
+            return;
+        }
+
+        if (chancellor is null)
+        {
+            Refresh("The Chancellery is vacant. There is nobody to conduct the mission.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new ImproveRelationsOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = chancellor,
+            IssuedOn = state.Date,
+            SourceCountry = country,
+            TargetCountry = target
+        });
+
+        Refresh($"Diplomatic outreach to {target.Name} queued through {chancellor.FullName}.");
+    }
+
+    public void ToggleTradeAgreement(string countryId)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var target = state.FindCountry(countryId);
+        var chancellor = country.GetOfficeHolder(Position.Chancellor);
+
+        if (target is null || ReferenceEquals(target, country))
+        {
+            Refresh("Choose another country for trade policy.");
+            return;
+        }
+
+        if (chancellor is null)
+        {
+            Refresh("The Chancellery is vacant. There is nobody to conduct trade diplomacy.");
+            return;
+        }
+
+        var relation = state.Diplomacy.GetOrCreate(country, target);
+
+        if (relation.HasTradeAgreement)
+        {
+            _simulation.SubmitOrder(new EndTradeAgreementOrder
+            {
+                Issuer = country.Ruler,
+                Recipient = chancellor,
+                IssuedOn = state.Date,
+                SourceCountry = country,
+                TargetCountry = target
+            });
+
+            Refresh($"Termination of the trade agreement with {target.Name} queued.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new NegotiateTradeAgreementOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = chancellor,
+            IssuedOn = state.Date,
+            SourceCountry = country,
+            TargetCountry = target
+        });
+
+        Refresh($"Trade negotiations with {target.Name} queued through {chancellor.FullName}.");
+    }
+
+    public void DeclareWar(string countryId)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var target = state.FindCountry(countryId);
+        var chancellor = country.GetOfficeHolder(Position.Chancellor);
+
+        if (target is null || ReferenceEquals(target, country))
+        {
+            Refresh("Choose another country.");
+            return;
+        }
+
+        if (!country.IsNeighbor(target))
+        {
+            Refresh($"{target.Name} is not currently a valid neighbouring war target.");
+            return;
+        }
+
+        if (state.Wars.Any(war =>
+                war.Status == WarStatus.Active &&
+                war.IsParticipant(country) &&
+                war.IsParticipant(target)))
+        {
+            Refresh($"{country.Name} is already at war with {target.Name}.");
+            return;
+        }
+
+        if (chancellor is null)
+        {
+            Refresh("The Chancellery is vacant. There is nobody to deliver the declaration.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new DeclareWarOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = chancellor,
+            IssuedOn = state.Date,
+            SourceCountry = country,
+            TargetCountry = target
+        });
+
+        Refresh($"Declaration of war on {target.Name} queued through {chancellor.FullName}.");
+    }
+
+    public void RespondToDiplomaticProposal(Guid proposalId, bool accept)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var chancellor = country.GetOfficeHolder(Position.Chancellor);
+        var proposal = state.DiplomaticProposals.FirstOrDefault(candidate =>
+            candidate.Id == proposalId &&
+            candidate.Status == DiplomaticProposalStatus.Pending &&
+            ReferenceEquals(candidate.TargetCountry, country));
+
+        if (proposal is null)
+        {
+            Refresh("That diplomatic proposal is no longer pending.");
+            return;
+        }
+
+        if (chancellor is null)
+        {
+            Refresh("The Chancellery is vacant. There is nobody to deliver a formal response.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new RespondToDiplomaticProposalOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = chancellor,
+            IssuedOn = state.Date,
+            Country = country,
+            Proposal = proposal,
+            Accept = accept
+        });
+
+        Refresh(
+            $"{(accept ? "Acceptance" : "Rejection")} of {proposal.SourceCountry.Name}'s proposal queued.");
     }
 
     public void Refresh(string? statusMessage = null)
@@ -565,6 +728,92 @@ public sealed class GameSession
             opposition,
             pressure);
 
+        var chancellor = country.GetOfficeHolder(Position.Chancellor);
+        var chancellorObedience = chancellor is null
+            ? "Vacant"
+            : PlayerInformationFormatter.Willingness(
+                PoliticalCalculations.GetOrderWillingness(
+                    state,
+                    country,
+                    chancellor,
+                    ruler));
+
+        var foreignStates = state.Countries
+            .Where(other => !ReferenceEquals(other, country))
+            .OrderBy(other => other.Name)
+            .Select(other =>
+            {
+                var relation = state.Diplomacy.GetOrCreate(country, other);
+                var activeWar = state.Wars.FirstOrDefault(war =>
+                    war.Status == WarStatus.Active &&
+                    war.IsParticipant(country) &&
+                    war.IsParticipant(other));
+
+                return new ForeignStateView(
+                    other.Id,
+                    other.Name,
+                    other.Ruler.FullName,
+                    other.Government.Type.ToString(),
+                    KnownShort(
+                        state,
+                        InformationMetric.DiplomaticRelations,
+                        other.Id,
+                        country.Id),
+                    KnownShort(
+                        state,
+                        InformationMetric.DiplomaticTrust,
+                        other.Id,
+                        country.Id),
+                    KnownShort(
+                        state,
+                        InformationMetric.DiplomaticTension,
+                        other.Id,
+                        country.Id),
+                    KnownShort(
+                        state,
+                        InformationMetric.Gdp,
+                        other.Id),
+                    KnownShort(
+                        state,
+                        InformationMetric.ArmySize,
+                        other.Id),
+                    relation.HasTradeAgreement ? "Active trade agreement" : "No trade agreement",
+                    activeWar is null ? "At peace" : $"At war · month {activeWar.MonthsActive}",
+                    relation.HasTradeAgreement,
+                    activeWar is not null,
+                    country.IsNeighbor(other) && activeWar is null);
+            })
+            .ToList();
+
+        var incomingProposals = state.DiplomaticProposals
+            .Where(proposal =>
+                proposal.Status == DiplomaticProposalStatus.Pending &&
+                ReferenceEquals(proposal.TargetCountry, country))
+            .OrderByDescending(proposal => proposal.CreatedOn.Year)
+            .ThenByDescending(proposal => proposal.CreatedOn.Month)
+            .Select(proposal => new DiplomaticProposalView(
+                proposal.Id,
+                proposal.SourceCountry.Name,
+                proposal.Type switch
+                {
+                    DiplomaticProposalType.TradeAgreement => "Trade agreement",
+                    DiplomaticProposalType.TributeUltimatum => "Tribute ultimatum",
+                    _ => proposal.Type.ToString()
+                },
+                proposal.Type == DiplomaticProposalType.TributeUltimatum
+                    ? $"Payment demanded: {proposal.DemandedPayment:N0}"
+                    : "Mutual trade access proposed",
+                proposal.MonthsOpen == 0
+                    ? "New"
+                    : $"{proposal.MonthsOpen} month(s) open"))
+            .ToList();
+
+        var foreignAffairs = new ForeignAffairsView(
+            chancellor?.FullName ?? "Vacant",
+            chancellorObedience,
+            foreignStates,
+            incomingProposals);
+
         return new PlayerViewState(
             country.Name,
             state.Date.ToString(),
@@ -583,7 +832,28 @@ public sealed class GameSession
             foreignCountries,
             government,
             court,
+            foreignAffairs,
             _statusMessage);
+    }
+
+    private static string KnownShort(
+        GameState state,
+        InformationMetric metric,
+        string subjectCountryId,
+        string? relatedCountryId = null)
+    {
+        var known = state.Knowledge.Get(
+            metric,
+            subjectCountryId,
+            relatedCountryId);
+
+        if (known is null)
+            return "Unknown";
+
+        var age = known.AgeInMonths(state.Date);
+
+        return $"~{PlayerInformationFormatter.Value(metric, known.Estimate)} · " +
+               PlayerInformationFormatter.Age(age);
     }
 
     private static string DescribeAmbition(int ambition) => ambition switch
