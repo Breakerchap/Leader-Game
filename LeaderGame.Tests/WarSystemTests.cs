@@ -65,17 +65,27 @@ public class WarSystemTests
     }
 
     [Fact]
-    public void WarOperationsCanCreateDebt()
+    public void WarOperationsAddDebtBeyondEquivalentPeacetimeCosts()
     {
-        var state = DemoScenario.Create();
-        var source = state.Player.Country;
-        var target = state.Countries.Single(country => country.Id == "valeria");
-        state.Random = new ConstantRandom(0.5);
-        source.Treasury = 0;
+        var warState = DemoScenario.Create();
+        var peaceState = DemoScenario.Create();
 
-        DeclareWar(state, source, target);
+        var warSource = warState.Player.Country;
+        var warTarget = warState.Countries.Single(country => country.Id == "valeria");
+        var peaceSource = peaceState.Player.Country;
 
-        Assert.True(source.Debt > 0);
+        warState.Random = new ConstantRandom(0.5);
+        peaceState.Random = new ConstantRandom(0.5);
+
+        warSource.Treasury = 0;
+        peaceSource.Treasury = 0;
+        warSource.TaxRate = 0;
+        peaceSource.TaxRate = 0;
+
+        DeclareWar(warState, warSource, warTarget);
+        new GameSimulation(peaceState).AdvanceMonth();
+
+        Assert.True(warSource.Debt > peaceSource.Debt);
     }
 
     [Fact]
