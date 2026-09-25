@@ -370,4 +370,70 @@ public class PresentationBoundaryTests
         Assert.NotEmpty(session.View.Briefings);
         Assert.NotEmpty(session.View.Advisors);
     }
+
+    [Fact]
+    public void CourtInvestigation_QueuesRealChancellorOrder()
+    {
+        var state = DemoScenario.Create();
+        var session = new GameSession(new GameSimulation(state));
+        var target = session.View.Court.Figures.First(figure =>
+            figure.CanInvestigate);
+
+        session.InvestigateCharacter(target.Id);
+
+        var order = Assert.IsType<InvestigateCharacterOrder>(
+            Assert.Single(state.PendingOrders));
+
+        Assert.Equal(target.Id, order.Subject.Id);
+        Assert.Equal(
+            Position.Chancellor,
+            order.Recipient.Position);
+    }
+
+    [Fact]
+    public void CourtArrest_QueuesRealMarshalOrder()
+    {
+        var state = DemoScenario.Create();
+        var session = new GameSession(new GameSimulation(state));
+        var target = session.View.Court.Figures.First(figure =>
+            figure.CanArrest);
+
+        session.ArrestCharacter(target.Id);
+
+        var order = Assert.IsType<ArrestCharacterOrder>(
+            Assert.Single(state.PendingOrders));
+
+        Assert.Equal(target.Id, order.Subject.Id);
+        Assert.Equal(
+            Position.Marshal,
+            order.Recipient.Position);
+    }
+
+    [Fact]
+    public void CourtRelease_QueuesDirectRulerOrderForPrisoner()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var prisoner = country.PoliticalFigures.First(character =>
+            character.IsPoliticallyActive &&
+            !ReferenceEquals(character, country.Ruler) &&
+            character.Position is null);
+
+        prisoner.Status = PoliticalStatus.Imprisoned;
+
+        var session = new GameSession(new GameSimulation(state));
+        var view = session.View.Court.Figures.Single(figure =>
+            figure.Id == prisoner.Id);
+
+        Assert.True(view.CanRelease);
+
+        session.ReleasePrisoner(prisoner.Id);
+
+        var order = Assert.IsType<ReleasePrisonerOrder>(
+            Assert.Single(state.PendingOrders));
+
+        Assert.Same(prisoner, order.Recipient);
+        Assert.Same(country.Ruler, order.Issuer);
+    }
+
 }
