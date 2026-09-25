@@ -1,6 +1,7 @@
 using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
+using LeaderGame.Simulation.Diplomacy;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
@@ -34,6 +35,7 @@ while (true)
     Console.WriteLine("[A] Appoint or replace an adviser");
     Console.WriteLine("[D] Dismiss an office-holder");
     Console.WriteLine("[I] Investigate a political figure");
+    Console.WriteLine("[F] Foreign affairs");
     Console.WriteLine("[P] Prison and arrests");
     Console.WriteLine("[C] Inspect the court");
     Console.WriteLine("[R] Read recent reports");
@@ -71,6 +73,12 @@ while (true)
     if (string.Equals(input, "i", StringComparison.OrdinalIgnoreCase))
     {
         QueueInvestigationOrder(simulation, country);
+        continue;
+    }
+
+    if (string.Equals(input, "f", StringComparison.OrdinalIgnoreCase))
+    {
+        ManageForeignAffairs(simulation, country);
         continue;
     }
 
@@ -113,7 +121,8 @@ static void PrintDashboard(GameState state)
     if (country.LastMonthlyTaxRevenue != 0m || country.LastMonthlyExpenses != 0m)
     {
         Console.WriteLine(
-            $"Last budget: revenue {country.LastMonthlyTaxRevenue:N0}, " +
+            $"Last budget: tax {country.LastMonthlyTaxRevenue:N0}, " +
+            $"trade {country.LastMonthlyTradeIncome:N0}, " +
             $"expenses {country.LastMonthlyExpenses:N0}, " +
             $"balance {country.LastMonthlyBalance:N0}");
     }
@@ -496,6 +505,162 @@ static void QueueInvestigationOrder(GameSimulation simulation, Country country)
         $"{chancellor.FullName}.");
 }
 
+
+static void ManageForeignAffairs(GameSimulation simulation, Country country)
+{
+    var chancellor = country.GetOfficeHolder(Position.Chancellor);
+
+    if (chancellor is null)
+    {
+        Pause("There is no active Chancellor to conduct foreign policy.");
+        return;
+    }
+
+    var foreignCountries = simulation.State.Countries
+        .Where(candidate => !ReferenceEquals(candidate, country))
+        .OrderBy(candidate => candidate.Name)
+        .ToList();
+
+    Console.Clear();
+    Console.WriteLine("Foreign affairs");
+    Console.WriteLine("===============");
+    Console.WriteLine();
+    Console.WriteLine(
+        $"Chancellor: {chancellor.FullName} — competence {chancellor.Competence}/100");
+    Console.WriteLine();
+
+    for (var i = 0; i < foreignCountries.Count; i++)
+    {
+        var foreign = foreignCountries[i];
+        var relation = simulation.State.Diplomacy.GetOrCreate(country, foreign);
+        var trade = relation.HasTradeAgreement ? "trade" : "no trade";
+
+        Console.WriteLine(
+            $"[{i + 1}] {foreign.Name,-12} " +
+            $"Relations {relation.Relations,4}  Trust {relation.Trust,3}  " +
+            $"Tension {relation.Tension,3}  {trade}");
+    }
+
+    Console.WriteLine();
+    Console.Write("Choose country: ");
+
+    if (!int.TryParse(Console.ReadLine(), out var number) ||
+        number < 1 ||
+        number > foreignCountries.Count)
+    {
+        Pause("Invalid country.");
+        return;
+    }
+
+    var target = foreignCountries[number - 1];
+    var targetRelation = simulation.State.Diplomacy.GetOrCreate(country, target);
+    ShowForeignCountry(simulation.State, country, target, chancellor, targetRelation);
+
+    Console.WriteLine();
+    Console.WriteLine("[1] Send a mission to improve relations");
+
+    if (targetRelation.HasTradeAgreement)
+        Console.WriteLine("[2] End the trade agreement");
+    else
+        Console.WriteLine("[2] Propose a trade agreement");
+
+    Console.WriteLine("[Enter] Cancel");
+    Console.Write("Choose action: ");
+
+    var action = Console.ReadLine()?.Trim();
+
+    if (action == "1")
+    {
+        simulation.SubmitOrder(new ImproveRelationsOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = chancellor,
+            IssuedOn = simulation.State.Date,
+            SourceCountry = country,
+            TargetCountry = target
+        });
+
+        Pause(
+            $"Diplomatic mission to {target.Name} queued through {chancellor.FullName}.");
+        return;
+    }
+
+    if (action != "2")
+        return;
+
+    if (targetRelation.HasTradeAgreement)
+    {
+        simulation.SubmitOrder(new EndTradeAgreementOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = chancellor,
+            IssuedOn = simulation.State.Date,
+            SourceCountry = country,
+            TargetCountry = target
+        });
+
+        Pause($"Termination of the {target.Name} trade agreement queued.");
+        return;
+    }
+
+    simulation.SubmitOrder(new NegotiateTradeAgreementOrder
+    {
+        Issuer = country.Ruler,
+        Recipient = chancellor,
+        IssuedOn = simulation.State.Date,
+        SourceCountry = country,
+        TargetCountry = target
+    });
+
+    Pause(
+        $"Trade negotiations with {target.Name} queued. Your Chancellor can carry out " +
+        "the talks well and still be rejected by the foreign government.");
+}
+
+static void ShowForeignCountry(
+    GameState state,
+    Country country,
+    Country target,
+    Character chancellor,
+    DiplomaticRelation relation)
+{
+    Console.Clear();
+    Console.WriteLine(target.Name);
+    Console.WriteLine(new string('=', target.Name.Length));
+    Console.WriteLine();
+    Console.WriteLine(
+        $"Ruler: {target.Ruler.FullName} — age {target.Ruler.Age}, " +
+        $"health {target.Ruler.Health}/100");
+    Console.WriteLine($"Government: {target.Government.Type}");
+    Console.WriteLine($"Population: {target.Population:N0}");
+    Console.WriteLine($"GDP: {target.Gdp:N0}");
+    Console.WriteLine(
+        $"Army: {target.ArmySize:N0} — readiness {target.ArmyReadiness:F0}/100");
+    Console.WriteLine(
+        $"Relations {relation.Relations}, trust {relation.Trust}, tension {relation.Tension}");
+    Console.WriteLine(
+        $"Trade agreement: {(relation.HasTradeAgreement ? "active" : "none")}");
+
+    if (!relation.HasTradeAgreement && country.IsNeighbor(target))
+    {
+        var score = DiplomaticCalculations.GetTradeAcceptanceScore(
+            state,
+            country,
+            target,
+            chancellor);
+
+        var assessment = score switch
+        {
+            >= 70 => "likely receptive",
+            >= 55 => "plausibly receptive",
+            >= 40 => "unlikely to accept",
+            _ => "strongly opposed"
+        };
+
+        Console.WriteLine(
+            $"Chancellor's assessment of a trade proposal: {assessment}.");
+    }
+}
 
 static void ManagePrison(GameSimulation simulation, Country country)
 {

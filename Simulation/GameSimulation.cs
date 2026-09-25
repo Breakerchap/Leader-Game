@@ -38,6 +38,8 @@ public class GameSimulation
 
         PoliticalSystem.ProcessMonth(State);
 
+        DiplomacySystem.ProcessMonth(State);
+
         State.Reports.AddRange(PlotSystem.ProcessMonth(State));
 
         State.Date = State.Date.NextMonth();
