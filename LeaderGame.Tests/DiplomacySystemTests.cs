@@ -37,6 +37,7 @@ public class DiplomacySystemTests
         var relation = state.Diplomacy.GetOrCreate(country, target);
 
         relation.HasTradeAgreement = false;
+        relation.BorderDisputeSeverity = 0;
         relation.Relations = -60;
         relation.Trust = 25;
         relation.Tension = 80;
