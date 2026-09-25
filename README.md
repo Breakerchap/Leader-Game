@@ -33,7 +33,7 @@ Implemented systems include:
 - autonomous domestic demands from dissatisfied power bases;
 - multiple power bases able to maintain simultaneous grievances and demands;
 - organised opposition blocs that form around shared rival leaders when major groups become alienated;
-- bloc cohesion and membership feeding back into political threat and conspiracy co-operation;
+- bloc cohesion and membership feeding back into political threat, conspiracy co-operation and willingness to obey the ruler;
 - escalating political pressure when important groups are ignored, including rivals gaining support;
 - material conditions such as underfunding, high taxes, unrest and war exhaustion changing political backing over time;
 - calculated willingness to obey orders;
