@@ -5,7 +5,7 @@ namespace LeaderGame.Simulation.Information;
 
 public sealed class AdvisorIntelligenceReport
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public required InformationTopic Topic { get; init; }
 
