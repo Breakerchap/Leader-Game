@@ -105,6 +105,51 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         DismissAdvisorCommand = new RelayCommand(_ =>
             RunAndRefresh(() =>
                 _session.DismissAdvisor(SelectedOffice)));
+
+        ImproveRelationsCommand = new RelayCommand(_ =>
+        {
+            if (SelectedForeignCountry is null)
+                return;
+
+            RunAndRefresh(() =>
+                _session.ImproveRelations(SelectedForeignCountry.Id));
+        });
+
+        ToggleTradeCommand = new RelayCommand(_ =>
+        {
+            if (SelectedForeignCountry is null)
+                return;
+
+            RunAndRefresh(() =>
+                _session.ToggleTradeAgreement(SelectedForeignCountry.Id));
+        });
+
+        DeclareWarCommand = new RelayCommand(_ =>
+        {
+            if (SelectedForeignCountry is null)
+                return;
+
+            RunAndRefresh(() =>
+                _session.DeclareWar(SelectedForeignCountry.Id));
+        });
+
+        AcceptProposalCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is DiplomaticProposalView proposal)
+            {
+                RunAndRefresh(() =>
+                    _session.RespondToDiplomaticProposal(proposal.Id, accept: true));
+            }
+        });
+
+        RejectProposalCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is DiplomaticProposalView proposal)
+            {
+                RunAndRefresh(() =>
+                    _session.RespondToDiplomaticProposal(proposal.Id, accept: false));
+            }
+        });
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -133,6 +178,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ICommand DismissAdvisorCommand { get; }
 
+    public ICommand ImproveRelationsCommand { get; }
+
+    public ICommand ToggleTradeCommand { get; }
+
+    public ICommand DeclareWarCommand { get; }
+
+    public ICommand AcceptProposalCommand { get; }
+
+    public ICommand RejectProposalCommand { get; }
+
     public string CurrentSection
     {
         get => _currentSection;
@@ -146,6 +201,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsBriefingVisible));
             OnPropertyChanged(nameof(IsGovernmentVisible));
             OnPropertyChanged(nameof(IsCourtVisible));
+            OnPropertyChanged(nameof(IsForeignAffairsVisible));
             OnPropertyChanged(nameof(IsIntelligenceVisible));
             OnPropertyChanged(nameof(IsPlaceholderVisible));
             OnPropertyChanged(nameof(IsBriefingSelected));
@@ -167,12 +223,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public bool IsCourtVisible => CurrentSection == "Court";
 
+    public bool IsForeignAffairsVisible => CurrentSection == "Foreign Affairs";
+
     public bool IsIntelligenceVisible => CurrentSection == "Intelligence";
 
     public bool IsPlaceholderVisible =>
         !IsBriefingVisible &&
         !IsGovernmentVisible &&
         !IsCourtVisible &&
+        !IsForeignAffairsVisible &&
         !IsIntelligenceVisible;
 
     public bool IsBriefingSelected => CurrentSection == "Briefing";
@@ -205,6 +264,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public IReadOnlyList<ForeignCountryOptionView> ForeignCountries =>
         View.ForeignCountries;
 
+    public ForeignStateView? SelectedForeignState =>
+        SelectedForeignCountry is null
+            ? null
+            : View.ForeignAffairs.Countries.FirstOrDefault(country =>
+                country.Id == SelectedForeignCountry.Id);
+
+    public string TradeActionLabel =>
+        SelectedForeignState?.HasTradeAgreement == true
+            ? "End trade agreement"
+            : "Propose trade agreement";
+
     public IReadOnlyList<CourtFigureView> AppointmentCandidates =>
         View.Court.Figures
             .Where(figure => figure.IsAvailableForOffice)
@@ -223,6 +293,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
             _selectedForeignCountry = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedForeignState));
+            OnPropertyChanged(nameof(TradeActionLabel));
         }
     }
 
@@ -335,6 +407,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
         OnPropertyChanged(nameof(View));
         OnPropertyChanged(nameof(ForeignCountries));
+        OnPropertyChanged(nameof(SelectedForeignState));
+        OnPropertyChanged(nameof(TradeActionLabel));
         OnPropertyChanged(nameof(AppointmentCandidates));
         OnPropertyChanged(nameof(SelectedForeignCountry));
         OnPropertyChanged(nameof(SelectedCourtFigure));
