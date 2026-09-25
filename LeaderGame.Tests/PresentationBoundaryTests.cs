@@ -5,6 +5,7 @@ using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Persistence;
+using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Reports;
 using LeaderGame.Simulation.Scenarios;
 
@@ -434,6 +435,43 @@ public class PresentationBoundaryTests
 
         Assert.Same(prisoner, order.Recipient);
         Assert.Same(country.Ruler, order.Issuer);
+    }
+
+
+    [Fact]
+    public void CourtEvidence_OnlyAppearsAfterPlotIsDiscovered()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var target = country.PoliticalFigures.Single(character =>
+            character.FullName == "Lukas Hartmann");
+
+        var plot = new PoliticalPlot
+        {
+            Country = country,
+            Instigator = target,
+            Progress = 45
+        };
+        state.Plots.Add(plot);
+
+        var hiddenSession = new GameSession(new GameSimulation(state));
+        var hidden = hiddenSession.View.Court.Figures.Single(figure =>
+            figure.Id == target.Id);
+
+        Assert.False(hidden.HasKnownEvidence);
+        Assert.Equal("No known conspiracy evidence", hidden.KnownEvidence);
+
+        plot.DiscoveryStage = 2;
+
+        var discoveredSession = new GameSession(new GameSimulation(state));
+        var discovered = discoveredSession.View.Court.Figures.Single(figure =>
+            figure.Id == target.Id);
+
+        Assert.True(discovered.HasKnownEvidence);
+        Assert.Contains(
+            "credible",
+            discovered.KnownEvidence,
+            StringComparison.OrdinalIgnoreCase);
     }
 
 }
