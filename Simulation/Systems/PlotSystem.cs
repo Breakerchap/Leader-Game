@@ -280,6 +280,8 @@ internal static class PlotSystem
 
         var supporterBonus =
             Math.Min(25, GetSupporterInfluence(country, plot) * 0.20);
+        var powerBaseInfluence =
+            PoliticalCalculations.GetPowerBaseInfluence(country, instigator);
 
         return
             instigator.Influence * 0.35 +
@@ -287,6 +289,7 @@ internal static class PlotSystem
             (100 - willingness) * 0.20 +
             country.PublicUnrest * 0.10 +
             (100 - country.Government.Stability) * 0.10 +
+            (powerBaseInfluence - 50) * 0.20 +
             officeBonus +
             supporterBonus;
     }
@@ -306,11 +309,15 @@ internal static class PlotSystem
                     character,
                     country.Ruler));
 
+        var rulerBacking =
+            PoliticalCalculations.GetPowerBaseInfluence(country, country.Ruler);
+
         return
             country.Ruler.Influence * 0.25 +
             country.Ruler.Legitimacy * 0.25 +
             country.Government.Stability * 0.35 +
-            averageWillingness * 0.15;
+            averageWillingness * 0.15 +
+            (rulerBacking - 50) * 0.20;
     }
 
     private static double GetSupporterInfluence(
