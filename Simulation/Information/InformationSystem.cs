@@ -168,6 +168,11 @@ internal static class InformationSystem
         foreach (var request in state.InformationRequests.Where(request =>
                      request.Status == InformationRequestStatus.Pending).ToList())
         {
+            // A request issued during this turn cannot also be completed during
+            // the same turn. RemainingMonths measures full future turns of work.
+            if (request.RequestedOn == state.Date)
+                continue;
+
             if (!request.Advisor.IsPoliticallyActive ||
                 !IsAppropriateAdvisor(request.Advisor, request.Topic))
             {
