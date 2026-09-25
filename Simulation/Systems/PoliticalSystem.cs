@@ -18,6 +18,18 @@ internal static class PoliticalSystem
                 else if (character.Influence > target)
                     character.Influence = Math.Max(target, character.Influence - step);
             }
+
+            if (country.Ruler.IsAlive)
+            {
+                var rulerBacking =
+                    PoliticalCalculations.GetPowerBaseInfluence(country, country.Ruler);
+
+                // Institutional and social support changes regime resilience slowly.
+                // It should matter over time without replacing acute shocks from
+                // debt, war, repression or unrest.
+                country.Government.Stability +=
+                    Math.Clamp((rulerBacking - 50) / 125.0, -0.4, 0.4);
+            }
         }
 
         foreach (var relationship in state.Relationships.All)
