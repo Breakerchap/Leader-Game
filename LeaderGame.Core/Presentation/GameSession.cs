@@ -1083,6 +1083,10 @@ public sealed class GameSession
             }
             : "Hereditary succession";
 
+        var electionNominee = hasElection
+            ? ElectionSystem.GetPlayerLineageNominee(state, country)
+            : null;
+
         var politicalCycleDetail = hasElection
             ? country.Government.MonthsUntilElection <=
               country.Government.ElectionCampaignMonths
@@ -1091,7 +1095,10 @@ public sealed class GameSession
                       ", ",
                       ElectionSystem
                           .GetCandidateField(state, country)
-                          .Select(candidate => candidate.FullName))
+                          .Select(candidate => candidate.FullName)) +
+                  (electionNominee is null
+                      ? string.Empty
+                      : $". {state.Player.Lineage.Name} nominee: {electionNominee.FullName}.")
                 : $"Campaign season begins in " +
                   $"{Math.Max(0, country.Government.MonthsUntilElection - country.Government.ElectionCampaignMonths)} months."
             : country.SuccessionOrder.FirstOrDefault(candidate =>
