@@ -11,7 +11,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _currentSection = "Briefing";
     private ForeignCountryOptionView? _selectedForeignCountry;
     private CourtFigureView? _selectedCourtFigure;
+    private WarCampaignView? _selectedCampaign;
     private string _selectedOffice = "Chancellor";
+    private string _selectedWarStance = "Balanced";
+    private string _selectedPeaceTerms = "WhitePeace";
     private double _targetTaxPercent;
     private double _targetArmyFundingPercent;
     private double _targetAdministrationFundingPercent;
@@ -24,6 +27,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         _selectedForeignCountry = View.ForeignCountries.FirstOrDefault();
         _selectedCourtFigure = View.Court.Figures.FirstOrDefault(figure =>
             figure.IsAvailableForOffice);
+        _selectedCampaign = View.Military.Campaigns.FirstOrDefault();
 
         SyncPolicyTargets();
 
@@ -150,6 +154,38 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                     _session.RespondToDiplomaticProposal(proposal.Id, accept: false));
             }
         });
+
+        ApplyWarStanceCommand = new RelayCommand(_ =>
+        {
+            if (SelectedCampaign is null)
+                return;
+
+            RunAndRefresh(() =>
+                _session.SetWarStance(
+                    SelectedCampaign.Id,
+                    SelectedWarStance));
+        });
+
+        OfferPeaceCommand = new RelayCommand(_ =>
+        {
+            if (SelectedCampaign is null)
+                return;
+
+            RunAndRefresh(() =>
+                _session.OfferPeace(
+                    SelectedCampaign.Id,
+                    SelectedPeaceTerms));
+        });
+
+        RequestCampaignIntelligenceCommand = new RelayCommand(_ =>
+        {
+            if (SelectedCampaign is null)
+                return;
+
+            RunAndRefresh(() =>
+                _session.RequestForeignMilitaryReport(
+                    SelectedCampaign.OpponentId));
+        });
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -188,6 +224,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ICommand RejectProposalCommand { get; }
 
+    public ICommand ApplyWarStanceCommand { get; }
+
+    public ICommand OfferPeaceCommand { get; }
+
+    public ICommand RequestCampaignIntelligenceCommand { get; }
+
     public string CurrentSection
     {
         get => _currentSection;
@@ -202,6 +244,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsGovernmentVisible));
             OnPropertyChanged(nameof(IsCourtVisible));
             OnPropertyChanged(nameof(IsForeignAffairsVisible));
+            OnPropertyChanged(nameof(IsMilitaryVisible));
             OnPropertyChanged(nameof(IsIntelligenceVisible));
             OnPropertyChanged(nameof(IsPlaceholderVisible));
             OnPropertyChanged(nameof(IsBriefingSelected));
@@ -225,6 +268,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public bool IsForeignAffairsVisible => CurrentSection == "Foreign Affairs";
 
+    public bool IsMilitaryVisible => CurrentSection == "Military";
+
     public bool IsIntelligenceVisible => CurrentSection == "Intelligence";
 
     public bool IsPlaceholderVisible =>
@@ -232,6 +277,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         !IsGovernmentVisible &&
         !IsCourtVisible &&
         !IsForeignAffairsVisible &&
+        !IsMilitaryVisible &&
         !IsIntelligenceVisible;
 
     public bool IsBriefingSelected => CurrentSection == "Briefing";
@@ -324,6 +370,55 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public IReadOnlyList<string> WarStanceOptions { get; } =
+        ["Defensive", "Balanced", "Aggressive"];
+
+    public IReadOnlyList<string> PeaceTermOptions { get; } =
+        ["WhitePeace", "DemandReparations", "OfferReparations"];
+
+    public WarCampaignView? SelectedCampaign
+    {
+        get => _selectedCampaign;
+        set
+        {
+            if (Equals(_selectedCampaign, value))
+                return;
+
+            _selectedCampaign = value;
+
+            if (value is not null)
+                SelectedWarStance = value.Stance;
+
+            OnPropertyChanged();
+        }
+    }
+
+    public string SelectedWarStance
+    {
+        get => _selectedWarStance;
+        set
+        {
+            if (_selectedWarStance == value)
+                return;
+
+            _selectedWarStance = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string SelectedPeaceTerms
+    {
+        get => _selectedPeaceTerms;
+        set
+        {
+            if (_selectedPeaceTerms == value)
+                return;
+
+            _selectedPeaceTerms = value;
+            OnPropertyChanged();
+        }
+    }
+
     public double TargetTaxPercent
     {
         get => _targetTaxPercent;
@@ -405,11 +500,24 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 figure.Id == SelectedCourtFigure.Id);
         }
 
+        if (SelectedCampaign is null ||
+            !View.Military.Campaigns.Any(campaign =>
+                campaign.Id == SelectedCampaign.Id))
+        {
+            SelectedCampaign = View.Military.Campaigns.FirstOrDefault();
+        }
+        else
+        {
+            SelectedCampaign = View.Military.Campaigns.First(campaign =>
+                campaign.Id == SelectedCampaign.Id);
+        }
+
         OnPropertyChanged(nameof(View));
         OnPropertyChanged(nameof(ForeignCountries));
         OnPropertyChanged(nameof(SelectedForeignState));
         OnPropertyChanged(nameof(TradeActionLabel));
         OnPropertyChanged(nameof(AppointmentCandidates));
+        OnPropertyChanged(nameof(SelectedCampaign));
         OnPropertyChanged(nameof(SelectedForeignCountry));
         OnPropertyChanged(nameof(SelectedCourtFigure));
         OnPropertyChanged(nameof(HasPendingReports));
