@@ -51,6 +51,7 @@ Implemented systems include:
 - advisers and offices including Treasurer, Marshal and Chancellor;
 - appointment and dismissal of advisers, with patronage and dismissal reshaping power-base support;
 - condition-driven cabinet recommendations from Treasurer, Marshal and Chancellor, with acceptance, rejection, expiry and relationship consequences;
+- adviser recommendations carrying visible rationales, including election-season political motives that may conflict with fiscal advice;
 - accepted adviser recommendations entering the world as normal orders rather than direct state edits;
 - political threat calculations and court coalitions;
 - investigations and discoverable coup plots;
@@ -61,6 +62,10 @@ Implemented systems include:
 - deterministic coups and usurpation;
 - seeded illness, recovery, ageing and natural mortality;
 - succession after a ruler's death;
+- constitutional republican election clocks, campaign seasons and competitive candidate fields;
+- election outcomes driven by constituencies, influence, competence, ambition, legitimacy, government performance and seeded uncertainty;
+- party-lineage continuity when its nominee wins, and loss of government when a rival wins;
+- interim republican succession forcing an early election rather than hereditary continuation;
 - player lineage continuity and loss of political control;
 - population, GDP, treasury, debt and tax revenue;
 - army, administration and court/patronage budgets;
@@ -258,7 +263,7 @@ It does **not** yet provide:
 - a geographic world map;
 - hundreds of states or large populations of political actors;
 - deep social groups, parties, religions or regional politics;
-- dynamic constitutional institutions;
+- deeper constitutional institutions beyond the current monarchy/republic succession and election rules;
 - a full production/trade/resource economy;
 - detailed military logistics or territorial occupation;
 - a knowledge/capability/adoption model for technology;
