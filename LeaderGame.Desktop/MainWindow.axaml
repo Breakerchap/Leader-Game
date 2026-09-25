@@ -648,6 +648,38 @@
                   Classes="muted" />
             </StackPanel>
 
+            <Border Classes="panel" Background="#151922" BorderBrush="#3A4656">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                <StackPanel Spacing="5">
+                  <TextBlock Text="CONSTITUTIONAL ORDER" Classes="eyebrow" Foreground="#8CBCE8" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock
+                        Text="{Binding View.Government.Regime}"
+                        FontSize="18"
+                        FontWeight="SemiBold" />
+                    <Border Classes="badge" Background="#13202B">
+                      <TextBlock
+                          Text="{Binding View.Government.PoliticalCycle}"
+                          FontSize="10"
+                          Foreground="#8CBCE8" />
+                    </Border>
+                  </StackPanel>
+                  <TextBlock
+                      Text="{Binding View.Government.PoliticalCycleDetail}"
+                      MaxWidth="760"
+                      TextWrapping="Wrap"
+                      Classes="muted" />
+                </StackPanel>
+                <TextBlock
+                    Grid.Column="1"
+                    Text="◇"
+                    IsVisible="{Binding View.Government.HasElection}"
+                    FontSize="30"
+                    Foreground="#70C4D0"
+                    VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+
             <Border Classes="panel">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
                 <StackPanel Spacing="4">
