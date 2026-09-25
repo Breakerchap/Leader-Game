@@ -25,6 +25,8 @@ A save currently stores:
 - simulation date;
 - both deterministic RNG states;
 - player country, current character and political lineage;
+- selected scenario, campaign objective definitions, progress and completion dates;
+- campaign victory state and reason;
 - every character and their mutable attributes;
 - character allegiances and power-base standing;
 - country economy, military, government and political structure;
@@ -34,7 +36,7 @@ A save currently stores:
 - diplomatic relations and trade agreements;
 - wars, IDs, status, stances and war score;
 - political plots and discovery state;
-- power-base demands;
+- power-base demands and their current named spokespeople;
 - organised opposition blocs;
 - diplomatic proposals;
 - pending player orders;
@@ -115,5 +117,7 @@ Persistence tests currently verify:
 - pending orders reconnect to the restored object graph;
 - both RNG streams continue identically;
 - atomic file saving and file loading work.
+- selected scenario, campaign-objective progress and victory state survive round trips;
+- political-demand spokespeople reconnect to restored character objects.
 
 Future systems that add mutable simulation state should extend these tests.
