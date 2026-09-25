@@ -20,7 +20,7 @@ public enum DiplomaticProposalStatus
 
 public sealed class DiplomaticProposal
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public DiplomaticProposalType Type { get; init; }
 
