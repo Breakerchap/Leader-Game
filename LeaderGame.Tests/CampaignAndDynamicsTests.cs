@@ -134,6 +134,38 @@ public class CampaignAndDynamicsTests
     }
 
     [Fact]
+    public void HostileAiRivals_CanStartWarWithoutPlayerInvolvement()
+    {
+        var state = DemoScenario.Create(
+            ScenarioCatalog.FalkenreichId);
+        var nordmark = state.FindCountry("nordmark")!;
+        var valeria = state.FindCountry("valeria")!;
+        var relation = state.Diplomacy.GetOrCreate(
+            nordmark,
+            valeria);
+
+        relation.Relations = -80;
+        relation.Trust = 10;
+        relation.Tension = 90;
+
+        nordmark.Ruler.Ambition = 85;
+        nordmark.ArmySize = 18_000;
+        nordmark.ArmyReadiness = 85;
+
+        var simulation = new GameSimulation(state);
+
+        for (var month = 0; month < 6; month++)
+            simulation.AdvanceMonth();
+
+        Assert.Contains(
+            state.Wars,
+            war =>
+                war.Status == Simulation.Military.WarStatus.Active &&
+                war.IsParticipant(nordmark) &&
+                war.IsParticipant(valeria));
+    }
+
+    [Fact]
     public void AiCountries_CanDevelopTradeWithoutPlayerIntervention()
     {
         var state = DemoScenario.Create(
