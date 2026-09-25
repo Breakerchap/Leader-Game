@@ -92,13 +92,15 @@ public static class PoliticalCalculations
             character.GetAllegiance(PoliticalKeys.Country(country.Id));
 
         var powerBaseInfluence = GetPowerBaseInfluence(country, character);
+        var blocBonus = GetBlocThreatBonus(state, country, character);
 
         var threat =
             character.Influence * 0.45 +
             character.Ambition * 0.35 +
             (100 - willingness) * 0.35 -
             countryAllegiance * 0.15 +
-            (powerBaseInfluence - 50) * 0.20;
+            (powerBaseInfluence - 50) * 0.20 +
+            blocBonus;
 
         return Math.Clamp(threat, 0, 100);
     }
@@ -127,12 +129,59 @@ public static class PoliticalCalculations
             supporter,
             country.Ruler);
 
+        var blocBonus = GetBlocAffinityBonus(
+            state,
+            country,
+            supporter,
+            instigator);
+
         return Math.Clamp(
             towardInstigator.Trust * 0.40 +
             normalisedOpinion * 0.30 +
-            (100 - rulerWillingness) * 0.30,
+            (100 - rulerWillingness) * 0.30 +
+            blocBonus,
             0,
             100);
+    }
+
+    private static double GetBlocThreatBonus(
+        GameState state,
+        Country country,
+        Character character)
+    {
+        var bloc = state.PoliticalBlocs.FirstOrDefault(candidate =>
+            candidate.IsActive &&
+            ReferenceEquals(candidate.Country, country) &&
+            ReferenceEquals(candidate.Leader, character));
+
+        if (bloc is null)
+            return 0;
+
+        var structuralSupport = bloc.PowerBases.Sum(powerBase =>
+            country.GetPowerBaseStrength(powerBase));
+
+        return Math.Min(
+            18,
+            structuralSupport / 25.0 +
+            bloc.MemberIds.Count * 1.5 +
+            bloc.Cohesion / 20.0);
+    }
+
+    private static double GetBlocAffinityBonus(
+        GameState state,
+        Country country,
+        Character supporter,
+        Character instigator)
+    {
+        var bloc = state.PoliticalBlocs.FirstOrDefault(candidate =>
+            candidate.IsActive &&
+            ReferenceEquals(candidate.Country, country) &&
+            ReferenceEquals(candidate.Leader, instigator));
+
+        if (bloc is null || !bloc.MemberIds.Contains(supporter.Id))
+            return 0;
+
+        return 12 + bloc.Cohesion / 10.0;
     }
 
     public static int GetInfluenceTarget(Country country, Character character)
