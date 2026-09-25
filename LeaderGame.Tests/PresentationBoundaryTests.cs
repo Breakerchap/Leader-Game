@@ -1,6 +1,8 @@
 using LeaderGame.Presentation;
 using LeaderGame.Simulation;
+using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Information;
+using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Scenarios;
 
 namespace LeaderGame.Tests;
