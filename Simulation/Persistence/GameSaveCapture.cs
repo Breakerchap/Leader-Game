@@ -102,6 +102,7 @@ public static partial class GameSaveService
                     CountryId = demand.Country.Id,
                     PowerBase = demand.PowerBase,
                     Type = demand.Type,
+                    SpokespersonId = demand.Spokesperson?.Id,
                     TargetValue = demand.TargetValue,
                     MonthsOpen = demand.MonthsOpen,
                     EscalationLevel = demand.EscalationLevel,
