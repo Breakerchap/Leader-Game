@@ -28,6 +28,8 @@ Implemented systems include:
 - character attributes including competence, ambition, legitimacy, influence, age and health;
 - directional personal relationships with separate opinion, trust and fear;
 - allegiance to countries and political lineages;
+- explicit political power bases: aristocracy, military, merchants, clergy, bureaucracy, workers, peasantry, regional elites, parties and royal families;
+- country-specific power structures and character standing within those power bases;
 - calculated willingness to obey orders;
 - advisers and offices including Treasurer, Marshal and Chancellor;
 - appointment and dismissal of advisers;
@@ -42,6 +44,7 @@ Implemented systems include:
 - population, GDP, treasury, debt and tax revenue;
 - army, administration and court/patronage budgets;
 - administrative efficiency and army readiness responding to funding;
+- tax and budget decisions changing the ruler's backing among affected power bases;
 - deficits, debt and monthly debt interest;
 - fiscal stress feeding into unrest and stability;
 - bilateral diplomatic relations, trust and tension;
@@ -166,6 +169,10 @@ A character can dislike or distrust the ruler and still comply because they are 
 ### Politics is a network
 
 Characters have relationships with one another, not just with the ruler. Coalitions and threats should therefore emerge from groups of people with shared interests or enemies.
+
+### Power must come from somewhere
+
+A character's influence is not only a consequence of holding office. The simulation tracks support from political power bases such as the army, aristocracy, merchants, bureaucracy, clergy, parties and royal family. Different countries give those bases different structural importance, and policy choices can strengthen or weaken the ruler's backing among them.
 
 ### State capacity costs resources
 
