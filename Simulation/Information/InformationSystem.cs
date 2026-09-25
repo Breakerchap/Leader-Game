@@ -669,6 +669,8 @@ internal static class InformationSystem
 
             InformationTopic.ForeignAffairs =>
             [
+                InformationMetric.Population,
+                InformationMetric.Gdp,
                 InformationMetric.DiplomaticRelations,
                 InformationMetric.DiplomaticTrust,
                 InformationMetric.DiplomaticTension
@@ -1011,6 +1013,12 @@ internal static class InformationSystem
             return 0.18;
         }
 
+        if (foreign && metric == InformationMetric.Population)
+            return 0.13;
+
+        if (foreign && metric == InformationMetric.Gdp)
+            return 0.17;
+
         return metric switch
         {
             InformationMetric.Population => 0.08,
@@ -1276,6 +1284,8 @@ internal static class InformationSystem
             ],
             InformationTopic.ForeignAffairs =>
             [
+                InformationMetric.Population,
+                InformationMetric.Gdp,
                 InformationMetric.DiplomaticRelations,
                 InformationMetric.DiplomaticTrust,
                 InformationMetric.DiplomaticTension
