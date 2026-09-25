@@ -97,7 +97,7 @@ public class PresentationBoundaryTests
         Assert.DoesNotContain(
             session.View.Court.Figures,
             figure =>
-                figure.Role is "Marshal" or "Treasurer" or "Chancellor" &&
+                (figure.Role is "Marshal" or "Treasurer" or "Chancellor") &&
                 figure.IsAvailableForOffice);
     }
 
