@@ -1,3 +1,6 @@
+using LeaderGame.Simulation.Orders;
+using LeaderGame.Simulation.Systems;
+
 namespace LeaderGame.Simulation;
 
 public class GameSimulation
@@ -9,29 +12,30 @@ public class GameSimulation
         State = state;
     }
 
+    public void SubmitOrder(Order order)
+    {
+        if (order.Status != OrderStatus.Pending)
+            throw new InvalidOperationException("Only pending orders can be submitted.");
+
+        State.PendingOrders.Add(order);
+    }
+
     public void AdvanceMonth()
     {
         ProcessOrders();
 
-        State.Date.AdvanceMonth();
+        State.Reports.AddRange(EconomySystem.ProcessMonth(State));
+
+        State.Date = State.Date.NextMonth();
     }
 
     private void ProcessOrders()
     {
-        foreach (var order in State.PendingOrders)
+        foreach (var order in State.PendingOrders.ToArray())
         {
-            if (order.HasBeenProcessed)
-                continue;
-
-            // Eventually:
-            // interpret order
-            // decide whether recipient obeys
-            // execute consequences
-            // record outcome
-
-            order.HasBeenProcessed = true;
+            State.Reports.Add(OrderProcessor.Process(State, order));
         }
 
-        State.PendingOrders.RemoveAll(order => order.HasBeenProcessed);
+        State.PendingOrders.RemoveAll(order => order.Status != OrderStatus.Pending);
     }
 }

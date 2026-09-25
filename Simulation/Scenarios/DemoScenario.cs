@@ -1,0 +1,93 @@
+using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Countries;
+using LeaderGame.Simulation.Player;
+
+namespace LeaderGame.Simulation.Scenarios;
+
+public static class DemoScenario
+{
+    public static GameState Create()
+    {
+        var king = new Ruler
+        {
+            Id = 1,
+            FirstName = "Friedrich",
+            LastName = "von Falken",
+            Age = 41,
+            Competence = 64,
+            Ambition = 72,
+            Legitimacy = 78
+        };
+
+        var country = new Country
+        {
+            Id = "falkenreich",
+            Name = "Falkenreich",
+            Population = 1_250_000,
+            Gdp = 85_000_000m,
+            Treasury = 320_000m,
+            ArmySize = 8_200,
+            TaxRate = 0.10m,
+            AdministrativeEfficiency = 0.75m,
+            PublicUnrest = 20,
+            Government = new Government
+            {
+                Type = GovernmentType.FeudalMonarchy,
+                Stability = 67
+            },
+            Ruler = king
+        };
+
+        country.Advisors.Add(new Advisor
+        {
+            Id = 2,
+            FirstName = "Johann",
+            LastName = "Keller",
+            Age = 53,
+            Competence = 84,
+            Ambition = 32,
+            Loyalty = 61,
+            Position = Position.Treasurer
+        });
+
+        country.Advisors.Add(new Advisor
+        {
+            Id = 3,
+            FirstName = "Otto",
+            LastName = "Bauer",
+            Age = 47,
+            Competence = 91,
+            Ambition = 76,
+            Loyalty = 43,
+            Position = Position.Marshal
+        });
+
+        country.Advisors.Add(new Advisor
+        {
+            Id = 4,
+            FirstName = "Konrad",
+            LastName = "Stein",
+            Age = 58,
+            Competence = 73,
+            Ambition = 41,
+            Loyalty = 81,
+            Position = Position.Chancellor
+        });
+
+        var player = new PlayerState
+        {
+            CurrentCharacter = king,
+            Country = country
+        };
+
+        var state = new GameState
+        {
+            Date = new GameDate(1450, 1),
+            Player = player
+        };
+
+        state.Countries.Add(country);
+
+        return state;
+    }
+}
