@@ -1,3 +1,4 @@
+using LeaderGame.Simulation.Campaign;
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Diplomacy;
@@ -8,6 +9,7 @@ using LeaderGame.Simulation.Player;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Randomness;
 using LeaderGame.Simulation.Reports;
+using LeaderGame.Simulation.Scenarios;
 
 namespace LeaderGame.Simulation.Persistence;
 
@@ -89,7 +91,9 @@ public static partial class GameSaveService
                 snapshot.Player.CountryId),
             Lineage = lineage,
             HasLost = snapshot.Player.HasLost,
-            LossReason = snapshot.Player.LossReason
+            LossReason = snapshot.Player.LossReason,
+            HasWon = snapshot.Player.HasWon,
+            WinReason = snapshot.Player.WinReason
         };
 
         var state = new GameState
@@ -105,6 +109,11 @@ public static partial class GameSaveService
                 State = snapshot.InformationRandomState
             }
         };
+
+        state.Campaign = RestoreCampaign(
+            snapshot.Campaign,
+            player.Country.Id,
+            state.Date);
 
         foreach (var country in snapshot.Countries)
             state.Countries.Add(RequireCountry(countries, country.Id));
@@ -338,6 +347,55 @@ public static partial class GameSaveService
         }
 
         return state;
+    }
+
+    private static CampaignState RestoreCampaign(
+        CampaignSnapshot? saved,
+        string playerCountryId,
+        GameDate currentDate)
+    {
+        if (saved is null)
+        {
+            var scenarioId = playerCountryId switch
+            {
+                ScenarioCatalog.ValeriaId => ScenarioCatalog.ValeriaId,
+                _ => ScenarioCatalog.FalkenreichId
+            };
+
+            return ScenarioCatalog.CreateCampaign(
+                scenarioId,
+                currentDate);
+        }
+
+        var campaign = new CampaignState
+        {
+            ScenarioId = saved.ScenarioId,
+            Title = saved.Title,
+            Summary = saved.Summary,
+            StartedOn = GameDate(saved.StartedOn)
+        };
+
+        foreach (var objective in saved.Objectives)
+        {
+            campaign.Objectives.Add(new CampaignObjective
+            {
+                Id = objective.Id,
+                Title = objective.Title,
+                Description = objective.Description,
+                Type = objective.Type,
+                TargetValue = objective.TargetValue,
+                SecondaryTargetValue = objective.SecondaryTargetValue,
+                RelatedCountryId = objective.RelatedCountryId,
+                RequiredMonths = objective.RequiredMonths,
+                ProgressMonths = objective.ProgressMonths,
+                IsCompleted = objective.IsCompleted,
+                CompletedOn = objective.CompletedOn is { } completed
+                    ? GameDate(completed)
+                    : null
+            });
+        }
+
+        return campaign;
     }
 
     private static Character RestoreCharacter(CharacterSnapshot saved)
