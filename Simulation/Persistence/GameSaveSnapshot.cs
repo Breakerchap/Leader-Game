@@ -123,6 +123,8 @@ public sealed class PlayerSnapshot
     public bool HasWon { get; init; }
 
     public string? WinReason { get; init; }
+
+    public int ElectionsWon { get; init; }
 }
 
 public sealed class CharacterSnapshot
@@ -201,6 +203,12 @@ public sealed class CountrySnapshot
     public GovernmentType GovernmentType { get; init; }
 
     public double GovernmentStability { get; init; }
+
+    public int ElectionIntervalMonths { get; init; }
+
+    public int MonthsUntilElection { get; init; }
+
+    public int ElectionCampaignMonths { get; init; }
 
     public int RulerId { get; init; }
 
