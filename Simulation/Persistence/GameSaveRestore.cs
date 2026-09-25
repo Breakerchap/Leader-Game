@@ -46,7 +46,23 @@ public static partial class GameSaveService
                 Government = new Government
                 {
                     Type = saved.GovernmentType,
-                    Stability = saved.GovernmentStability
+                    Stability = saved.GovernmentStability,
+                    ElectionIntervalMonths =
+                        saved.ElectionIntervalMonths > 0
+                            ? saved.ElectionIntervalMonths
+                            : saved.GovernmentType == GovernmentType.Republic
+                                ? 48
+                                : 0,
+                    MonthsUntilElection =
+                        saved.MonthsUntilElection > 0
+                            ? saved.MonthsUntilElection
+                            : saved.GovernmentType == GovernmentType.Republic
+                                ? 12
+                                : 0,
+                    ElectionCampaignMonths =
+                        saved.ElectionCampaignMonths > 0
+                            ? saved.ElectionCampaignMonths
+                            : 6
                 },
                 Ruler = RequireCharacter(characters, saved.RulerId)
             };
@@ -93,7 +109,8 @@ public static partial class GameSaveService
             HasLost = snapshot.Player.HasLost,
             LossReason = snapshot.Player.LossReason,
             HasWon = snapshot.Player.HasWon,
-            WinReason = snapshot.Player.WinReason
+            WinReason = snapshot.Player.WinReason,
+            ElectionsWon = snapshot.Player.ElectionsWon
         };
 
         var state = new GameState
