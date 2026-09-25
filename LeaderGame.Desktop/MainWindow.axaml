@@ -803,6 +803,88 @@
             </Grid>
 
             <StackPanel Spacing="8">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel>
+                  <TextBlock Text="ACTIVE DEMANDS" Classes="eyebrow" Foreground="#D8A657" />
+                  <TextBlock Text="Petitions that require a political answer" FontWeight="SemiBold" />
+                </StackPanel>
+                <Border Grid.Column="1" Classes="badge" Background="#2A2115" VerticalAlignment="Center">
+                  <TextBlock
+                      Text="{Binding View.Court.Demands.Count, StringFormat='{}{0} active'}"
+                      Foreground="#E1B66F"
+                      FontSize="11" />
+                </Border>
+              </Grid>
+
+              <ItemsControl ItemsSource="{Binding View.Court.Demands}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="card" Margin="0,0,0,8" Background="#1A1712" BorderBrush="#5B492B">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <StackPanel Spacing="6">
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Classes="badge" Background="#3A2C16">
+                              <TextBlock
+                                  Text="{Binding Group}"
+                                  FontSize="10"
+                                  FontWeight="Bold"
+                                  Foreground="#E1B66F" />
+                            </Border>
+                            <TextBlock
+                                Text="{Binding Spokesperson}"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                Foreground="#D7C9AE" />
+                          </StackPanel>
+                          <TextBlock
+                              Text="{Binding Request}"
+                              FontSize="15"
+                              FontWeight="SemiBold"
+                              TextWrapping="Wrap" />
+                          <WrapPanel Orientation="Horizontal">
+                            <TextBlock
+                                Text="{Binding Age}"
+                                Margin="0,0,14,0"
+                                FontSize="11"
+                                Classes="muted" />
+                            <TextBlock
+                                Text="{Binding Escalation, StringFormat='Pressure: {0}'}"
+                                Margin="0,0,14,0"
+                                FontSize="11"
+                                Foreground="#D8A657" />
+                            <TextBlock
+                                Text="{Binding ResponseStatus}"
+                                FontSize="11"
+                                Foreground="#C8ACE1" />
+                          </WrapPanel>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                          <Button
+                              Classes="action politics"
+                              Command="{Binding #Root.DataContext.ConcedePoliticalDemandCommand}"
+                              CommandParameter="{Binding}"
+                              Content="Concede" />
+                          <Button
+                              Classes="action"
+                              Command="{Binding #Root.DataContext.RejectPoliticalDemandCommand}"
+                              CommandParameter="{Binding}"
+                              Content="Reject" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <TextBlock
+                  Text="Conceding queues the actual policy order. The group remains dissatisfied until the responsible official really delivers it. Rejecting closes the petition but creates an immediate grievance."
+                  TextWrapping="Wrap"
+                  FontSize="11"
+                  Classes="muted" />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
               <TextBlock Text="OFFICES" Classes="eyebrow" />
               <ItemsControl ItemsSource="{Binding View.Court.Offices}">
                 <ItemsControl.ItemsPanel>
@@ -904,7 +986,7 @@
                                        Foreground="{Binding Trust, Converter={StaticResource SemanticStatusBrush}}" />
                           </WrapPanel>
                         </StackPanel>
-                        <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="5">
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="6">
                           <Border Classes="badge" Background="#171E27">
                             <TextBlock
                                 Text="{Binding Risk, StringFormat='Risk {0}'}"
@@ -917,6 +999,31 @@
                               FontSize="11"
                               HorizontalAlignment="Right"
                               Foreground="{Binding Obedience, Converter={StaticResource SemanticStatusBrush}}" />
+                          <WrapPanel
+                              Orientation="Horizontal"
+                              HorizontalAlignment="Right"
+                              Margin="0,3,0,0">
+                            <Button
+                                IsVisible="{Binding CanInvestigate}"
+                                Margin="0,0,6,0"
+                                Classes="action intelligence"
+                                Command="{Binding #Root.DataContext.InvestigateCharacterCommand}"
+                                CommandParameter="{Binding}"
+                                Content="Investigate" />
+                            <Button
+                                IsVisible="{Binding CanArrest}"
+                                Margin="0,0,6,0"
+                                Classes="action military"
+                                Command="{Binding #Root.DataContext.ArrestCharacterCommand}"
+                                CommandParameter="{Binding}"
+                                Content="Arrest" />
+                            <Button
+                                IsVisible="{Binding CanRelease}"
+                                Classes="action politics"
+                                Command="{Binding #Root.DataContext.ReleasePrisonerCommand}"
+                                CommandParameter="{Binding}"
+                                Content="Release" />
+                          </WrapPanel>
                         </StackPanel>
                       </Grid>
                     </Border>
