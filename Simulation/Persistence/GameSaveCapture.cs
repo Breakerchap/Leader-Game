@@ -99,6 +99,7 @@ public static partial class GameSaveService
             PowerBaseDemands = state.PowerBaseDemands
                 .Select(demand => new PowerBaseDemandSnapshot
                 {
+                    Id = demand.Id,
                     CountryId = demand.Country.Id,
                     PowerBase = demand.PowerBase,
                     Type = demand.Type,
@@ -106,6 +107,11 @@ public static partial class GameSaveService
                     TargetValue = demand.TargetValue,
                     MonthsOpen = demand.MonthsOpen,
                     EscalationLevel = demand.EscalationLevel,
+                    AcknowledgedByRuler = demand.AcknowledgedByRuler,
+                    IsRejected = demand.IsRejected,
+                    ResolvedOn = demand.ResolvedOn is { } resolvedOn
+                        ? Date(resolvedOn)
+                        : null,
                     IsResolved = demand.IsResolved
                 })
                 .ToList(),
