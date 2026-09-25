@@ -1,5 +1,6 @@
 using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Diplomacy;
 using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Military;
