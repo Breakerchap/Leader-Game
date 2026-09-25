@@ -1605,7 +1605,8 @@ static void PrintCourt(GameState state)
         }
 
         var strongestBases = Enum.GetValues<PowerBaseType>()
-            .OrderByDescending(character.GetPowerBaseStanding)
+            .OrderByDescending(powerBase =>
+                character.GetPowerBaseStanding(powerBase))
             .Take(2)
             .Select(powerBase =>
                 $"{FormatPowerBase(powerBase)} ({DescribeBacking(character.GetPowerBaseStanding(powerBase))})");
