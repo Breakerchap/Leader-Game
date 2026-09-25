@@ -4,6 +4,7 @@ using LeaderGame.Simulation.Diplomacy;
 using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
+using LeaderGame.Simulation.Persistence;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Reports;
 using LeaderGame.Simulation.Scenarios;
@@ -19,7 +20,7 @@ namespace LeaderGame.Presentation;
 /// </summary>
 public sealed class GameSession
 {
-    private readonly GameSimulation _simulation;
+    private GameSimulation _simulation;
     private string _statusMessage = "Inherited briefings loaded.";
 
     public GameSession()
@@ -34,6 +35,67 @@ public sealed class GameSession
     }
 
     public PlayerViewState View { get; private set; }
+
+    public static string DefaultSavePath
+    {
+        get
+        {
+            var root = Environment.GetFolderPath(
+                Environment.SpecialFolder.LocalApplicationData);
+
+            if (string.IsNullOrWhiteSpace(root))
+                root = AppContext.BaseDirectory;
+
+            return Path.Combine(
+                root,
+                "LeaderGame",
+                "saves",
+                "campaign.json");
+        }
+    }
+
+    public bool DefaultSaveExists => File.Exists(DefaultSavePath);
+
+    public void SaveDefault()
+    {
+        try
+        {
+            GameSaveService.SaveToFile(
+                _simulation.State,
+                DefaultSavePath);
+
+            Refresh(
+                $"Campaign saved at {_simulation.State.Date}.");
+        }
+        catch (Exception exception)
+        {
+            Refresh($"Save failed: {exception.Message}");
+        }
+    }
+
+    public void LoadDefault()
+    {
+        if (!DefaultSaveExists)
+        {
+            Refresh("No saved campaign exists in the default slot.");
+            return;
+        }
+
+        try
+        {
+            var state = GameSaveService.LoadFromFile(
+                DefaultSavePath);
+
+            _simulation = new GameSimulation(state);
+            _statusMessage =
+                $"Campaign loaded from {state.Date}.";
+            View = BuildView();
+        }
+        catch (Exception exception)
+        {
+            Refresh($"Load failed: {exception.Message}");
+        }
+    }
 
     public void AdvanceMonth()
     {
