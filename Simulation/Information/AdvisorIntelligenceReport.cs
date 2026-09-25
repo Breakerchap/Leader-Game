@@ -26,4 +26,11 @@ public sealed class AdvisorIntelligenceReport
     public required string Summary { get; init; }
 
     public List<KnownInformation> Facts { get; } = [];
+
+    /// <summary>
+    /// Things the player can legitimately notice about the report itself, such
+    /// as missing sections or conflict with an earlier report. These do not
+    /// reveal which report is actually correct.
+    /// </summary>
+    public List<string> Caveats { get; } = [];
 }
