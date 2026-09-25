@@ -503,8 +503,35 @@ internal static class InformationSystem
 
         report.Facts.AddRange(facts);
 
+        if (report.Facts.Count == 0)
+        {
+            report.Caveats.Add(
+                "The report contains no usable quantitative findings despite the tasking.");
+        }
+
         foreach (var fact in report.Facts)
+        {
+            var previous = state.Knowledge.Get(
+                fact.Key.Metric,
+                fact.Key.SubjectCountryId,
+                fact.Key.RelatedCountryId);
+
+            if (previous is not null)
+            {
+                var disagreement = Math.Abs(fact.Estimate - previous.Estimate);
+                var tolerance = Math.Max(1, Math.Max(fact.Margin, previous.Margin));
+
+                if (disagreement > tolerance * 1.25)
+                {
+                    report.Caveats.Add(
+                        $"{FormatMetricForCaveat(fact.Key.Metric)} differs materially from " +
+                        $"the previous estimate supplied by {previous.SourceAdvisorName}. " +
+                        "The available reports do not establish which estimate is closer to the truth.");
+                }
+            }
+
             state.Knowledge.Update(fact);
+        }
 
         state.AdvisorReports.Add(report);
         return report;
@@ -562,6 +589,16 @@ internal static class InformationSystem
 
         foreach (var metric in metrics)
         {
+            if (ShouldOmitFact(
+                    state,
+                    advisor,
+                    willingness,
+                    metric,
+                    wasRequested))
+            {
+                continue;
+            }
+
             var relatedId = metric is InformationMetric.DiplomaticRelations
                 or InformationMetric.DiplomaticTrust
                 or InformationMetric.DiplomaticTension
@@ -600,6 +637,33 @@ internal static class InformationSystem
                     wasRequested);
             }
         }
+    }
+
+    private static bool ShouldOmitFact(
+        GameState state,
+        Character advisor,
+        double willingness,
+        InformationMetric metric,
+        bool wasRequested)
+    {
+        if (willingness >= 50)
+            return false;
+
+        var oppositionAligned =
+            IsOppositionAligned(state, state.Player.Country, advisor);
+
+        var chance =
+            Math.Max(0, 45 - willingness) / 100.0 * 0.28 +
+            (oppositionAligned ? 0.06 : 0);
+
+        if (wasRequested)
+            chance *= 0.65;
+
+        if (metric is InformationMetric.Population or InformationMetric.Gdp)
+            chance *= 0.50;
+
+        return state.InformationRandom.NextDouble() <
+               Math.Clamp(chance, 0, 0.22);
     }
 
     private static KnownInformation CreateFact(
@@ -1220,6 +1284,23 @@ internal static class InformationSystem
             InformationTopic.DomesticPolitics =>
                 $"An assessment of domestic stability and political backing using {freshness}.",
             _ => $"A report based on {freshness}."
+        };
+    }
+
+    private static string FormatMetricForCaveat(InformationMetric metric)
+    {
+        return metric switch
+        {
+            InformationMetric.Gdp => "GDP",
+            InformationMetric.ArmySize => "Army strength",
+            InformationMetric.ArmyReadiness => "Army readiness",
+            InformationMetric.GovernmentStability => "Government stability",
+            InformationMetric.PoliticalBacking => "Political backing",
+            InformationMetric.DiplomaticRelations => "Diplomatic relations",
+            InformationMetric.DiplomaticTrust => "Diplomatic trust",
+            InformationMetric.DiplomaticTension => "Diplomatic tension",
+            InformationMetric.WarScore => "Campaign position",
+            _ => metric.ToString()
         };
     }
 
