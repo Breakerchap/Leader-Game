@@ -31,25 +31,6 @@ internal static class EconomySystem
             ApplyFundingConsequences(country);
             ApplyDebtPressure(country);
 
-            if (ReferenceEquals(country, state.Player.Country))
-            {
-                var debtText = country.Debt > 0
-                    ? $" Debt now stands at {country.Debt:N0}."
-                    : string.Empty;
-
-                var tradeText = tradeIncome > 0
-                    ? $" Trade agreements contributed {tradeIncome:N0}."
-                    : string.Empty;
-
-                yield return new SimulationReport(
-                    state.Date,
-                    ReportCategory.Economy,
-                    balance >= 0 ? "Monthly budget surplus" : "Monthly budget deficit",
-                    $"{country.Name} collected {taxRevenue:N0} in tax revenue and spent " +
-                    $"{expenses:N0}: administration {administrationCost:N0}, army " +
-                    $"{armyCost:N0}, court and patronage {courtCost:N0}, debt interest " +
-                    $"{interest:N0}. Monthly balance: {balance:N0}.{tradeText}{debtText}");
-            }
         }
     }
 
