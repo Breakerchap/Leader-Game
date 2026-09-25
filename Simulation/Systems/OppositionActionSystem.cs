@@ -149,7 +149,7 @@ internal static class OppositionActionSystem
         var averageStrength = bloc.PowerBases.Count == 0
             ? 50.0
             : bloc.PowerBases.Average(
-                country.GetPowerBaseStrength);
+                powerBase => country.GetPowerBaseStrength(powerBase));
 
         country.PublicUnrest += Math.Clamp(
             averageStrength / 90.0,
@@ -208,7 +208,7 @@ internal static class OppositionActionSystem
                 var backing = bloc.PowerBases.Count == 0
                     ? 50.0
                     : bloc.PowerBases.Average(
-                        character.GetPowerBaseStanding);
+                        powerBase => character.GetPowerBaseStanding(powerBase));
 
                 return towardLeader.Trust * 0.35 +
                        (towardLeader.Opinion + 100) / 2.0 * 0.20 +
