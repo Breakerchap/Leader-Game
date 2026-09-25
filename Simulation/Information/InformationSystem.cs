@@ -13,7 +13,7 @@ public sealed record InformationRequestResult(
     string Details,
     InformationRequest? Request = null);
 
-internal static class InformationSystem
+public static class InformationSystem
 {
     public static void CaptureTruthSnapshot(
         GameState state,
