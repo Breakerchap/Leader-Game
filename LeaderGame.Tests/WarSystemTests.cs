@@ -1,5 +1,6 @@
 using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Randomness;
@@ -110,8 +111,8 @@ public class WarSystemTests
 
     private static void DeclareWar(
         GameState state,
-        Countries.Country source,
-        Countries.Country target)
+        Country source,
+        Country target)
     {
         var simulation = new GameSimulation(state);
         var chancellor = source.GetOfficeHolder(Position.Chancellor)!;
