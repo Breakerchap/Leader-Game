@@ -52,7 +52,8 @@ public static partial class GameSaveService
                 HasLost = state.Player.HasLost,
                 LossReason = state.Player.LossReason,
                 HasWon = state.Player.HasWon,
-                WinReason = state.Player.WinReason
+                WinReason = state.Player.WinReason,
+                ElectionsWon = state.Player.ElectionsWon
             },
             Campaign = state.Campaign is null
                 ? null
@@ -244,6 +245,9 @@ public static partial class GameSaveService
             LastMonthlyBalance = country.LastMonthlyBalance,
             GovernmentType = country.Government.Type,
             GovernmentStability = country.Government.Stability,
+            ElectionIntervalMonths = country.Government.ElectionIntervalMonths,
+            MonthsUntilElection = country.Government.MonthsUntilElection,
+            ElectionCampaignMonths = country.Government.ElectionCampaignMonths,
             RulerId = country.Ruler.Id,
             NeighborIds = country.NeighborIds.ToList(),
             SuccessionOrderIds = country.SuccessionOrder
