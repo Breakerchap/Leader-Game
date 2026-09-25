@@ -154,16 +154,33 @@ static void PrintDashboard(GameState state)
         $"Political backing: {PoliticalCalculations.GetPowerBaseInfluence(country, country.Ruler):F0}/100");
     Console.WriteLine($"Pending orders: {state.PendingOrders.Count}");
 
-    var activeDomesticDemand = state.PowerBaseDemands.FirstOrDefault(demand =>
-        !demand.IsResolved &&
-        ReferenceEquals(demand.Country, country));
+    var activeDomesticDemands = state.PowerBaseDemands
+        .Where(demand =>
+            !demand.IsResolved &&
+            ReferenceEquals(demand.Country, country))
+        .OrderByDescending(demand => demand.EscalationLevel)
+        .ThenByDescending(demand => demand.MonthsOpen)
+        .ToList();
 
-    if (activeDomesticDemand is not null)
+    if (activeDomesticDemands.Count > 0)
+    {
+        var urgent = activeDomesticDemands[0];
+
+        Console.WriteLine(
+            $"Domestic pressures: {activeDomesticDemands.Count} — most urgent: " +
+            $"{FormatPowerBase(urgent.PowerBase)} wants {DescribeDemandBrief(urgent)} " +
+            $"({urgent.MonthsOpen} month(s) open, escalation {urgent.EscalationLevel})");
+    }
+
+    var activeBloc = state.PoliticalBlocs.FirstOrDefault(bloc =>
+        bloc.IsActive &&
+        ReferenceEquals(bloc.Country, country));
+
+    if (activeBloc is not null)
     {
         Console.WriteLine(
-            $"Domestic pressure: {FormatPowerBase(activeDomesticDemand.PowerBase)} — " +
-            $"{DescribeDemandBrief(activeDomesticDemand)} " +
-            $"({activeDomesticDemand.MonthsOpen} month(s) open)");
+            $"Organised opposition: {activeBloc.Leader.FullName} — " +
+            $"{FormatPowerBaseList(activeBloc.PowerBases)}, cohesion {activeBloc.Cohesion:F0}/100");
     }
 
     var activeWars = state.Wars
@@ -1306,20 +1323,56 @@ static void PrintPoliticalGroups(GameState state)
             $"Strength {strength,3}  Backing {backing,3}  Best rival: {rivalText}");
     }
 
-    var demand = state.PowerBaseDemands.FirstOrDefault(candidate =>
-        !candidate.IsResolved &&
-        ReferenceEquals(candidate.Country, country));
+    var demands = state.PowerBaseDemands
+        .Where(candidate =>
+            !candidate.IsResolved &&
+            ReferenceEquals(candidate.Country, country))
+        .OrderByDescending(candidate => candidate.EscalationLevel)
+        .ThenByDescending(candidate => candidate.MonthsOpen)
+        .ToList();
 
-    if (demand is not null)
+    if (demands.Count > 0)
     {
         Console.WriteLine();
-        Console.WriteLine("Active demand:");
+        Console.WriteLine("Active demands:");
+
+        foreach (var demand in demands)
+        {
+            Console.WriteLine(
+                $"  {FormatPowerBase(demand.PowerBase),-18} " +
+                $"{DescribeDemandBrief(demand)} — open {demand.MonthsOpen} month(s), " +
+                $"escalation {demand.EscalationLevel}");
+        }
+
         Console.WriteLine(
-            $"  {FormatPowerBase(demand.PowerBase)}: {DescribeDemandBrief(demand)}");
+            "  Meet demands through the normal tax, budget, diplomacy or war controls.");
+    }
+
+    var bloc = state.PoliticalBlocs.FirstOrDefault(candidate =>
+        candidate.IsActive &&
+        ReferenceEquals(candidate.Country, country));
+
+    if (bloc is not null)
+    {
+        var members = country.PoliticalFigures
+            .Where(character => bloc.MemberIds.Contains(character.Id))
+            .Select(character => character.FullName)
+            .ToList();
+
+        Console.WriteLine();
+        Console.WriteLine("Organised opposition:");
         Console.WriteLine(
-            $"  Open {demand.MonthsOpen} month(s); escalation level {demand.EscalationLevel}.");
+            $"  Leader: {bloc.Leader.FullName}   Cohesion {bloc.Cohesion:F0}/100   " +
+            $"Active {bloc.MonthsActive} month(s)");
         Console.WriteLine(
-            "  Meet the demand through the normal tax, budget, diplomacy or war controls.");
+            $"  Backed by: {FormatPowerBaseList(bloc.PowerBases)}");
+        Console.WriteLine(
+            members.Count == 0
+                ? "  No other major political figures are openly aligned with the bloc."
+                : $"  Aligned figures: {string.Join(", ", members)}");
+        Console.WriteLine(
+            "  A bloc is organised opposition, not automatically a coup, but it raises " +
+            "the leader's political threat and makes coordinated action easier.");
     }
 
     Pause();
@@ -1333,6 +1386,23 @@ static string FormatPowerBase(PowerBaseType powerBase)
         PowerBaseType.RoyalFamily => "Royal family",
         _ => powerBase.ToString()
     };
+}
+
+static string FormatPowerBaseList(IEnumerable<PowerBaseType> powerBases)
+{
+    var names = powerBases
+        .Select(FormatPowerBase)
+        .OrderBy(name => name)
+        .ToList();
+
+    if (names.Count == 0)
+        return "no major groups";
+
+    if (names.Count == 1)
+        return names[0];
+
+    return string.Join(", ", names.Take(names.Count - 1)) +
+           " and " + names[^1];
 }
 
 static string DescribeDemandBrief(PowerBaseDemand demand)
