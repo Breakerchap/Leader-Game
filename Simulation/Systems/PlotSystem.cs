@@ -217,14 +217,13 @@ internal static class PlotSystem
                 state.Date,
                 ReportCategory.Politics,
                 $"{instigator.FullName} seizes power",
-                $"A coup against {oldRuler.FullName} succeeds. Political strength " +
-                $"{attack:F0} overcame regime strength {defence:F0}. " +
-                $"{instigator.FullName} now rules {country.Name}.{coalitionText}");
+                $"A coup against {oldRuler.FullName} succeeds. Loyal forces fail to " +
+                $"hold the regime together, and {instigator.FullName} now rules " +
+                $"{country.Name}.{coalitionText}");
         }
 
         plot.Succeeded = false;
 
-        var oldInfluence = instigator.Influence;
         instigator.Position = null;
         instigator.Influence = Math.Max(0, instigator.Influence - 35);
 
@@ -252,10 +251,9 @@ internal static class PlotSystem
             state.Date,
             ReportCategory.Politics,
             $"{instigator.FullName}'s coup collapses",
-            $"{instigator.FullName} failed to overthrow {oldRuler.FullName}: " +
-            $"political strength {attack:F0} against regime strength {defence:F0}. " +
-            $"They lose their office and their influence falls from {oldInfluence} " +
-            $"to {instigator.Influence}.");
+            $"{instigator.FullName} fails to overthrow {oldRuler.FullName}. Loyal " +
+            "forces retain control; the conspirator loses their office and emerges " +
+            "from the failed attempt politically weakened.");
     }
 
     private static double CalculateCoupStrength(
