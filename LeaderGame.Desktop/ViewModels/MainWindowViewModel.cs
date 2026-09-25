@@ -15,6 +15,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _selectedOffice = "Chancellor";
     private string _selectedWarStance = "Balanced";
     private string _selectedPeaceTerms = "WhitePeace";
+    private string _archiveSearchText = string.Empty;
+    private string _selectedArchiveCategory = "All";
     private double _targetTaxPercent;
     private double _targetArmyFundingPercent;
     private double _targetAdministrationFundingPercent;
@@ -247,6 +249,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsForeignAffairsVisible));
             OnPropertyChanged(nameof(IsMilitaryVisible));
             OnPropertyChanged(nameof(IsIntelligenceVisible));
+            OnPropertyChanged(nameof(IsArchiveVisible));
             OnPropertyChanged(nameof(IsPlaceholderVisible));
             OnPropertyChanged(nameof(IsBriefingSelected));
             OnPropertyChanged(nameof(IsGovernmentSelected));
@@ -275,6 +278,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public bool IsIntelligenceVisible => CurrentSection == "Intelligence";
 
+    public bool IsArchiveVisible => CurrentSection == "Archive";
+
     public bool IsPlaceholderVisible =>
         !IsBriefingVisible &&
         !IsGovernmentVisible &&
@@ -282,7 +287,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         !IsEconomyVisible &&
         !IsForeignAffairsVisible &&
         !IsMilitaryVisible &&
-        !IsIntelligenceVisible;
+        !IsIntelligenceVisible &&
+        !IsArchiveVisible;
 
     public bool IsBriefingSelected => CurrentSection == "Briefing";
     public bool IsGovernmentSelected => CurrentSection == "Government";
@@ -425,6 +431,80 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public IReadOnlyList<string> ArchiveCategoryOptions { get; } =
+    [
+        "All",
+        "ADVISER REPORT",
+        "ECONOMY",
+        "MILITARY",
+        "POLITICS",
+        "DIPLOMACY",
+        "ORDER",
+        "PERSONAL",
+        "SYSTEM"
+    ];
+
+    public IReadOnlyList<ArchiveEntryView> ArchiveEntries
+    {
+        get
+        {
+            IEnumerable<ArchiveEntryView> entries = View.Archive.Entries;
+
+            if (!string.Equals(
+                    SelectedArchiveCategory,
+                    "All",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                entries = entries.Where(entry =>
+                    string.Equals(
+                        entry.Category,
+                        SelectedArchiveCategory,
+                        StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(ArchiveSearchText))
+            {
+                var search = ArchiveSearchText.Trim();
+
+                entries = entries.Where(entry =>
+                    entry.Title.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    entry.Details.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    entry.Source.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    entry.Date.Contains(search, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return entries.ToList();
+        }
+    }
+
+    public string ArchiveSearchText
+    {
+        get => _archiveSearchText;
+        set
+        {
+            if (_archiveSearchText == value)
+                return;
+
+            _archiveSearchText = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ArchiveEntries));
+        }
+    }
+
+    public string SelectedArchiveCategory
+    {
+        get => _selectedArchiveCategory;
+        set
+        {
+            if (_selectedArchiveCategory == value)
+                return;
+
+            _selectedArchiveCategory = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ArchiveEntries));
+        }
+    }
+
     public double TargetTaxPercent
     {
         get => _targetTaxPercent;
@@ -528,6 +608,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(SelectedCourtFigure));
         OnPropertyChanged(nameof(HasPendingReports));
         OnPropertyChanged(nameof(HasActiveCampaigns));
+        OnPropertyChanged(nameof(ArchiveEntries));
         _advanceMonthCommand.RaiseCanExecuteChanged();
     }
 
