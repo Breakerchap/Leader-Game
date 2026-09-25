@@ -390,6 +390,8 @@ static void QueueAppointmentOrder(GameSimulation simulation, Country country)
             simulation.State,
             country,
             candidate);
+        var powerBaseInfluence =
+            PoliticalCalculations.GetPowerBaseInfluence(country, candidate);
 
         Console.WriteLine(
             $"[{i + 1}] {candidate.FullName,-20} " +
@@ -397,6 +399,7 @@ static void QueueAppointmentOrder(GameSimulation simulation, Country country)
             $"Amb {candidate.Ambition,3}  " +
             $"Trust {relationship.Trust,3}  " +
             $"Infl {candidate.Influence,3}  " +
+            $"Base {powerBaseInfluence,5:F0}  " +
             $"Threat {threat,5:F0}");
     }
 
