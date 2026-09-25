@@ -182,6 +182,133 @@ public class InformationSystemTests
     }
 
     [Fact]
+    public void OppositionAlignedAdvisor_CanDeliverConfidentSlantedReport()
+    {
+        var state = DemoScenario.Create();
+        var simulation = new GameSimulation(state);
+        var country = state.Player.Country;
+        var treasurer = country.GetOfficeHolder(Position.Treasurer)!;
+
+        var relationship = state.Relationships.GetOrCreate(
+            treasurer,
+            country.Ruler);
+        relationship.Opinion = -100;
+        relationship.Trust = 0;
+        relationship.Fear = 0;
+        treasurer.Ambition = 100;
+        treasurer.SetAllegiance(
+            PoliticalKeys.Country(country.Id),
+            0);
+
+        country.SetPowerBaseStrength(PowerBaseType.Merchants, 100);
+        country.SetPowerBaseStrength(PowerBaseType.Bureaucracy, 100);
+        country.Ruler.SetPowerBaseStanding(PowerBaseType.Merchants, 0);
+        country.Ruler.SetPowerBaseStanding(PowerBaseType.Bureaucracy, 0);
+        treasurer.SetPowerBaseStanding(PowerBaseType.Merchants, 100);
+        treasurer.SetPowerBaseStanding(PowerBaseType.Bureaucracy, 100);
+
+        var bloc = new PoliticalBloc
+        {
+            Country = country,
+            Leader = treasurer,
+            Cohesion = 90
+        };
+        bloc.PowerBases.UnionWith(
+            [PowerBaseType.Merchants, PowerBaseType.Bureaucracy]);
+        state.PoliticalBlocs.Add(bloc);
+
+        state.Date = new GameDate(1450, 2);
+        state.InformationRequests.Add(new InformationRequest
+        {
+            Topic = InformationTopic.Economy,
+            Advisor = treasurer,
+            SubjectCountry = country,
+            RequestedOn = new GameDate(1450, 1),
+            RemainingMonths = 1,
+            WillingnessAtRequest = 0
+        });
+
+        // Per fact: do not omit, zero ordinary noise, then force deliberate
+        // distortion. Opposition alignment supplies the direction.
+        state.InformationRandom = new PatternRandom(1.0, 0.5, 0.5, 0.0);
+
+        simulation.AdvanceMonth();
+
+        var report = state.AdvisorReports.Last(candidate =>
+            candidate.WasRequested &&
+            candidate.Topic == InformationTopic.Economy);
+
+        var treasury = report.Facts.Single(fact =>
+            fact.Key.Metric == InformationMetric.Treasury);
+
+        Assert.True(treasury.Estimate < (double)country.Treasury);
+        Assert.True(treasury.ReportedConfidence >= 20);
+    }
+
+    [Fact]
+    public void HostileAdvisor_CanOmitRequestedFindingsEntirely()
+    {
+        var state = DemoScenario.Create();
+        var simulation = new GameSimulation(state);
+        var country = state.Player.Country;
+        var treasurer = country.GetOfficeHolder(Position.Treasurer)!;
+
+        var relationship = state.Relationships.GetOrCreate(
+            treasurer,
+            country.Ruler);
+        relationship.Opinion = -100;
+        relationship.Trust = 0;
+        relationship.Fear = 0;
+        treasurer.Ambition = 100;
+        treasurer.SetAllegiance(
+            PoliticalKeys.Country(country.Id),
+            0);
+
+        state.Date = new GameDate(1450, 2);
+        state.InformationRequests.Add(new InformationRequest
+        {
+            Topic = InformationTopic.Economy,
+            Advisor = treasurer,
+            SubjectCountry = country,
+            RequestedOn = new GameDate(1450, 1),
+            RemainingMonths = 1,
+            WillingnessAtRequest = 0
+        });
+
+        state.InformationRandom = new ConstantRandom(0.0);
+
+        simulation.AdvanceMonth();
+
+        var report = state.AdvisorReports.Last(candidate =>
+            candidate.WasRequested &&
+            candidate.Topic == InformationTopic.Economy);
+
+        Assert.Empty(report.Facts);
+        Assert.Contains(
+            report.Caveats,
+            caveat => caveat.Contains(
+                "no usable quantitative findings",
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void StaleKnowledge_CanPromptUnsolicitedAdvisorReport()
+    {
+        var state = DemoScenario.Create();
+        var initialReports = state.AdvisorReports.Count;
+
+        state.Date = new GameDate(1451, 1);
+        state.InformationRandom = new ConstantRandom(0.0);
+
+        new GameSimulation(state).AdvanceMonth();
+
+        Assert.True(state.AdvisorReports.Count > initialReports);
+        Assert.Contains(
+            state.AdvisorReports.Skip(initialReports),
+            report => !report.WasRequested);
+    }
+
+    [Fact]
     public void InformationRandomness_DoesNotPerturbPhysicalRandomStream()
     {
         var first = DemoScenario.Create();
@@ -214,6 +341,27 @@ public class InformationSystemTests
         Assert.Equal(
             first.Random.NextDouble(),
             second.Random.NextDouble());
+    }
+
+    private sealed class PatternRandom : IRandomSource
+    {
+        private readonly double[] _values;
+        private int _index;
+
+        public PatternRandom(params double[] values)
+        {
+            _values = values;
+        }
+
+        public double NextDouble()
+        {
+            if (_values.Length == 0)
+                return 1.0;
+
+            var value = _values[_index % _values.Length];
+            _index++;
+            return value;
+        }
     }
 
     private sealed class ConstantRandom : IRandomSource
