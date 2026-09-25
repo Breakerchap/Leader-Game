@@ -57,6 +57,25 @@ internal static class ElectionSystem
         return reports;
     }
 
+    public static Character? GetPlayerLineageNominee(
+        GameState state,
+        Country country)
+    {
+        if (!ReferenceEquals(country, state.Player.Country) ||
+            state.Player.Lineage.Type != PoliticalLineageType.Party)
+        {
+            return null;
+        }
+
+        return country.PoliticalFigures
+            .Where(character =>
+                character.IsPoliticallyActive &&
+                state.Player.Lineage.Contains(character))
+            .OrderByDescending(candidate =>
+                GetBaseElectionScore(state, country, candidate))
+            .FirstOrDefault();
+    }
+
     public static IReadOnlyList<Character> GetCandidateField(
         GameState state,
         Country country)
@@ -73,11 +92,9 @@ internal static class ElectionSystem
         if (ReferenceEquals(country, state.Player.Country) &&
             state.Player.Lineage.Type == PoliticalLineageType.Party)
         {
-            var nominee = active
-                .Where(state.Player.Lineage.Contains)
-                .OrderByDescending(candidate =>
-                    GetBaseElectionScore(state, country, candidate))
-                .FirstOrDefault();
+            var nominee = GetPlayerLineageNominee(
+                state,
+                country);
 
             var challengers = active
                 .Where(candidate =>
@@ -147,14 +164,23 @@ internal static class ElectionSystem
             _ => $"{country.Name}'s election approaches"
         };
 
+        var nominee = GetPlayerLineageNominee(
+            state,
+            country);
+
+        var lineageText = nominee is null
+            ? string.Empty
+            : $" {nominee.FullName} is the {state.Player.Lineage.Name} nominee.";
+
         return new SimulationReport(
             state.Date,
             ReportCategory.Politics,
             title,
             $"The constitutional election is {monthsRemaining} " +
             $"{(monthsRemaining == 1 ? "month" : "months")} away. " +
-            $"The visible candidate field is {names}. " +
-            "Political backing can still shift before the vote.");
+            $"The visible candidate field is {names}." +
+            lineageText +
+            " Political backing can still shift before the vote.");
     }
 
     private static SimulationReport ResolveElection(
