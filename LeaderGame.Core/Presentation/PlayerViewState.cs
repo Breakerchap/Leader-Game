@@ -21,6 +21,19 @@ public sealed record BriefingItemView(
     string Meta,
     bool NeedsAttention);
 
+public sealed record PendingOrderView(
+    Guid Id,
+    string Type,
+    string Description,
+    string Recipient,
+    string IssuedOn);
+
+public sealed record OrderOutcomeView(
+    string Date,
+    string Title,
+    string Details,
+    bool NeedsAttention);
+
 public sealed record PendingInquiryView(
     string Advisor,
     string Topic,
@@ -176,6 +189,8 @@ public sealed record PlayerViewState(
     string? LossReason,
     int PendingOrders,
     int PendingReports,
+    IReadOnlyList<PendingOrderView> PendingOrderDetails,
+    IReadOnlyList<OrderOutcomeView> RecentOrderOutcomes,
     IReadOnlyList<MetricCardView> Metrics,
     IReadOnlyList<AdvisorCardView> Advisors,
     IReadOnlyList<BriefingItemView> Briefings,
