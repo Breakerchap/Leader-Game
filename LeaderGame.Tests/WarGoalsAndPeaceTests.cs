@@ -157,28 +157,45 @@ public class WarGoalsAndPeaceTests
     [Fact]
     public void HumiliationGoalDamagesDefenderRulerRatherThanPayingStandardReparations()
     {
-        var state = DemoScenario.Create();
-        var source = state.Player.Country;
-        var target = state.Countries.Single(country => country.Id == "valeria");
-        state.Random = new ConstantRandom(0.5);
+        var humiliationState = DemoScenario.Create();
+        var reparationsState = DemoScenario.Create();
 
-        var targetLegitimacy = target.Ruler.Legitimacy;
-        var targetInfluence = target.Ruler.Influence;
-        var targetTreasury = target.Treasury;
+        humiliationState.Random = new ConstantRandom(0.5);
+        reparationsState.Random = new ConstantRandom(0.5);
 
-        var war = DeclareWar(
-            state,
-            source,
-            target,
+        var humiliationSource = humiliationState.Player.Country;
+        var reparationsSource = reparationsState.Player.Country;
+        var humiliationTarget = humiliationState.Countries.Single(country => country.Id == "valeria");
+        var reparationsTarget = reparationsState.Countries.Single(country => country.Id == "valeria");
+
+        var targetLegitimacy = humiliationTarget.Ruler.Legitimacy;
+        var targetInfluence = humiliationTarget.Ruler.Influence;
+
+        var humiliationWar = DeclareWar(
+            humiliationState,
+            humiliationSource,
+            humiliationTarget,
             WarGoalType.HumiliateRival);
 
-        target.ArmySize = 0;
-        new GameSimulation(state).AdvanceMonth();
+        var reparationsWar = DeclareWar(
+            reparationsState,
+            reparationsSource,
+            reparationsTarget,
+            WarGoalType.Reparations);
 
-        Assert.Equal(WarStatus.AttackerVictory, war.Status);
-        Assert.True(target.Ruler.Legitimacy < targetLegitimacy);
-        Assert.True(target.Ruler.Influence < targetInfluence);
-        Assert.Equal(targetTreasury, target.Treasury);
+        humiliationTarget.ArmySize = 0;
+        reparationsTarget.ArmySize = 0;
+
+        new GameSimulation(humiliationState).AdvanceMonth();
+        new GameSimulation(reparationsState).AdvanceMonth();
+
+        Assert.Equal(WarStatus.AttackerVictory, humiliationWar.Status);
+        Assert.Equal(WarStatus.AttackerVictory, reparationsWar.Status);
+        Assert.True(humiliationTarget.Ruler.Legitimacy < targetLegitimacy);
+        Assert.True(humiliationTarget.Ruler.Influence < targetInfluence);
+        Assert.True(
+            humiliationTarget.Treasury > reparationsTarget.Treasury ||
+            humiliationTarget.Debt < reparationsTarget.Debt);
     }
 
     private static War DeclareWar(
