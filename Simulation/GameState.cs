@@ -1,5 +1,6 @@
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
+using LeaderGame.Simulation.Diplomacy;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Player;
 using LeaderGame.Simulation.Politics;
@@ -22,6 +23,8 @@ public class GameState
 
     public RelationshipGraph Relationships { get; } = new();
 
+    public DiplomaticGraph Diplomacy { get; } = new();
+
     /// <summary>
     /// Seeded simulation randomness. Tests and future save loading can replace
     /// or restore this source without changing simulation systems.
@@ -29,4 +32,7 @@ public class GameState
     public IRandomSource Random { get; set; } = new SimulationRandom(42);
 
     public required PlayerState Player { get; set; }
+
+    public Country? FindCountry(string id) =>
+        Countries.FirstOrDefault(country => country.Id == id);
 }

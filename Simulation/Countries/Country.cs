@@ -74,6 +74,8 @@ public class Country
 
     public decimal LastMonthlyTaxRevenue { get; internal set; }
 
+    public decimal LastMonthlyTradeIncome { get; internal set; }
+
     public decimal LastMonthlyExpenses { get; internal set; }
 
     public decimal LastMonthlyDebtInterest { get; internal set; }
@@ -83,6 +85,12 @@ public class Country
     public required Government Government { get; set; }
 
     public required Character Ruler { get; set; }
+
+    /// <summary>
+    /// Country IDs sharing a direct land or strategically immediate border.
+    /// This is topology, not an alliance or relationship.
+    /// </summary>
+    public HashSet<string> NeighborIds { get; } = new(StringComparer.Ordinal);
 
     public List<Character> SuccessionOrder { get; } = [];
 
@@ -115,4 +123,7 @@ public class Country
 
     public bool ContainsPoliticalFigure(Character character) =>
         PoliticalFigures.Contains(character);
+
+    public bool IsNeighbor(Country other) =>
+        NeighborIds.Contains(other.Id);
 }
