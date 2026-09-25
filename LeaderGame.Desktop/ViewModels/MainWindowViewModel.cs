@@ -24,6 +24,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     private readonly RelayCommand _advanceMonthCommand;
     private readonly RelayCommand _loadCommand;
+    private readonly RelayCommand _recoverAutosaveCommand;
 
     public MainWindowViewModel()
     {
@@ -61,6 +62,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 _advanceMonthCommand.RaiseCanExecuteChanged();
             },
             _ => _session.DefaultSaveExists);
+
+        _recoverAutosaveCommand = new RelayCommand(
+            _ =>
+            {
+                _session.LoadAutosave();
+                CurrentSection = "Briefing";
+                SyncPolicyTargets();
+                RefreshBindings();
+                _advanceMonthCommand.RaiseCanExecuteChanged();
+            },
+            _ => _session.AutosaveExists);
 
         NavigateCommand = new RelayCommand(parameter =>
         {
@@ -220,7 +232,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ICommand LoadCommand => _loadCommand;
 
+    public ICommand RecoverAutosaveCommand => _recoverAutosaveCommand;
+
     public string SaveLocation => GameSession.DefaultSavePath;
+
+    public string AutosaveLocation => GameSession.AutosavePath;
 
     public ICommand NavigateCommand { get; }
 
@@ -638,6 +654,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(SaveLocation));
         _advanceMonthCommand.RaiseCanExecuteChanged();
         _loadCommand.RaiseCanExecuteChanged();
+        _recoverAutosaveCommand.RaiseCanExecuteChanged();
     }
 
     private void SyncPolicyTargets()
