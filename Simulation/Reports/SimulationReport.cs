@@ -6,6 +6,7 @@ public enum ReportCategory
     Economy,
     Politics,
     Diplomacy,
+    Military,
     Personal,
     System
 }

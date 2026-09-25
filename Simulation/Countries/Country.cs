@@ -11,6 +11,7 @@ public class Country
     private decimal _administrationFunding = 1m;
     private decimal _courtFunding = 1m;
     private double _armyReadiness = 75;
+    private double _warExhaustion;
     private double _publicUnrest = 20;
 
     public required string Id { get; init; }
@@ -64,6 +65,12 @@ public class Country
     {
         get => _courtFunding;
         set => _courtFunding = Math.Clamp(value, 0.5m, 1.5m);
+    }
+
+    public double WarExhaustion
+    {
+        get => _warExhaustion;
+        set => _warExhaustion = Math.Clamp(value, 0, 100);
     }
 
     public double PublicUnrest

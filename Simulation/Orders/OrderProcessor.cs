@@ -25,6 +25,7 @@ internal static class OrderProcessor
             NegotiateTradeAgreementOrder tradeOrder => ProcessTradeAgreementOrder(state, tradeOrder),
             EndTradeAgreementOrder endTradeOrder => ProcessEndTradeAgreementOrder(state, endTradeOrder),
             RespondToDiplomaticProposalOrder responseOrder => ProcessDiplomaticProposalResponse(state, responseOrder),
+            DeclareWarOrder warOrder => ProcessDeclareWarOrder(state, warOrder),
             AppointAdvisorOrder appointmentOrder => ProcessAppointAdvisorOrder(state, appointmentOrder),
             DismissAdvisorOrder dismissalOrder => ProcessDismissAdvisorOrder(state, dismissalOrder),
             InvestigateCharacterOrder investigationOrder => ProcessInvestigationOrder(state, investigationOrder),
@@ -831,6 +832,142 @@ internal static class OrderProcessor
             $"Trade agreement with {order.TargetCountry.Name} ended",
             $"{order.SourceCountry.Name} terminates its trade agreement with " +
             $"{order.TargetCountry.Name}. The decision damages trust and raises tension.");
+    }
+
+    private static SimulationReport ProcessDeclareWarOrder(
+        GameState state,
+        DeclareWarOrder order)
+    {
+        var chancellor = order.Recipient;
+
+        if (!IsServingChancellor(order.SourceCountry, chancellor) ||
+            ReferenceEquals(order.SourceCountry, order.TargetCountry) ||
+            !state.Countries.Contains(order.TargetCountry))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "War declaration rejected",
+                "An active Chancellor must deliver a declaration to another simulated country.");
+        }
+
+        if (!order.SourceCountry.IsNeighbor(order.TargetCountry))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                "War declaration rejected",
+                $"{order.TargetCountry.Name} is not an immediate neighbour in the current prototype.");
+        }
+
+        if (state.Wars.Any(war =>
+                war.Status == Military.WarStatus.Active &&
+                war.IsParticipant(order.SourceCountry) &&
+                war.IsParticipant(order.TargetCountry)))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Military,
+                "War declaration rejected",
+                $"{order.SourceCountry.Name} and {order.TargetCountry.Name} are already at war.");
+        }
+
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.SourceCountry,
+            chancellor,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"{chancellor.FullName} refuses to deliver the declaration",
+                $"{chancellor.FullName} refuses to formally declare war on " +
+                $"{order.TargetCountry.Name}. Their willingness to obey is only " +
+                $"{willingness:F0}/100.");
+        }
+
+        var relation = state.Diplomacy.GetOrCreate(
+            order.SourceCountry,
+            order.TargetCountry);
+        var preWarRelations = relation.Relations;
+
+        relation.HasTradeAgreement = false;
+        relation.TradeAgreementStartedOn = null;
+        relation.Relations = Math.Min(-70, relation.Relations - 30);
+        relation.Trust = Math.Max(0, relation.Trust - 40);
+        relation.Tension = 100;
+
+        var pendingProposals = state.DiplomaticProposals.Where(proposal =>
+            proposal.Status == Diplomacy.DiplomaticProposalStatus.Pending &&
+            ((ReferenceEquals(proposal.SourceCountry, order.SourceCountry) &&
+              ReferenceEquals(proposal.TargetCountry, order.TargetCountry)) ||
+             (ReferenceEquals(proposal.SourceCountry, order.TargetCountry) &&
+              ReferenceEquals(proposal.TargetCountry, order.SourceCountry))));
+
+        foreach (var proposal in pendingProposals)
+            proposal.Status = Diplomacy.DiplomaticProposalStatus.Withdrawn;
+
+        ApplyWarDeclarationPoliticalCost(order.SourceCountry, preWarRelations);
+
+        var targetToSource = state.Relationships.GetOrCreate(
+            order.TargetCountry.Ruler,
+            order.SourceCountry.Ruler);
+        targetToSource.ChangeOpinion(-35);
+        targetToSource.Trust = 0;
+        targetToSource.ChangeFear(10);
+
+        var sourceToTarget = state.Relationships.GetOrCreate(
+            order.SourceCountry.Ruler,
+            order.TargetCountry.Ruler);
+        sourceToTarget.ChangeOpinion(-20);
+        sourceToTarget.ChangeTrust(-20);
+
+        var war = new Military.War
+        {
+            Attacker = order.SourceCountry,
+            Defender = order.TargetCountry,
+            StartedOn = state.Date
+        };
+
+        state.Wars.Add(war);
+        order.Status = OrderStatus.Completed;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Military,
+            $"{order.SourceCountry.Name} declares war on {order.TargetCountry.Name}",
+            $"{chancellor.FullName} delivers the declaration. Trade and pending " +
+            $"diplomatic offers between the two states end immediately. War score begins at 0.");
+    }
+
+    private static void ApplyWarDeclarationPoliticalCost(
+        Countries.Country country,
+        int previousRelations)
+    {
+        if (previousRelations >= 25)
+        {
+            country.Ruler.Legitimacy -= 5;
+            country.Government.Stability -= 4;
+            country.PublicUnrest += 4;
+        }
+        else if (previousRelations >= 0)
+        {
+            country.Ruler.Legitimacy -= 3;
+            country.Government.Stability -= 2;
+            country.PublicUnrest += 2;
+        }
+        else
+        {
+            country.Government.Stability -= 1;
+            country.PublicUnrest += 1;
+        }
     }
 
     private static SimulationReport ProcessDiplomaticProposalResponse(

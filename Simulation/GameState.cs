@@ -1,6 +1,7 @@
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Diplomacy;
+using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Player;
 using LeaderGame.Simulation.Politics;
@@ -20,6 +21,8 @@ public class GameState
     public List<PoliticalPlot> Plots { get; } = [];
 
     public List<DiplomaticProposal> DiplomaticProposals { get; } = [];
+
+    public List<War> Wars { get; } = [];
 
     public List<SimulationReport> Reports { get; } = [];
 
