@@ -47,6 +47,31 @@ public sealed record ForeignCountryOptionView(
     string Id,
     string Name);
 
+public sealed record WarCampaignView(
+    Guid Id,
+    string OpponentId,
+    string OpponentName,
+    string MonthsActive,
+    string Stance,
+    string CampaignPosition,
+    string OwnArmy,
+    string OwnReadiness,
+    string OwnWarExhaustion,
+    string EnemyArmy,
+    string EnemyReadiness,
+    string MarshalName,
+    string MarshalObedience,
+    string ChancellorName,
+    string ChancellorObedience);
+
+public sealed record MilitaryView(
+    string MarshalName,
+    string MarshalObedience,
+    string ArmyStrength,
+    string ArmyReadiness,
+    string WarExhaustion,
+    IReadOnlyList<WarCampaignView> Campaigns);
+
 public sealed record ForeignStateView(
     string Id,
     string Name,
@@ -131,4 +156,5 @@ public sealed record PlayerViewState(
     GovernmentPolicyView Government,
     CourtPoliticsView Court,
     ForeignAffairsView ForeignAffairs,
+    MilitaryView Military,
     string StatusMessage);
