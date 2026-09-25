@@ -58,6 +58,124 @@ public sealed class GameSession
     public void RequestForeignAffairsReport(string countryId) =>
         QueueReport(InformationTopic.ForeignAffairs, countryId);
 
+    public void SetTaxRate(double percent)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var treasurer = country.GetOfficeHolder(Position.Treasurer);
+
+        if (treasurer is null)
+        {
+            Refresh("The Treasury is vacant. There is nobody to implement a tax order.");
+            return;
+        }
+
+        var clamped = Math.Clamp(percent, 0, 60) / 100.0;
+
+        _simulation.SubmitOrder(new ChangeTaxOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = treasurer,
+            IssuedOn = state.Date,
+            Country = country,
+            TargetTaxRate = (decimal)clamped
+        });
+
+        Refresh($"Tax directive queued through {treasurer.FullName}: target {clamped:P0}.");
+    }
+
+    public void SetBudget(
+        double armyPercent,
+        double administrationPercent,
+        double courtPercent)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var treasurer = country.GetOfficeHolder(Position.Treasurer);
+
+        if (treasurer is null)
+        {
+            Refresh("The Treasury is vacant. There is nobody to implement a budget order.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new SetBudgetOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = treasurer,
+            IssuedOn = state.Date,
+            Country = country,
+            TargetArmyFunding = (decimal)Math.Clamp(armyPercent / 100.0, 0.5, 1.5),
+            TargetAdministrationFunding = (decimal)Math.Clamp(administrationPercent / 100.0, 0.5, 1.5),
+            TargetCourtFunding = (decimal)Math.Clamp(courtPercent / 100.0, 0.5, 1.5)
+        });
+
+        Refresh($"Budget directive queued through {treasurer.FullName}.");
+    }
+
+    public void AppointAdvisor(int characterId, string positionName)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var candidate = country.PoliticalFigures.FirstOrDefault(character =>
+            character.Id == characterId &&
+            character.IsPoliticallyActive &&
+            !ReferenceEquals(character, country.Ruler));
+
+        if (candidate is null)
+        {
+            Refresh("That political figure is no longer available for appointment.");
+            return;
+        }
+
+        if (!Enum.TryParse<Position>(positionName, ignoreCase: true, out var position))
+        {
+            Refresh("That government office does not exist.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new AppointAdvisorOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = candidate,
+            IssuedOn = state.Date,
+            Country = country,
+            Position = position
+        });
+
+        Refresh($"Appointment of {candidate.FullName} as {position} queued.");
+    }
+
+    public void DismissAdvisor(string positionName)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+
+        if (!Enum.TryParse<Position>(positionName, ignoreCase: true, out var position))
+        {
+            Refresh("That government office does not exist.");
+            return;
+        }
+
+        var holder = country.GetOfficeHolder(position);
+
+        if (holder is null)
+        {
+            Refresh($"The office of {position} is already vacant.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new DismissAdvisorOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = holder,
+            IssuedOn = state.Date,
+            Country = country
+        });
+
+        Refresh($"Dismissal of {holder.FullName} from {position} queued.");
+    }
+
     public void Refresh(string? statusMessage = null)
     {
         if (!string.IsNullOrWhiteSpace(statusMessage))
@@ -315,6 +433,139 @@ public sealed class GameSession
                 candidate.Name))
             .ToList();
 
+        var treasurer = country.GetOfficeHolder(Position.Treasurer);
+        var treasurerObedience = treasurer is null
+            ? "Vacant"
+            : PlayerInformationFormatter.Willingness(
+                PoliticalCalculations.GetOrderWillingness(
+                    state,
+                    country,
+                    treasurer,
+                    ruler));
+
+        var government = new GovernmentPolicyView(
+            (double)country.TaxRate * 100,
+            (double)country.ArmyFunding * 100,
+            (double)country.AdministrationFunding * 100,
+            (double)country.CourtFunding * 100,
+            treasurer?.FullName ?? "Vacant",
+            treasurerObedience,
+            "These are formal government settings, so the ruler knows what was officially enacted. " +
+            "Their real effects still have to be learned through reports.");
+
+        var offices = Enum.GetValues<Position>()
+            .Select(position =>
+            {
+                var holder = country.GetOfficeHolder(position);
+
+                if (holder is null)
+                {
+                    return new OfficeView(
+                        position.ToString(),
+                        "Vacant",
+                        "—",
+                        "—",
+                        "—",
+                        "—");
+                }
+
+                var relationship = state.Relationships.GetOrCreate(holder, ruler);
+                var willingness = PoliticalCalculations.GetOrderWillingness(
+                    state,
+                    country,
+                    holder,
+                    ruler);
+                var threat = PoliticalCalculations.GetThreatScore(
+                    state,
+                    country,
+                    holder);
+
+                return new OfficeView(
+                    position.ToString(),
+                    holder.FullName,
+                    PlayerInformationFormatter.Level(holder.Competence),
+                    PlayerInformationFormatter.Trust(relationship.Trust),
+                    PlayerInformationFormatter.Willingness(willingness),
+                    PlayerInformationFormatter.Threat(threat));
+            })
+            .ToList();
+
+        var figures = country.PoliticalFigures
+            .Where(character =>
+                character.IsAlive &&
+                !ReferenceEquals(character, ruler))
+            .OrderByDescending(character =>
+                PoliticalCalculations.GetThreatScore(
+                    state,
+                    country,
+                    character))
+            .Select(character =>
+            {
+                var relationship = state.Relationships.GetOrCreate(character, ruler);
+                var willingness = PoliticalCalculations.GetOrderWillingness(
+                    state,
+                    country,
+                    character,
+                    ruler);
+                var threat = PoliticalCalculations.GetThreatScore(
+                    state,
+                    country,
+                    character);
+
+                var strongestBases = Enum.GetValues<PowerBaseType>()
+                    .OrderByDescending(powerBase =>
+                        character.GetPowerBaseStanding(powerBase))
+                    .Take(2)
+                    .Select(powerBase =>
+                        $"{FormatPowerBase(powerBase)} ({DescribeBacking(character.GetPowerBaseStanding(powerBase))})");
+
+                return new CourtFigureView(
+                    character.Id,
+                    character.FullName,
+                    character.Status == PoliticalStatus.Imprisoned
+                        ? "Imprisoned"
+                        : character.Status == PoliticalStatus.Exiled
+                            ? "Exiled"
+                            : character.Position?.ToString() ?? "Courtier",
+                    PlayerInformationFormatter.Level(character.Competence),
+                    DescribeAmbition(character.Ambition),
+                    PlayerInformationFormatter.Level(character.Influence),
+                    PlayerInformationFormatter.Trust(relationship.Trust),
+                    PlayerInformationFormatter.Willingness(willingness),
+                    PlayerInformationFormatter.Threat(threat),
+                    string.Join(", ", strongestBases),
+                    character.IsPoliticallyActive)
+                ;
+            })
+            .ToList();
+
+        var activeBloc = state.PoliticalBlocs.FirstOrDefault(bloc =>
+            bloc.IsActive &&
+            ReferenceEquals(bloc.Country, country));
+
+        var opposition = activeBloc is null
+            ? "No organised opposition bloc is clearly identified."
+            : $"{activeBloc.Leader.FullName} leads organised opposition backed by " +
+              string.Join(", ", activeBloc.PowerBases.Select(FormatPowerBase)) + ".";
+
+        var activeDemands = state.PowerBaseDemands
+            .Where(demand =>
+                !demand.IsResolved &&
+                ReferenceEquals(demand.Country, country))
+            .OrderByDescending(demand => demand.EscalationLevel)
+            .ToList();
+
+        var pressure = activeDemands.Count == 0
+            ? "No major organised demands are currently known."
+            : string.Join("  ", activeDemands.Take(3).Select(demand =>
+                $"{FormatPowerBase(demand.PowerBase)}: {DescribeDemand(demand)}"));
+
+        var court = new CourtPoliticsView(
+            offices,
+            figures,
+            opposition,
+            pressure);
+
         return new PlayerViewState(
             country.Name,
             state.Date.ToString(),
@@ -331,8 +582,50 @@ public sealed class GameSession
             pending,
             intelligenceReports,
             foreignCountries,
+            government,
+            court,
             _statusMessage);
     }
+
+    private static string DescribeAmbition(int ambition) => ambition switch
+    {
+        >= 85 => "Extreme",
+        >= 70 => "High",
+        >= 50 => "Noticeable",
+        >= 30 => "Modest",
+        _ => "Low"
+    };
+
+    private static string DescribeBacking(int backing) => backing switch
+    {
+        >= 75 => "strong",
+        >= 60 => "supportive",
+        >= 45 => "uncertain",
+        >= 30 => "hostile",
+        _ => "very hostile"
+    };
+
+    private static string FormatPowerBase(PowerBaseType powerBase) => powerBase switch
+    {
+        PowerBaseType.RegionalElites => "Regional elites",
+        PowerBaseType.RoyalFamily => "Royal family",
+        _ => powerBase.ToString()
+    };
+
+    private static string DescribeDemand(PowerBaseDemand demand) => demand.Type switch
+    {
+        PowerBaseDemandType.LowerTaxes =>
+            $"reduce taxes to {demand.TargetValue:P0} or lower",
+        PowerBaseDemandType.RaiseArmyFunding =>
+            $"raise army funding to at least {demand.TargetValue:P0}",
+        PowerBaseDemandType.RaiseAdministrationFunding =>
+            $"raise administration funding to at least {demand.TargetValue:P0}",
+        PowerBaseDemandType.RaiseCourtFunding =>
+            $"raise court funding to at least {demand.TargetValue:P0}",
+        PowerBaseDemandType.EndWar =>
+            "end the current war",
+        _ => "make a political concession"
+    };
 
     private static int DateKey(GameDate date) =>
         date.Year * 12 + date.Month;
