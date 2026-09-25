@@ -82,8 +82,8 @@ internal static class OrderProcessor
                 ReportCategory.Order,
                 $"{treasurer.FullName} refuses the tax order",
                 $"{treasurer.FullName} refuses to implement the requested " +
-                $"{order.TargetTaxRate:P1} tax rate. Their willingness to obey was " +
-                $"{willingness:F0}/100.");
+                $"{order.TargetTaxRate:P1} tax rate. The refusal makes clear that " +
+                "their willingness to carry out the ruler's wishes is very low.");
         }
 
         var oldRate = order.Country.TaxRate;
@@ -129,10 +129,8 @@ internal static class OrderProcessor
             ReportCategory.Order,
             $"{treasurer.FullName} implements the tax order",
             $"Requested {order.TargetTaxRate:P1}; enacted {order.Country.TaxRate:P1}. " +
-            $"Implementation was {implementationDescription}: competence " +
-            $"{treasurer.Competence}/100, willingness {willingness:F0}/100. " +
-            $"Public unrest is now {order.Country.PublicUnrest:F1} and stability " +
-            $"{order.Country.Government.Stability:F1}.");
+            $"Implementation appeared {implementationDescription}. Any wider effect on " +
+            "unrest or regime stability will have to be assessed through subsequent reports.");
     }
 
     private static SimulationReport ProcessSetBudgetOrder(
@@ -177,7 +175,7 @@ internal static class OrderProcessor
                 ReportCategory.Order,
                 $"{treasurer.FullName} refuses the budget order",
                 $"{treasurer.FullName} refuses to reorganise government spending. " +
-                $"Their willingness to obey was {willingness:F0}/100.");
+                "The refusal indicates serious resistance inside the treasury.");
         }
 
         var implementationFactor =
@@ -216,7 +214,7 @@ internal static class OrderProcessor
             $"{order.TargetAdministrationFunding:P0}, court {order.TargetCourtFunding:P0}. " +
             $"Enacted — army {order.Country.ArmyFunding:P0}, administration " +
             $"{order.Country.AdministrationFunding:P0}, court {order.Country.CourtFunding:P0}. " +
-            $"Willingness {willingness:F0}/100.");
+            "The difference between request and enactment reflects how the order was implemented.");
     }
 
     private static SimulationReport ProcessAppointAdvisorOrder(
@@ -309,9 +307,8 @@ internal static class OrderProcessor
             state.Date,
             ReportCategory.Politics,
             $"{target.FullName} dismissed as {oldPosition}",
-            $"{target.FullName} loses the office of {oldPosition}. Their immediate " +
-            $"influence falls from {oldInfluence} to {target.Influence}, but the " +
-            "dismissal creates a personal grievance against the ruler.");
+            $"{target.FullName} loses the office of {oldPosition}. The dismissal costs " +
+            "them some access to government but creates a serious personal and political grievance.");
     }
 
     private static SimulationReport ProcessInvestigationOrder(
@@ -360,7 +357,7 @@ internal static class OrderProcessor
                 ReportCategory.Order,
                 $"{chancellor.FullName} refuses the investigation",
                 $"{chancellor.FullName} will not investigate {subject.FullName}. " +
-                $"Their willingness to obey is only {willingness:F0}/100.");
+                "The refusal suggests serious reluctance or a conflicting political interest.");
         }
 
         var effectiveness =
@@ -473,7 +470,7 @@ internal static class OrderProcessor
                 ReportCategory.Order,
                 $"{marshal.FullName} refuses the arrest",
                 $"{marshal.FullName} refuses to arrest {subject.FullName}. " +
-                $"Their willingness to obey is only {willingness:F0}/100.");
+                "The refusal reveals serious resistance inside the command structure.");
         }
 
         var plot = state.Plots.FirstOrDefault(candidate =>
@@ -662,7 +659,7 @@ internal static class OrderProcessor
                 ReportCategory.Diplomacy,
                 $"{chancellor.FullName} refuses the diplomatic mission",
                 $"{chancellor.FullName} refuses to lead outreach to {order.TargetCountry.Name}. " +
-                $"Their willingness to obey is only {willingness:F0}/100.");
+                "They are plainly unwilling to carry out the mission.");
         }
 
         var relation = state.Diplomacy.GetOrCreate(
@@ -695,9 +692,8 @@ internal static class OrderProcessor
             state.Date,
             ReportCategory.Diplomacy,
             $"Relations improve with {order.TargetCountry.Name}",
-            $"{chancellor.FullName}'s mission improves relations by {improvement} points. " +
-            $"Relations are now {relation.Relations}, trust {relation.Trust}, " +
-            $"tension {relation.Tension}.");
+            $"{chancellor.FullName}'s mission appears to have improved the diplomatic climate. " +
+            "A later foreign-affairs assessment will indicate how much the relationship actually changed.");
     }
 
     private static SimulationReport ProcessTradeAgreementOrder(
@@ -757,7 +753,7 @@ internal static class OrderProcessor
                 ReportCategory.Diplomacy,
                 $"{chancellor.FullName} refuses trade negotiations",
                 $"{chancellor.FullName} refuses to negotiate with {order.TargetCountry.Name}. " +
-                $"Their willingness to obey is only {willingness:F0}/100.");
+                "They are plainly unwilling to conduct the talks.");
         }
 
         var acceptance = Diplomacy.DiplomaticCalculations.GetTradeAcceptanceScore(
@@ -1015,8 +1011,7 @@ internal static class OrderProcessor
                 ReportCategory.Military,
                 $"{marshal.FullName} refuses the military directive",
                 $"{marshal.FullName} refuses to adopt the requested " +
-                $"{order.RequestedStance} stance. Their willingness to obey is " +
-                $"{willingness:F0}/100.");
+                $"{order.RequestedStance} stance. The refusal indicates a serious command dispute.");
         }
 
         var enactedStance =
@@ -1095,8 +1090,7 @@ internal static class OrderProcessor
                 ReportCategory.Diplomacy,
                 $"{chancellor.FullName} refuses to deliver the declaration",
                 $"{chancellor.FullName} refuses to formally declare war on " +
-                $"{order.TargetCountry.Name}. Their willingness to obey is only " +
-                $"{willingness:F0}/100.");
+                $"{order.TargetCountry.Name}. They are unwilling to deliver the declaration.");
         }
 
         var war = Military.WarDeclarationService.Declare(
@@ -1111,7 +1105,8 @@ internal static class OrderProcessor
             ReportCategory.Military,
             $"{order.SourceCountry.Name} declares war on {order.TargetCountry.Name}",
             $"{chancellor.FullName} delivers the declaration. Trade and pending " +
-            $"diplomatic offers between the two states end immediately. War score begins at 0.");
+            "diplomatic offers between the two states end immediately. Reliable information " +
+            "about the opening military position will depend on subsequent field reports.");
     }
 
     private static SimulationReport ProcessDiplomaticProposalResponse(
