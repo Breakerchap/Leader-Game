@@ -58,6 +58,50 @@ public class PresentationBoundaryTests
     }
 
     [Fact]
+    public void GovernmentPolicyActions_QueueRealSimulationOrders()
+    {
+        var state = DemoScenario.Create();
+        var session = new GameSession(new GameSimulation(state));
+
+        session.SetTaxRate(18);
+        session.SetBudget(125, 90, 110);
+
+        Assert.Equal(2, session.View.PendingOrders);
+        Assert.Contains(state.PendingOrders, order => order is ChangeTaxOrder);
+        Assert.Contains(state.PendingOrders, order => order is SetBudgetOrder);
+    }
+
+    [Fact]
+    public void CourtAppointment_QueuesOrderForEligibleCandidate()
+    {
+        var state = DemoScenario.Create();
+        var session = new GameSession(new GameSimulation(state));
+        var candidate = session.View.Court.Figures.First(figure =>
+            figure.IsAvailableForOffice);
+
+        session.AppointAdvisor(candidate.Id, "Marshal");
+
+        var order = Assert.IsType<AppointAdvisorOrder>(
+            Assert.Single(state.PendingOrders));
+
+        Assert.Equal(candidate.Id, order.Recipient.Id);
+        Assert.Equal(Position.Marshal, order.Position);
+    }
+
+    [Fact]
+    public void CourtView_DoesNotOfferExistingOfficeHoldersForAppointment()
+    {
+        var state = DemoScenario.Create();
+        var session = new GameSession(new GameSimulation(state));
+
+        Assert.DoesNotContain(
+            session.View.Court.Figures,
+            figure =>
+                figure.Role is "Marshal" or "Treasurer" or "Chancellor" &&
+                figure.IsAvailableForOffice);
+    }
+
+    [Fact]
     public void AdvancingMonth_RefreshesDesktopBriefing()
     {
         var state = DemoScenario.Create();
