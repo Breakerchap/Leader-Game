@@ -172,6 +172,36 @@ public class SaveGameTests
     }
 
     [Fact]
+    public void SaveRoundTrip_PreservesSelectedScenarioAndObjectiveProgress()
+    {
+        var state = DemoScenario.Create(
+            ScenarioCatalog.ValeriaId);
+
+        var objective = state.Campaign!.Objectives.First();
+        objective.ProgressMonths = 2;
+        objective.IsCompleted = true;
+        objective.CompletedOn = state.Date;
+        state.Player.HasWon = true;
+        state.Player.WinReason = "Test victory state.";
+
+        var loaded = GameSaveService.Deserialize(
+            GameSaveService.Serialize(state));
+
+        Assert.Equal("valeria", loaded.Player.Country.Id);
+        Assert.Equal(
+            ScenarioCatalog.ValeriaId,
+            loaded.Campaign!.ScenarioId);
+        Assert.Equal(
+            state.Player.Lineage.Name,
+            loaded.Player.Lineage.Name);
+        Assert.Equal(2, loaded.Campaign.Objectives[0].ProgressMonths);
+        Assert.True(loaded.Campaign.Objectives[0].IsCompleted);
+        Assert.Equal(state.Date, loaded.Campaign.Objectives[0].CompletedOn);
+        Assert.True(loaded.Player.HasWon);
+        Assert.Equal("Test victory state.", loaded.Player.WinReason);
+    }
+
+    [Fact]
     public void SaveToFile_WritesAndReloadsAtomicSlot()
     {
         var state = DemoScenario.Create();
