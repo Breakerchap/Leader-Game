@@ -879,7 +879,7 @@ static void ManageMilitary(GameSimulation simulation, Country country)
             : -war.WarScore;
 
         Console.WriteLine(
-            $"[{i + 1}] {opponent.Name,-12} score {score,+6:0.0;-0.0;0.0}  " +
+            $"[{i + 1}] {opponent.Name,-12} score {score,6:+0.0;-0.0;0.0}  " +
             $"month {war.MonthsActive,2}  stance {war.GetStance(country)}");
     }
 
@@ -897,6 +897,7 @@ static void ManageMilitary(GameSimulation simulation, Country country)
     var selected = wars[number - 1];
     var enemy = selected.OpponentOf(country);
     var marshal = country.GetOfficeHolder(Position.Marshal);
+    var chancellor = country.GetOfficeHolder(Position.Chancellor);
 
     Console.Clear();
     Console.WriteLine($"{country.Name} vs {enemy.Name}");
@@ -916,23 +917,46 @@ static void ManageMilitary(GameSimulation simulation, Country country)
         $"Enemy army: {enemy.ArmySize:N0}, readiness {enemy.ArmyReadiness:F0}/100");
     Console.WriteLine($"Current stance: {selected.GetStance(country)}");
 
-    if (marshal is null)
+    if (marshal is not null)
     {
-        Pause(
-            "There is no active Marshal. The ruler is acting as commander and no " +
-            "formal campaign-stance order can be issued.");
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            simulation.State,
+            country,
+            marshal,
+            country.Ruler);
+
+        Console.WriteLine(
+            $"Marshal: {marshal.FullName} — competence {marshal.Competence}/100, " +
+            $"willingness {willingness:F0}/100");
+    }
+    else
+    {
+        Console.WriteLine("Marshal: vacant — the ruler is acting as commander.");
+    }
+
+    Console.WriteLine();
+    if (marshal is not null)
+        Console.WriteLine("[S] Change campaign stance");
+    if (chancellor is not null)
+        Console.WriteLine("[P] Propose peace");
+    Console.WriteLine("[Enter] Cancel");
+    Console.Write("Action: ");
+
+    var action = Console.ReadLine()?.Trim();
+
+    if (string.Equals(action, "p", StringComparison.OrdinalIgnoreCase) &&
+        chancellor is not null)
+    {
+        QueuePeaceOffer(simulation, country, selected, chancellor);
         return;
     }
 
-    var willingness = PoliticalCalculations.GetOrderWillingness(
-        simulation.State,
-        country,
-        marshal,
-        country.Ruler);
+    if (!string.Equals(action, "s", StringComparison.OrdinalIgnoreCase) ||
+        marshal is null)
+    {
+        return;
+    }
 
-    Console.WriteLine(
-        $"Marshal: {marshal.FullName} — competence {marshal.Competence}/100, " +
-        $"willingness {willingness:F0}/100");
     Console.WriteLine();
     Console.WriteLine("[1] Defensive — lower losses, weaker pressure");
     Console.WriteLine("[2] Balanced");
@@ -966,6 +990,76 @@ static void ManageMilitary(GameSimulation simulation, Country country)
     Pause(
         $"{stance.Value} campaign directive queued through {marshal.FullName}. " +
         "A sufficiently unwilling Marshal may refuse or moderate the instruction.");
+}
+
+static void QueuePeaceOffer(
+    GameSimulation simulation,
+    Country country,
+    War war,
+    Character chancellor)
+{
+    var enemy = war.OpponentOf(country);
+
+    Console.Clear();
+    Console.WriteLine($"Peace with {enemy.Name}");
+    Console.WriteLine(new string('=', 11 + enemy.Name.Length));
+    Console.WriteLine();
+    Console.WriteLine(
+        "The Chancellor can estimate the foreign government's position, but the " +
+        "acceptance calculation itself is not shown.");
+
+    var options = new[]
+    {
+        PeaceOfferTerms.WhitePeace,
+        PeaceOfferTerms.DemandReparations,
+        PeaceOfferTerms.OfferReparations
+    };
+
+    for (var i = 0; i < options.Length; i++)
+    {
+        var score = PeaceCalculations.GetAcceptanceScore(
+            simulation.State,
+            war,
+            country,
+            options[i]);
+
+        var assessment = score switch
+        {
+            >= 75 => "likely acceptable",
+            >= 55 => "plausibly acceptable",
+            >= 40 => "unlikely",
+            _ => "very unlikely"
+        };
+
+        Console.WriteLine($"[{i + 1}] {options[i],-18} — {assessment}");
+    }
+
+    Console.WriteLine();
+    Console.Write("Choose terms: ");
+
+    if (!int.TryParse(Console.ReadLine(), out var number) ||
+        number < 1 ||
+        number > options.Length)
+    {
+        Pause("Invalid peace terms.");
+        return;
+    }
+
+    var terms = options[number - 1];
+
+    simulation.SubmitOrder(new OfferPeaceOrder
+    {
+        Issuer = country.Ruler,
+        Recipient = chancellor,
+        IssuedOn = simulation.State.Date,
+        Country = country,
+        War = war,
+        Terms = terms
+    });
+
+    Pause(
+        $"{terms} proposal queued through {chancellor.FullName}. " +
+        $"{enemy.Name} may accept or reject it.");
 }
 
 static void ManagePrison(GameSimulation simulation, Country country)
