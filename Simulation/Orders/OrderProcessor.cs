@@ -883,7 +883,7 @@ internal static class OrderProcessor
                 ReportCategory.Diplomacy,
                 $"{chancellor.FullName} refuses to negotiate peace",
                 $"{chancellor.FullName} refuses to deliver the proposed peace terms. " +
-                $"Their willingness to obey is only {willingness:F0}/100.");
+                "The refusal reveals a serious political break inside the government.");
         }
 
         var opponent = order.War.OpponentOf(order.Country);
