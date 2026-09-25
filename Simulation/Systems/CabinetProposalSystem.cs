@@ -54,6 +54,7 @@ internal static class CabinetProposalSystem
             TargetCountry = candidate.TargetCountry,
             War = candidate.War,
             TargetValue = candidate.TargetValue,
+            Rationale = candidate.Rationale,
             CreatedOn = state.Date
         };
 
@@ -179,7 +180,7 @@ internal static class CabinetProposalSystem
 
     public static string ProposalDescription(CabinetProposal proposal)
     {
-        return proposal.Type switch
+        var action = proposal.Type switch
         {
             CabinetProposalType.LowerTaxes =>
                 $"Reduce the official tax rate to {proposal.TargetValue:P0}.",
@@ -213,6 +214,10 @@ internal static class CabinetProposalSystem
 
             _ => "Act on the adviser's recommendation."
         };
+
+        return string.IsNullOrWhiteSpace(proposal.Rationale)
+            ? action
+            : $"{action} {proposal.Rationale}";
     }
 
     private static void AdvancePendingProposals(
@@ -344,6 +349,48 @@ internal static class CabinetProposalSystem
                         priority,
                         TargetValue: demand.TargetValue);
                     break;
+            }
+        }
+
+        if (country.Government.HoldsScheduledElections &&
+            country.Government.MonthsUntilElection <=
+                country.Government.ElectionCampaignMonths)
+        {
+            var months = Math.Max(
+                1,
+                country.Government.MonthsUntilElection);
+            var urgency =
+                country.Government.ElectionCampaignMonths - months;
+
+            if (country.TaxRate > 0.07m)
+            {
+                yield return new ProposalCandidate(
+                    treasurer,
+                    CabinetProposalType.LowerTaxes,
+                    76 +
+                    urgency * 2 +
+                    Math.Max(0, country.PublicUnrest - 30) * 0.20,
+                    TargetValue: Math.Max(
+                        0.02m,
+                        country.TaxRate - 0.01m),
+                    Rationale:
+                        $"With the election {months} " +
+                        $"{(months == 1 ? "month" : "months")} away, " +
+                        "the Treasury expects even modest tax relief to improve the government's political position.");
+            }
+
+            if (country.CourtFunding < 1.10m &&
+                country.GetPowerBaseStrength(PowerBaseType.Party) >= 50)
+            {
+                yield return new ProposalCandidate(
+                    treasurer,
+                    CabinetProposalType.RaiseCourtFunding,
+                    68 + urgency * 1.5,
+                    TargetValue: Math.Min(
+                        1.5m,
+                        country.CourtFunding + 0.10m),
+                    Rationale:
+                        "The approaching election makes patronage, coalition organisation and elite access more politically valuable than usual.");
             }
         }
 
@@ -700,5 +747,6 @@ internal static class CabinetProposalSystem
         double Priority,
         Countries.Country? TargetCountry = null,
         War? War = null,
-        decimal TargetValue = 0m);
+        decimal TargetValue = 0m,
+        string? Rationale = null);
 }
