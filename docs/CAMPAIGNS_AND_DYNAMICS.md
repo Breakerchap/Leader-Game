@@ -37,11 +37,37 @@ Victory requires all three objectives:
 
 A richer merchant republic with a strong bureaucracy and commercial class but less dynastic insulation from political failure.
 
-Victory requires all three objectives:
+Victory requires all four objectives:
 
 1. **Merchant Network** — maintain trade agreements with both neighbouring states.
 2. **Commercial Reserves** — hold at least 2,000,000 in the treasury with a non-negative monthly balance for three consecutive months.
 3. **Normalise Falkenreich** — maintain formal relations with Falkenreich at +10 or better for three consecutive months.
+4. **Renew the Mandate** — win a scheduled republican election while keeping the Vieri Coalition in government.
+
+## Constitutional succession and elections
+
+Falkenreich and Valeria now preserve power in fundamentally different ways.
+
+Monarchies use the succession order after a ruler's death. If the player's dynastic successor takes the throne, control continues as that person.
+
+Valeria is an electoral republic:
+
+- its first election begins twelve months after the campaign starts;
+- normal elected terms last 48 months;
+- the active campaign season begins six months before the vote;
+- the Government screen shows the public constitutional countdown;
+- once campaigning begins, it shows the visible candidate field and the Vieri Coalition nominee;
+- candidate strength comes from the same simulated political system used elsewhere: constituency backing, influence, competence, ambition, legitimacy and current government performance;
+- a modest seeded random component prevents perfectly deterministic results while preserving reproducibility;
+- close losers retain more political momentum and become more hostile to the winner, naturally feeding later opposition.
+
+The Vieri Coalition nominates its strongest politically active lineage member rather than running every member at once.
+
+If a Vieri Coalition candidate wins, play continues as that office-holder and the player's electoral-victory count increases. If an outside candidate wins, the current prototype treats loss of government as campaign defeat because opposition/exile play is not implemented yet.
+
+If a republican ruler dies mid-term, the designated successor becomes an interim ruler and an election is forced within two months instead of simply inheriting the rest of the term.
+
+Election season also affects cabinet politics. Advisers can explicitly recommend voter-friendly tax relief or additional coalition/patronage spending and explain that the approaching election is part of their reasoning. This advice can conflict with other recommendations such as raising taxes to repair a deficit.
 
 ## Objective behaviour
 
