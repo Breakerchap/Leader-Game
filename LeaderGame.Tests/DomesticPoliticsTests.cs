@@ -106,7 +106,15 @@ public class DomesticPoliticsTests
             ReferenceEquals(candidate.Country, country));
 
         var rulerBacking = ruler.GetPowerBaseStanding(PowerBaseType.Bureaucracy);
-        var rivalBacking = chancellor.GetPowerBaseStanding(PowerBaseType.Bureaucracy);
+        var rival = country.PoliticalFigures
+            .Where(character =>
+                character.IsPoliticallyActive &&
+                !ReferenceEquals(character, ruler))
+            .OrderByDescending(character =>
+                character.GetPowerBaseStanding(PowerBaseType.Bureaucracy))
+            .ThenByDescending(character => character.Ambition)
+            .First();
+        var rivalBacking = rival.GetPowerBaseStanding(PowerBaseType.Bureaucracy);
 
         simulation.AdvanceMonth();
         simulation.AdvanceMonth();
@@ -118,10 +126,27 @@ public class DomesticPoliticsTests
             ruler.GetPowerBaseStanding(PowerBaseType.Bureaucracy) <
             rulerBacking);
         Assert.True(
-            chancellor.GetPowerBaseStanding(PowerBaseType.Bureaucracy) >
+            rival.GetPowerBaseStanding(PowerBaseType.Bureaucracy) >
             rivalBacking);
         Assert.Contains(state.Reports, report =>
             report.Title.Contains("pressure escalates", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ChronicUnderfunding_ErodesInstitutionalBacking()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var ruler = country.Ruler;
+
+        state.Date = new GameDate(1450, 3);
+        country.ArmyFunding = 0.5m;
+        ruler.SetPowerBaseStanding(PowerBaseType.Military, 50);
+
+        new GameSimulation(state).AdvanceMonth();
+
+        Assert.True(
+            ruler.GetPowerBaseStanding(PowerBaseType.Military) < 50);
     }
 
     [Fact]
