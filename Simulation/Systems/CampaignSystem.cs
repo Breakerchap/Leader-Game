@@ -96,6 +96,9 @@ internal static class CampaignSystem
                     war.IsParticipant(country)) &&
                 country.PublicUnrest <= objective.TargetValue,
 
+            CampaignObjectiveType.ElectoralMandate =>
+                state.Player.ElectionsWon >= objective.TargetValue,
+
             _ => false
         };
     }
