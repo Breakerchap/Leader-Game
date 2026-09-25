@@ -86,26 +86,26 @@
                 Classes="eyebrow"
                 Margin="10,0,0,8" />
 
-            <Button Classes="nav" Content="Briefing"
+            <Button Classes="nav" Content="◆  Briefing" Foreground="#86CBD6"
                     Command="{Binding NavigateCommand}" CommandParameter="Briefing" />
-            <Button Classes="nav" Content="Government"
+            <Button Classes="nav" Content="▣  Government" Foreground="#B9C5D3"
                     Command="{Binding NavigateCommand}" CommandParameter="Government" />
-            <Button Classes="nav" Content="Court"
+            <Button Classes="nav" Content="♟  Court" Foreground="#C8ACE1"
                     Command="{Binding NavigateCommand}" CommandParameter="Court" />
-            <Button Classes="nav" Content="Economy"
+            <Button Classes="nav" Content="▥  Economy" Foreground="#92CAA5"
                     Command="{Binding NavigateCommand}" CommandParameter="Economy" />
 
             <TextBlock
                 Text="STATE"
                 Classes="eyebrow"
                 Margin="10,18,0,8" />
-            <Button Classes="nav" Content="Foreign Affairs"
+            <Button Classes="nav" Content="◇  Foreign Affairs" Foreground="#8CBCE8"
                     Command="{Binding NavigateCommand}" CommandParameter="Foreign Affairs" />
-            <Button Classes="nav" Content="Military"
+            <Button Classes="nav" Content="⚑  Military" Foreground="#E99B9B"
                     Command="{Binding NavigateCommand}" CommandParameter="Military" />
-            <Button Classes="nav" Content="Intelligence"
+            <Button Classes="nav" Content="◉  Intelligence" Foreground="#86CBD6"
                     Command="{Binding NavigateCommand}" CommandParameter="Intelligence" />
-            <Button Classes="nav" Content="Archive"
+            <Button Classes="nav" Content="▤  Archive" Foreground="#AAB5C2"
                     Command="{Binding NavigateCommand}" CommandParameter="Archive" />
           </StackPanel>
 
@@ -137,8 +137,8 @@
         <!-- Briefing -->
         <ScrollViewer IsVisible="{Binding IsBriefingVisible}">
           <StackPanel Spacing="20">
-            <StackPanel Spacing="4">
-              <TextBlock Text="BRIEFING" Classes="eyebrow" />
+            <StackPanel Spacing="7">
+              <TextBlock Text="BRIEFING" Classes="eyebrow" Foreground="#70C4D0" />
               <TextBlock
                   Text="What the government thinks it knows"
                   Classes="title" />
@@ -146,6 +146,23 @@
                   Text="Estimates can be stale, incomplete or wrong. Open Intelligence to inspect their sources."
                   TextWrapping="Wrap"
                   Classes="muted" />
+              <WrapPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <Border Classes="badge" Background="#14241C" Margin="0,0,7,0">
+                  <TextBlock Text="● Economy" Foreground="#75C493" FontSize="11" />
+                </Border>
+                <Border Classes="badge" Background="#261718" Margin="0,0,7,0">
+                  <TextBlock Text="● Military" Foreground="#E28585" FontSize="11" />
+                </Border>
+                <Border Classes="badge" Background="#211827" Margin="0,0,7,0">
+                  <TextBlock Text="● Politics" Foreground="#C096E2" FontSize="11" />
+                </Border>
+                <Border Classes="badge" Background="#13202B" Margin="0,0,7,0">
+                  <TextBlock Text="● Diplomacy / Intel" Foreground="#74B8E8" FontSize="11" />
+                </Border>
+                <Border Classes="badge" Background="#261F14">
+                  <TextBlock Text="▲ Stale / uncertain" Foreground="#D8A657" FontSize="11" />
+                </Border>
+              </WrapPanel>
             </StackPanel>
 
             <ItemsControl ItemsSource="{Binding View.Metrics}">
@@ -159,27 +176,42 @@
                   <Border
                       Classes="card"
                       Width="235"
-                      MinHeight="112"
-                      Margin="0,0,10,10">
-                    <StackPanel Spacing="5">
-                      <TextBlock Text="{Binding Label}" Classes="eyebrow" />
-                      <TextBlock
-                          Text="{Binding Value}"
-                          FontSize="22"
-                          FontWeight="SemiBold"
-                          Foreground="#EDF2F7" />
-                      <TextBlock
-                          Text="{Binding Detail}"
-                          FontSize="11"
-                          TextWrapping="Wrap"
-                          Classes="muted" />
-                      <TextBlock
-                          IsVisible="{Binding IsStale}"
-                          Text="STALE INFORMATION"
-                          FontSize="10"
-                          FontWeight="Bold"
-                          Foreground="#C69A61" />
-                    </StackPanel>
+                      MinHeight="122"
+                      Margin="0,0,10,10"
+                      Padding="0"
+                      BorderBrush="{Binding IsStale, Converter={StaticResource StaleBrush}}">
+                    <Grid RowDefinitions="5,*">
+                      <Border
+                          Background="{Binding Label, Converter={StaticResource MetricAccentBrush}}"
+                          CornerRadius="8,8,0,0" />
+                      <StackPanel Grid.Row="1" Spacing="6" Margin="14,11,14,13">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Text="{Binding Label}" Classes="eyebrow" />
+                          <Border
+                              Grid.Column="1"
+                              Classes="badge"
+                              Background="#2A2115"
+                              IsVisible="{Binding IsStale}"
+                              Padding="6,2">
+                            <TextBlock
+                                Text="STALE"
+                                FontSize="9"
+                                FontWeight="Bold"
+                                Foreground="#E1B66F" />
+                          </Border>
+                        </Grid>
+                        <TextBlock
+                            Text="{Binding Value}"
+                            FontSize="23"
+                            FontWeight="SemiBold"
+                            Foreground="#F1F5F9" />
+                        <TextBlock
+                            Text="{Binding Detail}"
+                            FontSize="11"
+                            TextWrapping="Wrap"
+                            Classes="muted" />
+                      </StackPanel>
+                    </Grid>
                   </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
@@ -187,46 +219,70 @@
 
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel>
-                <TextBlock Text="INCOMING" Classes="eyebrow" />
+                <TextBlock Text="INCOMING" Classes="eyebrow" Foreground="#A9B7C6" />
                 <TextBlock
                     Text="Reports, events and decisions"
-                    FontSize="18"
-                    FontWeight="SemiBold" />
+                    Classes="section" />
               </StackPanel>
-              <StackPanel Grid.Column="1" HorizontalAlignment="Right">
-                <TextBlock
-                    Text="{Binding View.PendingOrders, StringFormat='{}{0} orders queued'}"
-                    FontSize="12"
-                    Classes="muted"
-                    HorizontalAlignment="Right" />
-                <TextBlock
-                    Text="{Binding View.PendingReports, StringFormat='{}{0} inquiries underway'}"
-                    FontSize="12"
-                    Classes="muted"
-                    HorizontalAlignment="Right" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <Border Classes="badge" Background="#1B2430">
+                  <TextBlock
+                      Text="{Binding View.PendingOrders, StringFormat='{}{0} orders queued'}"
+                      FontSize="11"
+                      Foreground="#C4D0DD" />
+                </Border>
+                <Border Classes="badge" Background="#13252B">
+                  <TextBlock
+                      Text="{Binding View.PendingReports, StringFormat='{}{0} inquiries underway'}"
+                      FontSize="11"
+                      Foreground="#86CBD6" />
+                </Border>
               </StackPanel>
             </Grid>
 
             <ItemsControl ItemsSource="{Binding View.Briefings}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Border Classes="card" Margin="0,0,0,10">
+                  <Border
+                      Classes="card"
+                      Margin="0,0,0,10"
+                      Background="{Binding NeedsAttention, Converter={StaticResource AttentionBackground}}">
                     <Grid ColumnDefinitions="5,*">
                       <Border
-                          Background="#A27742"
-                          CornerRadius="3"
-                          IsVisible="{Binding NeedsAttention}"
+                          Background="{Binding Category, Converter={StaticResource CategoryBrush}}"
+                          CornerRadius="4"
                           Margin="-5,0,12,0" />
-                      <StackPanel Grid.Column="1" Spacing="6">
-                        <StackPanel Orientation="Horizontal" Spacing="9">
+                      <StackPanel Grid.Column="1" Spacing="7">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                          <Border
+                              Classes="badge"
+                              Background="{Binding Category, Converter={StaticResource CategoryBrush}}"
+                              Padding="8,3">
+                            <TextBlock
+                                Text="{Binding Category}"
+                                FontSize="10"
+                                FontWeight="Bold"
+                                Foreground="#081016" />
+                          </Border>
                           <TextBlock
-                              Text="{Binding Category}"
-                              Classes="eyebrow" />
-                          <TextBlock
+                              Grid.Column="1"
                               Text="{Binding Meta}"
                               FontSize="11"
-                              Classes="muted" />
-                        </StackPanel>
+                              Classes="muted"
+                              VerticalAlignment="Center"
+                              Margin="9,0,0,0" />
+                          <Border
+                              Grid.Column="2"
+                              Classes="badge"
+                              Background="#2B2114"
+                              IsVisible="{Binding NeedsAttention}">
+                            <TextBlock
+                                Text="▲ ATTENTION"
+                                FontSize="9"
+                                FontWeight="Bold"
+                                Foreground="#E3B76C" />
+                          </Border>
+                        </Grid>
                         <TextBlock
                             Text="{Binding Title}"
                             FontSize="17"
@@ -235,12 +291,7 @@
                         <TextBlock
                             Text="{Binding Summary}"
                             TextWrapping="Wrap"
-                            Foreground="#C4CED9" />
-                        <TextBlock
-                            IsVisible="{Binding NeedsAttention}"
-                            Text="Requires attention or contains uncertainty."
-                            FontSize="11"
-                            Foreground="#C69A61" />
+                            Foreground="#C6D0DB" />
                       </StackPanel>
                     </Grid>
                   </Border>
@@ -254,7 +305,7 @@
         <ScrollViewer IsVisible="{Binding IsIntelligenceVisible}">
           <StackPanel Spacing="20">
             <StackPanel Spacing="4">
-              <TextBlock Text="INTELLIGENCE" Classes="eyebrow" />
+              <TextBlock Text="INTELLIGENCE" Classes="eyebrow" Foreground="#70C4D0" />
               <TextBlock
                   Text="Reports and inquiries"
                   Classes="title" />
@@ -270,16 +321,19 @@
                 <WrapPanel Orientation="Horizontal">
                   <Button
                       Margin="0,0,8,8"
+                      Classes="action economy"
                       Command="{Binding RequestEconomyReportCommand}"
-                      Content="Treasurer · Economy" />
+                      Content="▥  Treasurer · Economy" />
                   <Button
                       Margin="0,0,8,8"
+                      Classes="action military"
                       Command="{Binding RequestOwnMilitaryReportCommand}"
-                      Content="Marshal · Our military" />
+                      Content="⚑  Marshal · Our military" />
                   <Button
                       Margin="0,0,8,8"
+                      Classes="action politics"
                       Command="{Binding RequestDomesticReportCommand}"
-                      Content="Chancellor · Domestic politics" />
+                      Content="♟  Chancellor · Domestic politics" />
                 </WrapPanel>
 
                 <Grid ColumnDefinitions="220,Auto,Auto" ColumnSpacing="8">
@@ -295,12 +349,14 @@
                   </ComboBox>
                   <Button
                       Grid.Column="1"
+                      Classes="action intelligence"
                       Command="{Binding RequestForeignAffairsReportCommand}"
-                      Content="Chancellor assessment" />
+                      Content="◇  Chancellor assessment" />
                   <Button
                       Grid.Column="2"
+                      Classes="action military"
                       Command="{Binding RequestForeignMilitaryReportCommand}"
-                      Content="Marshal intelligence" />
+                      Content="⚑  Marshal intelligence" />
                 </Grid>
               </StackPanel>
             </Border>
@@ -310,18 +366,24 @@
               <ItemsControl ItemsSource="{Binding View.PendingInquiries}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Border Classes="card" Margin="0,8,0,0" Padding="12">
-                      <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel>
-                          <TextBlock
-                              Text="{Binding Topic}"
-                              FontWeight="SemiBold" />
+                    <Border Classes="card" Margin="0,8,0,0" Padding="0">
+                      <Grid ColumnDefinitions="5,*,Auto">
+                        <Border Background="#55B8C7" CornerRadius="8,0,0,8" />
+                        <StackPanel Grid.Column="1" Margin="12" Spacing="3">
+                          <StackPanel Orientation="Horizontal" Spacing="7">
+                            <TextBlock
+                                Text="{Binding Topic}"
+                                FontWeight="SemiBold" />
+                            <Border Classes="badge" Background="#153038" Padding="7,2">
+                              <TextBlock Text="UNDERWAY" FontSize="9" FontWeight="Bold" Foreground="#79CFDB" />
+                            </Border>
+                          </StackPanel>
                           <TextBlock
                               Text="{Binding Advisor}"
                               FontSize="12"
                               Classes="muted" />
                         </StackPanel>
-                        <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Right" Margin="12">
                           <TextBlock Text="{Binding Subject}" HorizontalAlignment="Right" />
                           <TextBlock
                               Text="{Binding Since, StringFormat='Queued {0}'}"
@@ -477,18 +539,44 @@
                           ColumnDefinitions="Auto,*"
                           RowDefinitions="Auto,Auto,Auto,Auto"
                           ColumnSpacing="12"
-                          RowSpacing="4">
+                          RowSpacing="5">
                         <TextBlock Text="Ability" Classes="muted" />
-                        <TextBlock Grid.Column="1" Text="{Binding Ability}" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="{Binding Ability}"
+                            FontWeight="SemiBold"
+                            Foreground="{Binding Ability, Converter={StaticResource SemanticStatusBrush}}" />
 
                         <TextBlock Grid.Row="1" Text="Trust" Classes="muted" />
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Trust}" />
+                        <TextBlock
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Text="{Binding Trust}"
+                            FontWeight="SemiBold"
+                            Foreground="{Binding Trust, Converter={StaticResource SemanticStatusBrush}}" />
 
                         <TextBlock Grid.Row="2" Text="Obedience" Classes="muted" />
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Obedience}" />
+                        <TextBlock
+                            Grid.Row="2"
+                            Grid.Column="1"
+                            Text="{Binding Obedience}"
+                            FontWeight="SemiBold"
+                            Foreground="{Binding Obedience, Converter={StaticResource SemanticStatusBrush}}" />
 
                         <TextBlock Grid.Row="3" Text="Risk" Classes="muted" />
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Risk}" />
+                        <Border
+                            Grid.Row="3"
+                            Grid.Column="1"
+                            Classes="badge"
+                            HorizontalAlignment="Left"
+                            Background="#171E27"
+                            Padding="7,2">
+                          <TextBlock
+                              Text="{Binding Risk}"
+                              FontWeight="Bold"
+                              FontSize="11"
+                              Foreground="{Binding Risk, Converter={StaticResource RiskBrush}}" />
+                        </Border>
                       </Grid>
                     </StackPanel>
                   </Border>
