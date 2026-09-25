@@ -139,6 +139,15 @@ public static class ScenarioCatalog
                         TargetValue = 10,
                         RelatedCountryId = FalkenreichId,
                         RequiredMonths = 3
+                    },
+                    new CampaignObjective
+                    {
+                        Id = "renew-mandate",
+                        Title = "Renew the Mandate",
+                        Description =
+                            "Win a scheduled republican election while keeping the Vieri Coalition in power.",
+                        Type = CampaignObjectiveType.ElectoralMandate,
+                        TargetValue = 1
                     }
                 ]);
                 break;
