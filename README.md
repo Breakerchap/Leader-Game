@@ -33,6 +33,8 @@ The prototype now links court politics and state capacity rather than treating t
 - arbitrary arrests that cost legitimacy, stability and relationships;
 - failed arrests that can harden opposition into an active coup plot;
 - release and political rehabilitation of prisoners;
+- deterministic seeded ageing, illness, recovery and natural mortality;
+- natural ruler death flowing directly into the succession system in the same monthly tick;
 - player lineage continuity, succession and usurpation;
 - monthly taxes and recurring government expenditure;
 - army, administration and court/patronage budgets;
@@ -67,6 +69,10 @@ A character may hate the ruler and still obey because they are afraid. That can 
 ### Politics is a network
 
 Characters do not relate only to the ruler. Friendship, trust and shared hostility between courtiers can turn an isolated rival into the centre of a coalition. Player actions can reshape that network unintentionally.
+
+### Randomness must be reproducible
+
+Illness and mortality use a seeded simulation random source rather than ad-hoc random calls. The same state and RNG state reproduce the same future, and tests can inject exact random sequences.
 
 ### State capacity costs money
 
