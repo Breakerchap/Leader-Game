@@ -355,7 +355,11 @@ public class PresentationBoundaryTests
         Assert.Equal(
             "The Valerian Republic",
             session.View.Campaign.ScenarioName);
-        Assert.Equal(3, session.View.Campaign.TotalObjectives);
+        Assert.Equal(4, session.View.Campaign.TotalObjectives);
+        Assert.True(session.View.Government.HasElection);
+        Assert.Contains(
+            "12",
+            session.View.Government.PoliticalCycle);
     }
 
     [Fact]
