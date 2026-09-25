@@ -21,6 +21,14 @@ public sealed record BriefingItemView(
     string Meta,
     bool NeedsAttention);
 
+public sealed record CabinetProposalView(
+    Guid Id,
+    string Advisor,
+    string Office,
+    string Title,
+    string Description,
+    string Age);
+
 public sealed record PendingOrderView(
     Guid Id,
     string Type,
@@ -191,6 +199,7 @@ public sealed record PlayerViewState(
     int PendingReports,
     IReadOnlyList<PendingOrderView> PendingOrderDetails,
     IReadOnlyList<OrderOutcomeView> RecentOrderOutcomes,
+    IReadOnlyList<CabinetProposalView> CabinetProposals,
     IReadOnlyList<MetricCardView> Metrics,
     IReadOnlyList<AdvisorCardView> Advisors,
     IReadOnlyList<BriefingItemView> Briefings,
