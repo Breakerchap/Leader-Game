@@ -15,7 +15,7 @@ player decision
 
 The country is deliberately separate from the player. A state can survive a ruler, dynasty, party or faction losing power.
 
-> **Project status:** early playable simulation with both a console host and a new Avalonia desktop prototype. The desktop client currently focuses on the ruler's briefing and unreliable-information workflow; many management screens are still being migrated.
+> **Project status:** early playable simulation with both a console host and an Avalonia desktop client. Briefing, Intelligence, Government, Court and Foreign Affairs are interactive; Economy, Military and Archive are still being migrated.
 
 See **[docs/FINAL_GOAL.md](docs/FINAL_GOAL.md)** for the intended final game.
 
@@ -97,9 +97,9 @@ This order matters. For example, a ruler can die and succession can be resolved 
 ## Requirements
 
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- Any terminal supported by .NET
+- Any desktop platform supported by Avalonia for the GUI client
 
-The project has no external runtime package dependencies at present.
+The desktop client uses Avalonia UI packages restored through NuGet. The simulation core itself remains UI-framework independent.
 
 ## Run
 
@@ -160,7 +160,9 @@ Leader-Game/
 │   └── GameState.cs
 ├── LeaderGame.Tests/
 ├── docs/
-│   └── FINAL_GOAL.md
+│   ├── FINAL_GOAL.md
+│   ├── INFORMATION_SYSTEM.md
+│   └── DESKTOP_UI.md
 └── .github/workflows/
 ```
 
@@ -168,7 +170,7 @@ Leader-Game/
 
 - **`Program.cs`** — legacy/current console host.
 - **`LeaderGame.Core/`** — reusable simulation assembly plus the player-safe `GameSession` presentation boundary.
-- **`LeaderGame.Desktop/`** — Avalonia desktop client. Briefing and Intelligence are already functional; other navigation surfaces are being migrated.
+- **`LeaderGame.Desktop/`** — Avalonia desktop client. Briefing, Intelligence, Government, Court and Foreign Affairs are functional; Economy, Military and Archive remain to be migrated.
 - **`Simulation/GameState.cs`** — the central hidden world state.
 - **`Simulation/GameSimulation.cs`** — monthly simulation orchestration and order processing.
 - **`Simulation/Information/`** — player knowledge, adviser reports, uncertainty, report requests and hidden historical snapshots.
