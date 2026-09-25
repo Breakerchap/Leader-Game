@@ -1407,6 +1407,111 @@
           </StackPanel>
         </ScrollViewer>
 
+        <!-- Archive -->
+        <ScrollViewer IsVisible="{Binding IsArchiveVisible}">
+          <StackPanel Spacing="20">
+            <StackPanel Spacing="5">
+              <TextBlock Text="ARCHIVE" Classes="eyebrow" Foreground="#AAB5C2" />
+              <TextBlock Text="What the government knew, ordered and believed" Classes="title" />
+              <TextBlock
+                  Text="Old reports are preserved as they were received. The archive records past beliefs instead of rewriting them to match later truth."
+                  TextWrapping="Wrap"
+                  Classes="muted" />
+            </StackPanel>
+
+            <Border Classes="panel">
+              <Grid ColumnDefinitions="*,220,Auto" ColumnSpacing="9">
+                <TextBox
+                    Watermark="Search reports, people, countries or dates…"
+                    Text="{Binding ArchiveSearchText, Mode=TwoWay}" />
+                <ComboBox
+                    Grid.Column="1"
+                    ItemsSource="{Binding ArchiveCategoryOptions}"
+                    SelectedItem="{Binding SelectedArchiveCategory}" />
+                <Border Grid.Column="2" Classes="badge" Background="#1A2430" VerticalAlignment="Center">
+                  <TextBlock
+                      Text="{Binding ArchiveEntries.Count, StringFormat='{}{0} matching entries'}"
+                      FontSize="11"
+                      Foreground="#B9C5D3" />
+                </Border>
+              </Grid>
+            </Border>
+
+            <ItemsControl ItemsSource="{Binding ArchiveEntries}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border
+                      Classes="card"
+                      Margin="0,0,0,10"
+                      Background="{Binding NeedsAttention, Converter={StaticResource AttentionBackground}}">
+                    <Grid ColumnDefinitions="5,*" ColumnSpacing="12">
+                      <Border
+                          Background="{Binding Category, Converter={StaticResource CategoryBrush}}"
+                          CornerRadius="4" />
+                      <StackPanel Grid.Column="1" Spacing="7">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                          <Border
+                              Classes="badge"
+                              Background="{Binding Category, Converter={StaticResource CategoryBrush}}">
+                            <TextBlock
+                                Text="{Binding Category}"
+                                FontSize="10"
+                                FontWeight="Bold"
+                                Foreground="#081016" />
+                          </Border>
+                          <TextBlock
+                              Grid.Column="1"
+                              Text="{Binding Source}"
+                              Margin="9,0,0,0"
+                              VerticalAlignment="Center"
+                              FontSize="11"
+                              Classes="muted" />
+                          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="7">
+                            <Border
+                                Classes="badge"
+                                Background="#2A2115"
+                                IsVisible="{Binding NeedsAttention}">
+                              <TextBlock
+                                  Text="▲ ATTENTION"
+                                  FontSize="9"
+                                  FontWeight="Bold"
+                                  Foreground="#E3B76C" />
+                            </Border>
+                            <Border Classes="badge" Background="#171E27">
+                              <TextBlock
+                                  Text="{Binding Date}"
+                                  FontSize="10"
+                                  Foreground="#AEBAC8" />
+                            </Border>
+                          </StackPanel>
+                        </Grid>
+
+                        <TextBlock
+                            Text="{Binding Title}"
+                            FontSize="17"
+                            FontWeight="SemiBold"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Text="{Binding Details}"
+                            TextWrapping="Wrap"
+                            Foreground="#C4CED9" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Background="#141B23" BorderBrush="#33404E" BorderThickness="1" CornerRadius="7" Padding="10">
+              <TextBlock
+                  Text="▤ Archive entries are player-visible records. Hidden simulation truth and private AI calculations are never stored here for the UI to discover."
+                  TextWrapping="Wrap"
+                  Foreground="#AEBAC8"
+                  FontSize="12" />
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+
         <!-- Placeholder surfaces -->
         <Grid IsVisible="{Binding IsPlaceholderVisible}">
           <Border
