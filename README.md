@@ -15,13 +15,14 @@ player decision
 
 The country is deliberately separate from the player. A state can survive a ruler, dynasty, party or faction losing power.
 
-> **Project status:** early playable simulation with both a console host and an Avalonia desktop client. All primary desktop surfaces are interactive: Briefing, Government, Court, Economy, Foreign Affairs, Military, Intelligence and Archive.
+> **Project status:** early playable campaign simulation with selectable Falkenreich and Valeria starts, explicit victory objectives, save/load/autosave, and a fully interactive Avalonia desktop client.
 
 See **[docs/FINAL_GOAL.md](docs/FINAL_GOAL.md)** for the intended final game.
+See **[docs/CAMPAIGNS_AND_DYNAMICS.md](docs/CAMPAIGNS_AND_DYNAMICS.md)** for current starting campaigns, victory rules and autonomous world evolution.
 
 ## Current prototype
 
-The current build uses a shared .NET 9 simulation core with two hosts: the original console client and an Avalonia desktop client. Both run the same three-country demo scenario and monthly simulation.
+The current build uses a shared .NET 9 simulation core with two hosts: the original console client and an Avalonia desktop client. Both run the same three-country world and can begin from different player countries/lineages with scenario-specific victory conditions.
 
 Implemented systems include:
 
@@ -30,12 +31,19 @@ Implemented systems include:
 - allegiance to countries and political lineages;
 - explicit political power bases: aristocracy, military, merchants, clergy, bureaucracy, workers, peasantry, regional elites, parties and royal families;
 - country-specific power structures and character standing within those power bases;
+- selectable campaign starts with distinct rulers, countries, political lineages and victory objectives;
+- campaign objectives that require sustained conditions and produce an actual win state;
 - autonomous domestic demands from dissatisfied power bases;
+- named political spokespeople who gain or lose influence, constituency standing and trust as demands are satisfied or ignored;
 - multiple power bases able to maintain simultaneous grievances and demands;
 - organised opposition blocs that form around shared rival leaders when major groups become alienated;
 - bloc cohesion and membership feeding back into political threat, conspiracy co-operation and willingness to obey the ruler;
 - escalating political pressure when important groups are ignored, including rivals gaining support;
 - material conditions such as underfunding, high taxes, unrest and war exhaustion changing political backing over time;
+- slow autonomous GDP and population change driven by administration, stability, trade, debt, unrest and war;
+- structural power bases that grow or shrink as economic and institutional conditions change;
+- foreign governments that adapt taxes and budgets to debt, unrest, readiness, state capacity and war;
+- AI countries that can form/abandon trade links and develop rivalries or wars without player involvement;
 - calculated willingness to obey orders;
 - advisers and offices including Treasurer, Marshal and Chancellor;
 - appointment and dismissal of advisers, with patronage and dismissal reshaping power-base support;
@@ -250,7 +258,7 @@ It does **not** yet provide:
 - detailed military logistics or territorial occupation;
 - a knowledge/capability/adoption model for technology;
 - dynamic time compression;
-- multiple named save slots and autosave (a versioned manual campaign save/load slot already exists);
+- multiple named save slots and save-slot management;
 - a geographic map and map-based territorial interface.
 
 Those belong to the longer-term design rather than the current prototype.
