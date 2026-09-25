@@ -585,11 +585,13 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
         var foreign = foreignCountries[i];
         var relation = simulation.State.Diplomacy.GetOrCreate(country, foreign);
         var trade = relation.HasTradeAgreement ? "trade" : "no trade";
+        var pact = relation.HasNonAggressionPact ? "NAP" : "no NAP";
 
         Console.WriteLine(
             $"[{i + 1}] {foreign.Name,-12} " +
             $"Relations {relation.Relations,4}  Trust {relation.Trust,3}  " +
-            $"Tension {relation.Tension,3}  {trade}");
+            $"Tension {relation.Tension,3}  Border {relation.BorderDisputeSeverity,3}  " +
+            $"{trade}, {pact}");
     }
 
     Console.WriteLine();
@@ -637,7 +639,14 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
         Console.WriteLine("[2] Propose a trade agreement");
 
     if (country.IsNeighbor(target))
-        Console.WriteLine("[3] Declare war");
+    {
+        if (targetRelation.HasNonAggressionPact)
+            Console.WriteLine("[3] End the non-aggression pact");
+        else
+            Console.WriteLine("[3] Propose a non-aggression pact");
+
+        Console.WriteLine("[4] Declare war");
+    }
 
     Console.WriteLine("[Enter] Cancel");
     Console.Write("Choose action: ");
@@ -662,10 +671,47 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
 
     if (action == "3" && country.IsNeighbor(target))
     {
+        if (targetRelation.HasNonAggressionPact)
+        {
+            simulation.SubmitOrder(new EndNonAggressionPactOrder
+            {
+                Issuer = country.Ruler,
+                Recipient = chancellor,
+                IssuedOn = simulation.State.Date,
+                SourceCountry = country,
+                TargetCountry = target
+            });
+
+            Pause($"Termination of the {target.Name} non-aggression pact queued.");
+            return;
+        }
+
+        simulation.SubmitOrder(new NegotiateNonAggressionPactOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = chancellor,
+            IssuedOn = simulation.State.Date,
+            SourceCountry = country,
+            TargetCountry = target
+        });
+
+        Pause(
+            $"Non-aggression pact negotiations with {target.Name} queued through " +
+            $"{chancellor.FullName}.");
+        return;
+    }
+
+    if (action == "4" && country.IsNeighbor(target))
+    {
         Console.WriteLine();
+        var pactWarning = targetRelation.HasNonAggressionPact
+            ? " This will also break the active non-aggression pact and carry a major " +
+              "additional legitimacy and trust penalty."
+            : string.Empty;
+
         Console.WriteLine(
             $"Declaring war will destroy trade, drive tension to its maximum, " +
-            "and may carry a serious domestic political cost.");
+            $"and may carry a serious domestic political cost.{pactWarning}");
         Console.Write("Type DECLARE to confirm: ");
 
         if (!string.Equals(
@@ -775,7 +821,9 @@ static void ReviewDiplomaticProposals(
 
     Console.WriteLine();
     Console.WriteLine(
-        $"{selected.SourceCountry.Name} proposes a trade agreement with {country.Name}.");
+        $"{selected.SourceCountry.Name} proposes a " +
+        $"{(selected.Type == DiplomaticProposalType.TradeAgreement ? "trade agreement" : "non-aggression pact")} " +
+        $"with {country.Name}.");
     Console.WriteLine("[A] Accept");
     Console.WriteLine("[R] Reject");
     Console.WriteLine("[Enter] Leave unanswered");
@@ -829,6 +877,10 @@ static void ShowForeignCountry(
         $"Relations {relation.Relations}, trust {relation.Trust}, tension {relation.Tension}");
     Console.WriteLine(
         $"Trade agreement: {(relation.HasTradeAgreement ? "active" : "none")}");
+    Console.WriteLine(
+        $"Non-aggression pact: {(relation.HasNonAggressionPact ? "active" : "none")}");
+    Console.WriteLine(
+        $"Border dispute severity: {relation.BorderDisputeSeverity}/100");
 
     if (!relation.HasTradeAgreement && country.IsNeighbor(target))
     {
@@ -848,6 +900,26 @@ static void ShowForeignCountry(
 
         Console.WriteLine(
             $"Chancellor's assessment of a trade proposal: {assessment}.");
+    }
+
+    if (!relation.HasNonAggressionPact && country.IsNeighbor(target))
+    {
+        var score = DiplomaticCalculations.GetNonAggressionAcceptanceScore(
+            state,
+            country,
+            target,
+            chancellor);
+
+        var assessment = score switch
+        {
+            >= 70 => "likely receptive",
+            >= 55 => "plausibly receptive",
+            >= 40 => "unlikely to accept",
+            _ => "strongly opposed"
+        };
+
+        Console.WriteLine(
+            $"Chancellor's assessment of a non-aggression pact: {assessment}.");
     }
 }
 
