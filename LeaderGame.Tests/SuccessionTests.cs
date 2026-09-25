@@ -76,4 +76,33 @@ public class SuccessionTests
         Assert.Equal(OrderStatus.Rejected, order.Status);
         Assert.Equal(0.10m, country.TaxRate);
     }
+
+    [Fact]
+    public void RepublicanRulerDeath_ForcesEarlyElectionForInterimSuccessor()
+    {
+        var state = DemoScenario.Create(
+            ScenarioCatalog.ValeriaId);
+        var country = state.Player.Country;
+        var oldRuler = country.Ruler;
+        var successor = country.SuccessionOrder.First();
+
+        oldRuler.IsAlive = false;
+        oldRuler.Health = 0;
+
+        new GameSimulation(state).AdvanceMonth();
+
+        Assert.Same(successor, country.Ruler);
+        Assert.Same(successor, state.Player.CurrentCharacter);
+        Assert.InRange(
+            country.Government.MonthsUntilElection,
+            1,
+            2);
+        Assert.False(state.Player.HasLost);
+        Assert.Contains(
+            state.Reports,
+            report => report.Title.Contains(
+                "interim",
+                StringComparison.OrdinalIgnoreCase));
+    }
+
 }
