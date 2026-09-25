@@ -13,7 +13,7 @@ public enum InformationRequestStatus
 
 public sealed class InformationRequest
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public required InformationTopic Topic { get; init; }
 
