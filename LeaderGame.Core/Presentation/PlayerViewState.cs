@@ -1,5 +1,29 @@
 namespace LeaderGame.Presentation;
 
+public sealed record ScenarioOptionView(
+    string Id,
+    string Name,
+    string Country,
+    string Leader,
+    string Lineage,
+    string GovernmentStyle,
+    string Summary,
+    string StrategicProblem);
+
+public sealed record CampaignObjectiveView(
+    string Id,
+    string Title,
+    string Description,
+    string Progress,
+    bool IsCompleted);
+
+public sealed record CampaignView(
+    string ScenarioName,
+    string Summary,
+    int CompletedObjectives,
+    int TotalObjectives,
+    IReadOnlyList<CampaignObjectiveView> Objectives);
+
 public sealed record MetricCardView(
     string Label,
     string Value,
@@ -195,6 +219,9 @@ public sealed record PlayerViewState(
     string RulerSummary,
     bool HasLost,
     string? LossReason,
+    bool HasWon,
+    string? WinReason,
+    CampaignView Campaign,
     int PendingOrders,
     int PendingReports,
     IReadOnlyList<PendingOrderView> PendingOrderDetails,
