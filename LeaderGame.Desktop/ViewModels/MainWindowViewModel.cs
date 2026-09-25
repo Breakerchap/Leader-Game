@@ -107,6 +107,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public bool IsPlaceholderVisible =>
         !IsBriefingVisible && !IsIntelligenceVisible;
 
+    public bool HasPendingReports =>
+        View.PendingReports > 0;
+
     public string SectionTitle => CurrentSection;
 
     public string SectionDescription => CurrentSection switch
@@ -157,6 +160,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(View));
         OnPropertyChanged(nameof(ForeignCountries));
         OnPropertyChanged(nameof(SelectedForeignCountry));
+        OnPropertyChanged(nameof(HasPendingReports));
         _advanceMonthCommand.RaiseCanExecuteChanged();
     }
 
