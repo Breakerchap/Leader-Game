@@ -26,6 +26,7 @@ internal static class OrderProcessor
             EndTradeAgreementOrder endTradeOrder => ProcessEndTradeAgreementOrder(state, endTradeOrder),
             RespondToDiplomaticProposalOrder responseOrder => ProcessDiplomaticProposalResponse(state, responseOrder),
             DeclareWarOrder warOrder => ProcessDeclareWarOrder(state, warOrder),
+            SetWarStanceOrder stanceOrder => ProcessSetWarStanceOrder(state, stanceOrder),
             AppointAdvisorOrder appointmentOrder => ProcessAppointAdvisorOrder(state, appointmentOrder),
             DismissAdvisorOrder dismissalOrder => ProcessDismissAdvisorOrder(state, dismissalOrder),
             InvestigateCharacterOrder investigationOrder => ProcessInvestigationOrder(state, investigationOrder),
@@ -832,6 +833,63 @@ internal static class OrderProcessor
             $"Trade agreement with {order.TargetCountry.Name} ended",
             $"{order.SourceCountry.Name} terminates its trade agreement with " +
             $"{order.TargetCountry.Name}. The decision damages trust and raises tension.");
+    }
+
+    private static SimulationReport ProcessSetWarStanceOrder(
+        GameState state,
+        SetWarStanceOrder order)
+    {
+        var marshal = order.Recipient;
+
+        if (order.War.Status != Military.WarStatus.Active ||
+            !order.War.IsParticipant(order.Country) ||
+            !IsServingMarshal(order.Country, marshal))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Military directive rejected",
+                "An active Marshal can only receive directives for an active war their country is fighting.");
+        }
+
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.Country,
+            marshal,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Military,
+                $"{marshal.FullName} refuses the military directive",
+                $"{marshal.FullName} refuses to adopt the requested " +
+                $"{order.RequestedStance} stance. Their willingness to obey is " +
+                $"{willingness:F0}/100.");
+        }
+
+        var enactedStance =
+            willingness < 35 &&
+            order.RequestedStance != Military.WarStance.Balanced
+                ? Military.WarStance.Balanced
+                : order.RequestedStance;
+
+        order.War.SetStance(order.Country, enactedStance);
+        order.Status = OrderStatus.Completed;
+
+        var interpretation = enactedStance == order.RequestedStance
+            ? "as ordered"
+            : "but moderates the instruction into a Balanced stance";
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Military,
+            $"{marshal.FullName} sets the war stance",
+            $"{marshal.FullName} receives the order for a {order.RequestedStance} " +
+            $"campaign and implements it {interpretation}. Current stance: {enactedStance}.");
     }
 
     private static SimulationReport ProcessDeclareWarOrder(

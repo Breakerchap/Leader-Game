@@ -40,6 +40,8 @@ public class GameSimulation
 
         DiplomacySystem.ProcessMonth(State);
 
+        State.Reports.AddRange(WarSystem.ProcessMonth(State));
+
         State.Reports.AddRange(ForeignPolicySystem.ProcessMonth(State));
 
         State.Reports.AddRange(PlotSystem.ProcessMonth(State));

@@ -28,7 +28,13 @@ internal static class ForeignPolicySystem
                 foreignCountry,
                 playerCountry);
 
-            if (relation.HasTradeAgreement ||
+            var atWar = state.Wars.Any(war =>
+                war.Status == Military.WarStatus.Active &&
+                war.IsParticipant(foreignCountry) &&
+                war.IsParticipant(playerCountry));
+
+            if (atWar ||
+                relation.HasTradeAgreement ||
                 HasPendingProposal(state, foreignCountry, playerCountry) ||
                 HasRecentProposal(state, foreignCountry, playerCountry))
             {
