@@ -1,0 +1,518 @@
+<Window
+    x:Class="LeaderGame.Desktop.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Leader Game"
+    Width="1440"
+    Height="900"
+    MinWidth="1050"
+    MinHeight="700"
+    WindowStartupLocation="CenterScreen">
+
+  <Grid RowDefinitions="64,*">
+    <Border
+        Grid.Row="0"
+        Background="#0F151D"
+        BorderBrush="#26313D"
+        BorderThickness="0,0,0,1"
+        Padding="20,0">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel
+            VerticalAlignment="Center"
+            Spacing="1">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock
+                Text="{Binding View.CountryName}"
+                FontSize="19"
+                FontWeight="SemiBold"
+                Foreground="#EDF2F7" />
+            <TextBlock
+                Text="{Binding View.Date}"
+                VerticalAlignment="Center"
+                Classes="muted" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <TextBlock
+                Text="{Binding View.LineageName}"
+                FontSize="12"
+                Classes="muted" />
+            <TextBlock
+                Text="{Binding View.StatusMessage}"
+                FontSize="12"
+                Foreground="#AEBAC8" />
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel
+            Grid.Column="1"
+            Orientation="Horizontal"
+            VerticalAlignment="Center"
+            Spacing="12">
+          <StackPanel
+              VerticalAlignment="Center"
+              HorizontalAlignment="Right">
+            <TextBlock
+                Text="{Binding View.RulerName}"
+                HorizontalAlignment="Right"
+                FontWeight="SemiBold" />
+            <TextBlock
+                Text="{Binding View.RulerSummary}"
+                HorizontalAlignment="Right"
+                FontSize="12"
+                Classes="muted" />
+          </StackPanel>
+          <Button
+              Classes="primary"
+              Command="{Binding AdvanceMonthCommand}"
+              Content="Advance month  →" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Grid
+        Grid.Row="1"
+        ColumnDefinitions="210,*,300">
+
+      <Border
+          Grid.Column="0"
+          Background="#0D131A"
+          BorderBrush="#26313D"
+          BorderThickness="0,0,1,0"
+          Padding="14,18">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <StackPanel Spacing="4">
+            <TextBlock
+                Text="GOVERNMENT"
+                Classes="eyebrow"
+                Margin="10,0,0,8" />
+
+            <Button Classes="nav" Content="Briefing"
+                    Command="{Binding NavigateCommand}" CommandParameter="Briefing" />
+            <Button Classes="nav" Content="Government"
+                    Command="{Binding NavigateCommand}" CommandParameter="Government" />
+            <Button Classes="nav" Content="Court"
+                    Command="{Binding NavigateCommand}" CommandParameter="Court" />
+            <Button Classes="nav" Content="Economy"
+                    Command="{Binding NavigateCommand}" CommandParameter="Economy" />
+
+            <TextBlock
+                Text="STATE"
+                Classes="eyebrow"
+                Margin="10,18,0,8" />
+            <Button Classes="nav" Content="Foreign Affairs"
+                    Command="{Binding NavigateCommand}" CommandParameter="Foreign Affairs" />
+            <Button Classes="nav" Content="Military"
+                    Command="{Binding NavigateCommand}" CommandParameter="Military" />
+            <Button Classes="nav" Content="Intelligence"
+                    Command="{Binding NavigateCommand}" CommandParameter="Intelligence" />
+            <Button Classes="nav" Content="Archive"
+                    Command="{Binding NavigateCommand}" CommandParameter="Archive" />
+          </StackPanel>
+
+          <Border
+              Grid.Row="2"
+              Classes="card"
+              Padding="12"
+              Margin="0,16,0,0">
+            <StackPanel Spacing="5">
+              <TextBlock Text="WORK IN PROGRESS" Classes="eyebrow" />
+              <TextBlock
+                  Text="Desktop prototype"
+                  FontWeight="SemiBold" />
+              <TextBlock
+                  Text="The console host remains available while desktop surfaces are migrated."
+                  FontSize="12"
+                  TextWrapping="Wrap"
+                  Classes="muted" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Border>
+
+      <Grid
+          Grid.Column="1"
+          Margin="24,22"
+          ClipToBounds="True">
+
+        <!-- Briefing -->
+        <ScrollViewer IsVisible="{Binding IsBriefingVisible}">
+          <StackPanel Spacing="20">
+            <StackPanel Spacing="4">
+              <TextBlock Text="BRIEFING" Classes="eyebrow" />
+              <TextBlock
+                  Text="What the government thinks it knows"
+                  Classes="title" />
+              <TextBlock
+                  Text="Estimates can be stale, incomplete or wrong. Open Intelligence to inspect their sources."
+                  TextWrapping="Wrap"
+                  Classes="muted" />
+            </StackPanel>
+
+            <ItemsControl ItemsSource="{Binding View.Metrics}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border
+                      Classes="card"
+                      Width="235"
+                      MinHeight="112"
+                      Margin="0,0,10,10">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{Binding Label}" Classes="eyebrow" />
+                      <TextBlock
+                          Text="{Binding Value}"
+                          FontSize="22"
+                          FontWeight="SemiBold"
+                          Foreground="#EDF2F7" />
+                      <TextBlock
+                          Text="{Binding Detail}"
+                          FontSize="11"
+                          TextWrapping="Wrap"
+                          Classes="muted" />
+                      <TextBlock
+                          IsVisible="{Binding IsStale}"
+                          Text="STALE INFORMATION"
+                          FontSize="10"
+                          FontWeight="Bold"
+                          Foreground="#C69A61" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel>
+                <TextBlock Text="INCOMING" Classes="eyebrow" />
+                <TextBlock
+                    Text="Reports, events and decisions"
+                    FontSize="18"
+                    FontWeight="SemiBold" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                <TextBlock
+                    Text="{Binding View.PendingOrders, StringFormat='{}{0} orders queued'}"
+                    FontSize="12"
+                    Classes="muted"
+                    HorizontalAlignment="Right" />
+                <TextBlock
+                    Text="{Binding View.PendingReports, StringFormat='{}{0} inquiries underway'}"
+                    FontSize="12"
+                    Classes="muted"
+                    HorizontalAlignment="Right" />
+              </StackPanel>
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding View.Briefings}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="card" Margin="0,0,0,10">
+                    <Grid ColumnDefinitions="5,*">
+                      <Border
+                          Background="#A27742"
+                          CornerRadius="3"
+                          IsVisible="{Binding NeedsAttention}"
+                          Margin="-5,0,12,0" />
+                      <StackPanel Grid.Column="1" Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="9">
+                          <TextBlock
+                              Text="{Binding Category}"
+                              Classes="eyebrow" />
+                          <TextBlock
+                              Text="{Binding Meta}"
+                              FontSize="11"
+                              Classes="muted" />
+                        </StackPanel>
+                        <TextBlock
+                            Text="{Binding Title}"
+                            FontSize="17"
+                            FontWeight="SemiBold"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Text="{Binding Summary}"
+                            TextWrapping="Wrap"
+                            Foreground="#C4CED9" />
+                        <TextBlock
+                            IsVisible="{Binding NeedsAttention}"
+                            Text="Requires attention or contains uncertainty."
+                            FontSize="11"
+                            Foreground="#C69A61" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- Intelligence -->
+        <ScrollViewer IsVisible="{Binding IsIntelligenceVisible}">
+          <StackPanel Spacing="20">
+            <StackPanel Spacing="4">
+              <TextBlock Text="INTELLIGENCE" Classes="eyebrow" />
+              <TextBlock
+                  Text="Reports and inquiries"
+                  Classes="title" />
+              <TextBlock
+                  Text="Task advisers for information, compare their claims and keep track of how old your picture of the world has become."
+                  TextWrapping="Wrap"
+                  Classes="muted" />
+            </StackPanel>
+
+            <Border Classes="card">
+              <StackPanel Spacing="12">
+                <TextBlock Text="REQUEST A REPORT" Classes="eyebrow" />
+                <WrapPanel Orientation="Horizontal">
+                  <Button
+                      Margin="0,0,8,8"
+                      Command="{Binding RequestEconomyReportCommand}"
+                      Content="Treasurer · Economy" />
+                  <Button
+                      Margin="0,0,8,8"
+                      Command="{Binding RequestOwnMilitaryReportCommand}"
+                      Content="Marshal · Our military" />
+                  <Button
+                      Margin="0,0,8,8"
+                      Command="{Binding RequestDomesticReportCommand}"
+                      Content="Chancellor · Domestic politics" />
+                </WrapPanel>
+
+                <Grid ColumnDefinitions="220,Auto,Auto" ColumnSpacing="8">
+                  <ComboBox
+                      ItemsSource="{Binding ForeignCountries}"
+                      SelectedItem="{Binding SelectedForeignCountry}"
+                      PlaceholderText="Choose foreign country">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Name}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Button
+                      Grid.Column="1"
+                      Command="{Binding RequestForeignAffairsReportCommand}"
+                      Content="Chancellor assessment" />
+                  <Button
+                      Grid.Column="2"
+                      Command="{Binding RequestForeignMilitaryReportCommand}"
+                      Content="Marshal intelligence" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <StackPanel IsVisible="{Binding View.PendingReports}">
+              <TextBlock Text="PENDING INQUIRIES" Classes="eyebrow" />
+              <ItemsControl ItemsSource="{Binding View.PendingInquiries}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="card" Margin="0,8,0,0" Padding="12">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="{Binding Topic}"
+                              FontWeight="SemiBold" />
+                          <TextBlock
+                              Text="{Binding Advisor}"
+                              FontSize="12"
+                              Classes="muted" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                          <TextBlock Text="{Binding Subject}" HorizontalAlignment="Right" />
+                          <TextBlock
+                              Text="{Binding Since, StringFormat='Queued {0}'}"
+                              FontSize="11"
+                              Classes="muted"
+                              HorizontalAlignment="Right" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="REPORT HISTORY" Classes="eyebrow" />
+              <ItemsControl ItemsSource="{Binding View.IntelligenceReports}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="card" Margin="0,0,0,10">
+                      <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <StackPanel>
+                            <TextBlock
+                                Text="{Binding Title}"
+                                FontSize="17"
+                                FontWeight="SemiBold"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                Text="{Binding Source}"
+                                FontSize="12"
+                                Classes="muted" />
+                          </StackPanel>
+                          <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                            <TextBlock Text="{Binding Origin}" HorizontalAlignment="Right" />
+                            <TextBlock
+                                Text="{Binding DataAge}"
+                                FontSize="11"
+                                Classes="muted"
+                                HorizontalAlignment="Right" />
+                          </StackPanel>
+                        </Grid>
+
+                        <TextBlock
+                            Text="{Binding Summary}"
+                            TextWrapping="Wrap"
+                            Foreground="#C4CED9" />
+
+                        <ItemsControl ItemsSource="{Binding Facts}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <Grid
+                                  ColumnDefinitions="190,110,90,*"
+                                  Margin="0,3">
+                                <TextBlock Text="{Binding Label}" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Text="{Binding Value}"
+                                    FontWeight="SemiBold" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    Text="{Binding Margin}"
+                                    Classes="muted" />
+                                <TextBlock
+                                    Grid.Column="3"
+                                    Text="{Binding Confidence}"
+                                    FontSize="11"
+                                    Classes="muted" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <ItemsControl ItemsSource="{Binding Caveats}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <TextBlock
+                                  Text="{Binding}"
+                                  TextWrapping="Wrap"
+                                  Foreground="#C69A61"
+                                  FontSize="12"
+                                  Margin="0,2" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- Placeholder surfaces -->
+        <Grid IsVisible="{Binding IsPlaceholderVisible}">
+          <Border
+              Classes="card"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Top"
+              Padding="24">
+            <StackPanel Spacing="9">
+              <TextBlock
+                  Text="{Binding SectionTitle}"
+                  Classes="title" />
+              <TextBlock
+                  Text="{Binding SectionDescription}"
+                  FontSize="15"
+                  TextWrapping="Wrap"
+                  Foreground="#C4CED9"
+                  MaxWidth="720" />
+              <TextBlock
+                  Margin="0,12,0,0"
+                  Text="This navigation surface is intentionally present now so each simulation system can migrate behind the same player-information boundary rather than growing as a separate UI."
+                  TextWrapping="Wrap"
+                  Classes="muted"
+                  MaxWidth="720" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Grid>
+
+      <Border
+          Grid.Column="2"
+          Background="#0D131A"
+          BorderBrush="#26313D"
+          BorderThickness="1,0,0,0"
+          Padding="18,22">
+        <ScrollViewer>
+          <StackPanel Spacing="14">
+            <StackPanel Spacing="3">
+              <TextBlock Text="ADVISERS" Classes="eyebrow" />
+              <TextBlock
+                  Text="People between you and the state"
+                  FontSize="17"
+                  FontWeight="SemiBold"
+                  TextWrapping="Wrap" />
+            </StackPanel>
+
+            <ItemsControl ItemsSource="{Binding View.Advisors}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="card" Margin="0,0,0,10">
+                    <StackPanel Spacing="6">
+                      <TextBlock
+                          Text="{Binding Office}"
+                          Classes="eyebrow" />
+                      <TextBlock
+                          Text="{Binding Name}"
+                          FontSize="16"
+                          FontWeight="SemiBold" />
+                      <Grid
+                          ColumnDefinitions="Auto,*"
+                          RowDefinitions="Auto,Auto,Auto,Auto"
+                          ColumnSpacing="12"
+                          RowSpacing="4">
+                        <TextBlock Text="Ability" Classes="muted" />
+                        <TextBlock Grid.Column="1" Text="{Binding Ability}" />
+
+                        <TextBlock Grid.Row="1" Text="Trust" Classes="muted" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Trust}" />
+
+                        <TextBlock Grid.Row="2" Text="Obedience" Classes="muted" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Obedience}" />
+
+                        <TextBlock Grid.Row="3" Text="Risk" Classes="muted" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Risk}" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Classes="card">
+              <StackPanel Spacing="5">
+                <TextBlock Text="INFORMATION RULE" Classes="eyebrow" />
+                <TextBlock
+                    Text="The desktop UI does not bind to hidden simulation values."
+                    TextWrapping="Wrap"
+                    FontWeight="SemiBold" />
+                <TextBlock
+                    Text="Numbers shown as estimates come from the ruler's current knowledge state. Advisers may be wrong."
+                    TextWrapping="Wrap"
+                    FontSize="12"
+                    Classes="muted" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>
