@@ -13,6 +13,7 @@
   <Grid RowDefinitions="64,*">
     <Border
         Grid.Row="0"
+        IsVisible="{Binding IsCampaignUiVisible}"
         Background="#0F151D"
         BorderBrush="#26313D"
         BorderThickness="0,0,0,1"
@@ -95,6 +96,7 @@
 
     <Grid
         Grid.Row="1"
+        IsVisible="{Binding IsCampaignUiVisible}"
         ColumnDefinitions="210,*,300">
 
       <Border
@@ -162,16 +164,21 @@
               Classes="card"
               Padding="12"
               Margin="0,16,0,0">
-            <StackPanel Spacing="5">
-              <TextBlock Text="WORK IN PROGRESS" Classes="eyebrow" />
+            <StackPanel Spacing="7">
+              <TextBlock Text="CAMPAIGN" Classes="eyebrow" />
               <TextBlock
-                  Text="Desktop prototype"
-                  FontWeight="SemiBold" />
+                  Text="{Binding View.Campaign.ScenarioName}"
+                  FontWeight="SemiBold"
+                  TextWrapping="Wrap" />
               <TextBlock
-                  Text="The console host remains available while desktop surfaces are migrated."
-                  FontSize="12"
-                  TextWrapping="Wrap"
+                  Text="{Binding View.Campaign.CompletedObjectives, StringFormat='{}{0} objectives completed'}"
+                  FontSize="11"
                   Classes="muted" />
+              <Button
+                  Margin="0,5,0,0"
+                  Classes="action"
+                  Command="{Binding OpenCampaignSetupCommand}"
+                  Content="New / load campaign" />
             </StackPanel>
           </Border>
         </Grid>
@@ -212,6 +219,101 @@
                 </Border>
               </WrapPanel>
             </StackPanel>
+
+            <Border
+                IsVisible="{Binding View.HasWon}"
+                Background="#14281C"
+                BorderBrush="#3E8058"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="14">
+              <StackPanel Spacing="5">
+                <TextBlock Text="CAMPAIGN VICTORY" Classes="eyebrow" Foreground="#8FD2A8" />
+                <TextBlock
+                    Text="{Binding View.WinReason}"
+                    FontSize="16"
+                    FontWeight="SemiBold"
+                    TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <Border
+                IsVisible="{Binding View.HasLost}"
+                Background="#2B1718"
+                BorderBrush="#764044"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="14">
+              <StackPanel Spacing="5">
+                <TextBlock Text="POLITICAL DEFEAT" Classes="eyebrow" Foreground="#E99B9B" />
+                <TextBlock
+                    Text="{Binding View.LossReason}"
+                    FontSize="16"
+                    FontWeight="SemiBold"
+                    TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="panel">
+              <StackPanel Spacing="11">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Text="CAMPAIGN OBJECTIVES" Classes="eyebrow" Foreground="#D8A657" />
+                    <TextBlock
+                        Text="{Binding View.Campaign.ScenarioName}"
+                        FontSize="17"
+                        FontWeight="SemiBold" />
+                  </StackPanel>
+                  <Border Grid.Column="1" Classes="badge" Background="#2A2115" VerticalAlignment="Top">
+                    <TextBlock
+                        Text="{Binding View.Campaign.CompletedObjectives, StringFormat='{}{0} complete'}"
+                        Foreground="#E1B66F"
+                        FontSize="11" />
+                  </Border>
+                </Grid>
+                <TextBlock
+                    Text="{Binding View.Campaign.Summary}"
+                    TextWrapping="Wrap"
+                    FontSize="12"
+                    Classes="muted" />
+                <ItemsControl ItemsSource="{Binding View.Campaign.Objectives}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border
+                          Background="#0D141C"
+                          BorderBrush="#26313D"
+                          BorderThickness="1"
+                          CornerRadius="6"
+                          Padding="10"
+                          Margin="0,0,0,6">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
+                          <TextBlock
+                              Text="✓"
+                              IsVisible="{Binding IsCompleted}"
+                              Foreground="#75C493"
+                              FontWeight="Bold"
+                              FontSize="16" />
+                          <StackPanel Grid.Column="1" Spacing="3">
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                            <TextBlock
+                                Text="{Binding Description}"
+                                TextWrapping="Wrap"
+                                FontSize="11"
+                                Classes="muted" />
+                          </StackPanel>
+                          <Border Grid.Column="2" Classes="badge" Background="#171E27" VerticalAlignment="Top">
+                            <TextBlock
+                                Text="{Binding Progress}"
+                                FontSize="10"
+                                Foreground="#C8D2DD" />
+                          </Border>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
 
             <ItemsControl ItemsSource="{Binding View.Metrics}">
               <ItemsControl.ItemsPanel>
@@ -1843,6 +1945,125 @@
           </StackPanel>
         </ScrollViewer>
       </Border>
+    </Grid>
+
+    <Grid
+        Grid.RowSpan="2"
+        IsVisible="{Binding IsCampaignSetupVisible}"
+        Background="#0A1017">
+      <ScrollViewer>
+        <StackPanel
+            MaxWidth="1080"
+            Margin="48"
+            HorizontalAlignment="Center"
+            Spacing="24">
+          <StackPanel Spacing="7">
+            <TextBlock
+                Text="LEADER GAME"
+                Classes="eyebrow"
+                Foreground="#70C4D0" />
+            <TextBlock
+                Text="Choose who you are before history starts moving"
+                FontSize="34"
+                FontWeight="SemiBold"
+                TextWrapping="Wrap" />
+            <TextBlock
+                MaxWidth="820"
+                Text="The world is shared, but your political lineage, advisers, pressures and victory conditions depend on where you begin."
+                FontSize="15"
+                TextWrapping="Wrap"
+                Foreground="#AEBAC8" />
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button
+                Classes="primary"
+                Command="{Binding LoadCommand}"
+                Content="↺  Continue manual save" />
+            <Button
+                Classes="action"
+                Command="{Binding RecoverAutosaveCommand}"
+                Content="⟲  Recover autosave" />
+          </StackPanel>
+
+          <TextBlock Text="NEW CAMPAIGN" Classes="eyebrow" />
+
+          <ItemsControl ItemsSource="{Binding ScenarioOptions}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border
+                    Classes="card"
+                    Width="490"
+                    MinHeight="330"
+                    Margin="0,0,14,14"
+                    Padding="0">
+                  <Grid RowDefinitions="6,*">
+                    <Border
+                        Background="#55B8C7"
+                        CornerRadius="8,8,0,0" />
+                    <StackPanel Grid.Row="1" Margin="20" Spacing="12">
+                      <StackPanel Spacing="4">
+                        <TextBlock
+                            Text="{Binding Name}"
+                            FontSize="24"
+                            FontWeight="SemiBold" />
+                        <TextBlock
+                            Text="{Binding Country}"
+                            Foreground="#86CBD6"
+                            FontWeight="SemiBold" />
+                      </StackPanel>
+
+                      <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Border Background="#0D141C" CornerRadius="6" Padding="9">
+                          <StackPanel Spacing="3">
+                            <TextBlock Text="LEADER" Classes="eyebrow" />
+                            <TextBlock Text="{Binding Leader}" FontWeight="SemiBold" />
+                          </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Background="#0D141C" CornerRadius="6" Padding="9">
+                          <StackPanel Spacing="3">
+                            <TextBlock Text="LINEAGE" Classes="eyebrow" />
+                            <TextBlock Text="{Binding Lineage}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding GovernmentStyle}" FontSize="10" Classes="muted" />
+                          </StackPanel>
+                        </Border>
+                      </Grid>
+
+                      <TextBlock
+                          Text="{Binding Summary}"
+                          TextWrapping="Wrap"
+                          Foreground="#C8D2DD" />
+
+                      <Border Background="#211C14" BorderBrush="#5F4A28" BorderThickness="1" CornerRadius="6" Padding="10">
+                        <StackPanel Spacing="3">
+                          <TextBlock Text="OPENING PROBLEM" Classes="eyebrow" Foreground="#D8A657" />
+                          <TextBlock
+                              Text="{Binding StrategicProblem}"
+                              TextWrapping="Wrap"
+                              FontSize="12"
+                              Foreground="#DFC697" />
+                        </StackPanel>
+                      </Border>
+
+                      <Button
+                          Classes="primary"
+                          HorizontalAlignment="Left"
+                          Command="{Binding #Root.DataContext.StartScenarioCommand}"
+                          CommandParameter="{Binding}"
+                          Content="Begin campaign  →" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
     </Grid>
   </Grid>
 </Window>
