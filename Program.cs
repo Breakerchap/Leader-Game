@@ -8,12 +8,27 @@ using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
 
-var state = DemoScenario.Create();
+var state = ChooseStartingScenario();
 var simulation = new GameSimulation(state);
 
 while (true)
 {
     var country = state.Player.Country;
+
+    if (state.Player.HasWon)
+    {
+        Console.Clear();
+        Console.WriteLine("Campaign victory");
+        Console.WriteLine("================");
+        Console.WriteLine();
+        Console.WriteLine(
+            state.Player.WinReason ??
+            "Every campaign objective has been completed.");
+        Console.WriteLine();
+        Console.WriteLine(
+            $"{country.Name} remains under {country.Ruler.FullName}.");
+        break;
+    }
 
     if (state.Player.HasLost)
     {
@@ -126,12 +141,72 @@ while (true)
     simulation.AdvanceMonth();
 }
 
+static GameState ChooseStartingScenario()
+{
+    Console.Clear();
+    Console.WriteLine("Leader Game");
+    Console.WriteLine("===========");
+    Console.WriteLine();
+    Console.WriteLine("Choose a starting campaign:");
+    Console.WriteLine();
+
+    for (var i = 0; i < ScenarioCatalog.All.Count; i++)
+    {
+        var scenario = ScenarioCatalog.All[i];
+
+        Console.WriteLine(
+            $"[{i + 1}] {scenario.Name} — {scenario.CountryName}");
+        Console.WriteLine(
+            $"    {scenario.LeaderName} · {scenario.LineageName}");
+        Console.WriteLine(
+            $"    {scenario.StrategicProblem}");
+        Console.WriteLine();
+    }
+
+    Console.Write("Campaign [1]: ");
+    var raw = Console.ReadLine();
+
+    if (!int.TryParse(raw, out var choice) ||
+        choice < 1 ||
+        choice > ScenarioCatalog.All.Count)
+    {
+        choice = 1;
+    }
+
+    return DemoScenario.Create(
+        ScenarioCatalog.All[choice - 1].Id);
+}
+
 static void PrintDashboard(GameState state)
 {
     var country = state.Player.Country;
 
     Console.WriteLine($"{country.Name} — {state.Date}");
     Console.WriteLine($"Lineage: {state.Player.Lineage.Name}");
+
+    if (state.Campaign is not null)
+    {
+        var completed = state.Campaign.Objectives.Count(objective =>
+            objective.IsCompleted);
+
+        Console.WriteLine(
+            $"Campaign: {state.Campaign.Title} — " +
+            $"{completed}/{state.Campaign.Objectives.Count} objectives complete");
+
+        foreach (var objective in state.Campaign.Objectives)
+        {
+            var progress = objective.IsCompleted
+                ? "complete"
+                : objective.RequiredMonths <= 1
+                    ? "in progress"
+                    : $"{objective.ProgressMonths}/{objective.RequiredMonths} qualifying months";
+
+            Console.WriteLine(
+                $"  {(objective.IsCompleted ? "[x]" : "[ ]")} " +
+                $"{objective.Title}: {progress}");
+        }
+    }
+
     Console.WriteLine();
     Console.WriteLine(
         $"Ruler: {country.Ruler.FullName} — age {country.Ruler.Age}, " +
