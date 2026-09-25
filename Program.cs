@@ -136,31 +136,55 @@ static void PrintDashboard(GameState state)
     Console.WriteLine(
         $"Ruler: {country.Ruler.FullName} — age {country.Ruler.Age}, " +
         $"health {country.Ruler.Health}/100");
-    Console.WriteLine($"Population: {country.Population:N0}");
-    Console.WriteLine($"GDP: {country.Gdp:N0}");
-    Console.WriteLine($"Treasury: {country.Treasury:N0}");
-    Console.WriteLine($"Debt: {country.Debt:N0}");
+    Console.WriteLine(
+        $"Population: {FormatKnown(state, InformationMetric.Population, country.Id)}");
+    Console.WriteLine(
+        $"GDP: {FormatKnown(state, InformationMetric.Gdp, country.Id)}");
+    Console.WriteLine(
+        $"Treasury: {FormatKnown(state, InformationMetric.Treasury, country.Id)}");
+    Console.WriteLine(
+        $"Debt: {FormatKnown(state, InformationMetric.Debt, country.Id)}");
 
-    if (country.LastMonthlyTaxRevenue != 0m || country.LastMonthlyExpenses != 0m)
+    var taxRevenue = state.Knowledge.Get(
+        InformationMetric.MonthlyTaxRevenue,
+        country.Id);
+    var expenses = state.Knowledge.Get(
+        InformationMetric.MonthlyExpenses,
+        country.Id);
+    var balance = state.Knowledge.Get(
+        InformationMetric.MonthlyBalance,
+        country.Id);
+
+    if (taxRevenue is not null || expenses is not null || balance is not null)
     {
         Console.WriteLine(
-            $"Last budget: tax {country.LastMonthlyTaxRevenue:N0}, " +
-            $"trade {country.LastMonthlyTradeIncome:N0}, " +
-            $"expenses {country.LastMonthlyExpenses:N0}, " +
-            $"balance {country.LastMonthlyBalance:N0}");
+            $"Last budget estimate: revenue {FormatKnown(state, InformationMetric.MonthlyTaxRevenue, country.Id)}, " +
+            $"expenses {FormatKnown(state, InformationMetric.MonthlyExpenses, country.Id)}, " +
+            $"balance {FormatKnown(state, InformationMetric.MonthlyBalance, country.Id)}");
     }
 
-    Console.WriteLine($"Army: {country.ArmySize:N0} — readiness {country.ArmyReadiness:F0}/100");
-    Console.WriteLine($"Tax rate: {country.TaxRate:P1}");
-    Console.WriteLine($"Administrative efficiency: {country.AdministrativeEfficiency:P0}");
+    Console.WriteLine(
+        $"Army: {FormatKnown(state, InformationMetric.ArmySize, country.Id)} — " +
+        $"readiness {FormatKnown(state, InformationMetric.ArmyReadiness, country.Id)}");
+    Console.WriteLine($"Tax rate: {country.TaxRate:P1} (enacted policy)");
+    Console.WriteLine(
+        $"Administrative efficiency: {FormatKnown(state, InformationMetric.AdministrativeEfficiency, country.Id)}");
     Console.WriteLine(
         $"Funding: army {country.ArmyFunding:P0}, administration " +
-        $"{country.AdministrationFunding:P0}, court {country.CourtFunding:P0}");
-    Console.WriteLine($"Public unrest: {country.PublicUnrest:F1}");
-    Console.WriteLine($"Stability: {country.Government.Stability:F1}");
+        $"{country.AdministrationFunding:P0}, court {country.CourtFunding:P0} (enacted policy)");
     Console.WriteLine(
-        $"Political backing: {PoliticalCalculations.GetPowerBaseInfluence(country, country.Ruler):F0}/100");
+        $"Public unrest: {FormatKnown(state, InformationMetric.PublicUnrest, country.Id)}");
+    Console.WriteLine(
+        $"Stability: {FormatKnown(state, InformationMetric.GovernmentStability, country.Id)}");
+    Console.WriteLine(
+        $"Political backing: {FormatKnown(state, InformationMetric.PoliticalBacking, country.Id)}");
     Console.WriteLine($"Pending orders: {state.PendingOrders.Count}");
+
+    var pendingReports = state.InformationRequests.Count(request =>
+        request.Status == InformationRequestStatus.Pending);
+
+    if (pendingReports > 0)
+        Console.WriteLine($"Reports being prepared: {pendingReports}");
 
     var activeDomesticDemands = state.PowerBaseDemands
         .Where(demand =>
@@ -176,8 +200,7 @@ static void PrintDashboard(GameState state)
 
         Console.WriteLine(
             $"Domestic pressures: {activeDomesticDemands.Count} — most urgent: " +
-            $"{FormatPowerBase(urgent.PowerBase)} wants {DescribeDemandBrief(urgent)} " +
-            $"({urgent.MonthsOpen} month(s) open, escalation {urgent.EscalationLevel})");
+            $"{FormatPowerBase(urgent.PowerBase)} wants {DescribeDemandBrief(urgent)}");
     }
 
     var activeBloc = state.PoliticalBlocs.FirstOrDefault(bloc =>
@@ -188,7 +211,7 @@ static void PrintDashboard(GameState state)
     {
         Console.WriteLine(
             $"Organised opposition: {activeBloc.Leader.FullName} — " +
-            $"{FormatPowerBaseList(activeBloc.PowerBases)}, cohesion {activeBloc.Cohesion:F0}/100");
+            $"{DescribeLevel(activeBloc.Cohesion)} cohesion");
     }
 
     var activeWars = state.Wars
@@ -199,17 +222,16 @@ static void PrintDashboard(GameState state)
 
     if (activeWars.Count > 0)
     {
-        Console.WriteLine($"War exhaustion: {country.WarExhaustion:F1}/100");
+        Console.WriteLine(
+            $"War exhaustion: {FormatKnown(state, InformationMetric.WarExhaustion, country.Id)}");
 
         foreach (var war in activeWars)
         {
             var opponent = war.OpponentOf(country);
-            var score = ReferenceEquals(country, war.Attacker)
-                ? war.WarScore
-                : -war.WarScore;
 
             Console.WriteLine(
-                $"At war with {opponent.Name}: score {score:+0.0;-0.0;0.0}, " +
+                $"At war with {opponent.Name}: reported position " +
+                $"{FormatKnown(state, InformationMetric.WarScore, country.Id, opponent.Id)}, " +
                 $"month {war.MonthsActive}, stance {war.GetStance(country)}");
         }
     }
@@ -249,10 +271,10 @@ static void PrintDashboard(GameState state)
         Console.WriteLine(
             $"{advisor.Position!.Value,-12} " +
             $"{advisor.FullName,-20} " +
-            $"Comp {advisor.Competence,3}  " +
-            $"Trust {relationship.Trust,3}  " +
-            $"Will {willingness,5:F0}  " +
-            $"Threat {threat,5:F0}");
+            $"ability {DescribeLevel(advisor.Competence),-10}  " +
+            $"trust {DescribeTrust(relationship.Trust),-10}  " +
+            $"obedience {DescribeWillingness(willingness),-11}  " +
+            $"risk {DescribeThreat(threat)}");
     }
 
     var candidates = country.AvailableAdvisors.ToList();
@@ -262,6 +284,10 @@ static void PrintDashboard(GameState state)
         Console.WriteLine();
         Console.WriteLine($"Available political figures: {candidates.Count} — press C to inspect.");
     }
+
+    Console.WriteLine();
+    Console.WriteLine(
+        "Numbers marked with an adviser/date are estimates. Press K to inspect sources, uncertainty and staleness.");
 }
 
 static void QueueTaxOrder(GameSimulation simulation, Country country)
