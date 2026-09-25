@@ -1,4 +1,5 @@
 using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Campaign;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Diplomacy;
 using LeaderGame.Simulation.Military;
@@ -26,6 +27,8 @@ public class GameState
     public List<PoliticalBloc> PoliticalBlocs { get; } = [];
 
     public List<CabinetProposal> CabinetProposals { get; } = [];
+
+    public CampaignState? Campaign { get; set; }
 
     public PlayerKnowledge Knowledge { get; } = new();
 
