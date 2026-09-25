@@ -143,15 +143,68 @@ The Foreign Affairs surface includes:
 
 Foreign relations and state capabilities are shown from player knowledge. Treaties and formal war status are exact because they are public state acts.
 
-### Remaining placeholders
+### Military
 
-The remaining major placeholder surfaces are:
+The Military surface works in both peace and war.
 
+It includes:
+
+- current reported army strength, readiness and war exhaustion;
+- the Marshal and qualitative obedience;
+- active campaign selection;
+- reported campaign position;
+- own-force and enemy-force estimates;
+- campaign stance orders;
+- fresh enemy-intelligence requests;
+- peace proposals with white peace, demanded reparations or offered reparations.
+
+Battlefield position and enemy strength are always mediated by player knowledge. A campaign can therefore change before the player's screen catches up.
+
+### Economy
+
+The Economy surface is explicitly a **reported-history** screen rather than an omniscient ledger.
+
+It includes:
+
+- current reported GDP, treasury, debt, revenue, expenses, monthly balance and administrative efficiency;
+- the Treasurer and qualitative obedience;
+- a fresh-report request;
+- successive historical Treasury snapshots;
+- delivered date, data age, source and origin;
+- reported treasury, debt, revenue, expenses and balance for each historical report;
+- contradiction/caveat indicators.
+
+Historical rows are not corrected after later information arrives. If the Treasurer first reports one figure and later revises it, both claims remain visible.
+
+### Archive
+
+The Archive is a searchable record of what reached the ruler.
+
+It combines:
+
+- adviser reports;
+- order outcomes;
+- diplomatic events;
+- military events;
+- political events;
+- other player-visible government records.
+
+It supports free-text search and category filtering. It deliberately stores the player-visible record rather than hidden simulation truth.
+
+## Current coverage
+
+All primary desktop navigation surfaces are now functional:
+
+- Briefing;
+- Government;
+- Court;
 - Economy;
+- Foreign Affairs;
 - Military;
+- Intelligence;
 - Archive.
 
-Those should be migrated behind the same `GameSession` boundary rather than reading simulation internals directly.
+The next desktop work is depth and polish rather than replacing placeholders.
 
 ## Run the desktop client
 
@@ -175,12 +228,14 @@ The interface should remain readable and game-like rather than becoming a litera
 
 ## Next desktop priorities
 
-The highest-priority remaining surfaces are:
+With the primary screens now covered, the next priorities are:
 
-1. **Military** — campaign stance, peace offers, commanders and fogged field intelligence.
-2. **Economy** — historical charts built from **reported estimates**, including contradictions between successive reports.
-3. **Archive** — a searchable history of what the ruler was told, ordered and believed at the time.
+1. **Save/load and campaign persistence** so the desktop can support real multi-session play.
+2. **Richer order workflows** with confirmation, context, likely political consequences and clearer pending-order inspection.
+3. **Deeper court interaction** such as investigations, arrests, prisoners and direct political responses.
+4. **Economy visualisation** using reported historical series rather than hidden data.
+5. **Military depth** around commanders, fronts, logistics and uncertain territorial control.
+6. **Keyboard/accessibility polish**, tooltips, empty states and better narrow-window behaviour.
+7. **Map work later**, treated as another uncertain information surface rather than the centre of the game.
 
-After those are functional, the desktop client should be able to replace nearly all normal console play.
-
-A geographic map should come later and behave as another uncertain information surface rather than the central object of play.
+At this point the desktop client can cover the normal high-level play loop without relying on the console for its main management surfaces.
