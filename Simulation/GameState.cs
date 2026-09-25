@@ -2,6 +2,7 @@ using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Diplomacy;
 using LeaderGame.Simulation.Military;
+using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Player;
 using LeaderGame.Simulation.Politics;
@@ -24,6 +25,12 @@ public class GameState
 
     public List<PoliticalBloc> PoliticalBlocs { get; } = [];
 
+    public PlayerKnowledge Knowledge { get; } = new();
+
+    public List<AdvisorIntelligenceReport> AdvisorReports { get; } = [];
+
+    public List<InformationRequest> InformationRequests { get; } = [];
+
     public List<DiplomaticProposal> DiplomaticProposals { get; } = [];
 
     public List<War> Wars { get; } = [];
@@ -35,6 +42,14 @@ public class GameState
     public DiplomaticGraph Diplomacy { get; } = new();
 
     public IRandomSource Random { get; set; } = new SimulationRandom(42);
+
+    /// <summary>
+    /// Separate deterministic random stream for uncertainty, misinformation and
+    /// reporting behaviour. Information mechanics must not perturb physical
+    /// simulation outcomes such as battles, illness or plots.
+    /// </summary>
+    public IRandomSource InformationRandom { get; set; } =
+        new SimulationRandom(0x494E464FUL);
 
     public required PlayerState Player { get; set; }
 
