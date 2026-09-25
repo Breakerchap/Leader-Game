@@ -2,63 +2,122 @@
     x:Class="LeaderGame.Desktop.App"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:conv="using:LeaderGame.Desktop.Converters"
     RequestedThemeVariant="Dark">
+
+  <Application.Resources>
+    <conv:CategoryBrushConverter x:Key="CategoryBrush" />
+    <conv:MetricAccentBrushConverter x:Key="MetricAccentBrush" />
+    <conv:RiskBrushConverter x:Key="RiskBrush" />
+    <conv:SemanticStatusBrushConverter x:Key="SemanticStatusBrush" />
+    <conv:StaleBrushConverter x:Key="StaleBrush" />
+    <conv:AttentionBackgroundConverter x:Key="AttentionBackground" />
+    <conv:BoolOpacityConverter x:Key="BoolOpacity" />
+  </Application.Resources>
 
   <Application.Styles>
     <FluentTheme />
 
     <Style Selector="Window">
-      <Setter Property="Background" Value="#0B0F14" />
+      <Setter Property="Background" Value="#0A0E13" />
       <Setter Property="FontFamily" Value="Segoe UI" />
+      <Setter Property="Foreground" Value="#E7EDF5" />
     </Style>
 
     <Style Selector="Border.card">
       <Setter Property="Background" Value="#121922" />
-      <Setter Property="BorderBrush" Value="#27313D" />
+      <Setter Property="BorderBrush" Value="#283442" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="CornerRadius" Value="9" />
       <Setter Property="Padding" Value="14" />
     </Style>
 
-    <Style Selector="Border.card.attention">
-      <Setter Property="BorderBrush" Value="#9B7545" />
-      <Setter Property="Background" Value="#1A1712" />
+    <Style Selector="Border.panel">
+      <Setter Property="Background" Value="#0F151D" />
+      <Setter Property="BorderBrush" Value="#25313D" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="16" />
+    </Style>
+
+    <Style Selector="Border.badge">
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Padding" Value="8,3" />
+      <Setter Property="Background" Value="#1A2430" />
     </Style>
 
     <Style Selector="Button.nav">
       <Setter Property="HorizontalContentAlignment" Value="Left" />
-      <Setter Property="Padding" Value="12,9" />
+      <Setter Property="Padding" Value="12,10" />
       <Setter Property="Margin" Value="0,2" />
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="#CFD7E3" />
+      <Setter Property="Foreground" Value="#C6D0DD" />
+      <Setter Property="CornerRadius" Value="7" />
     </Style>
 
     <Style Selector="Button.nav:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#18212C" />
+      <Setter Property="Background" Value="#182330" />
     </Style>
 
     <Style Selector="Button.primary">
-      <Setter Property="Padding" Value="16,9" />
-      <Setter Property="Background" Value="#D8E2EF" />
-      <Setter Property="Foreground" Value="#0B0F14" />
+      <Setter Property="Padding" Value="16,10" />
+      <Setter Property="Background" Value="#DCE7F5" />
+      <Setter Property="Foreground" Value="#0A0E13" />
       <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="CornerRadius" Value="7" />
+    </Style>
+
+    <Style Selector="Button.action">
+      <Setter Property="Padding" Value="13,8" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="Button.economy">
+      <Setter Property="Background" Value="#14241C" />
+      <Setter Property="BorderBrush" Value="#376E4E" />
+      <Setter Property="Foreground" Value="#8FD2A8" />
+    </Style>
+
+    <Style Selector="Button.military">
+      <Setter Property="Background" Value="#261718" />
+      <Setter Property="BorderBrush" Value="#7A4144" />
+      <Setter Property="Foreground" Value="#E99B9B" />
+    </Style>
+
+    <Style Selector="Button.politics">
+      <Setter Property="Background" Value="#211827" />
+      <Setter Property="BorderBrush" Value="#674A7D" />
+      <Setter Property="Foreground" Value="#CEAFE8" />
+    </Style>
+
+    <Style Selector="Button.intelligence">
+      <Setter Property="Background" Value="#122128" />
+      <Setter Property="BorderBrush" Value="#397484" />
+      <Setter Property="Foreground" Value="#93D3DE" />
     </Style>
 
     <Style Selector="TextBlock.muted">
-      <Setter Property="Foreground" Value="#8996A6" />
+      <Setter Property="Foreground" Value="#8997A8" />
     </Style>
 
     <Style Selector="TextBlock.eyebrow">
-      <Setter Property="Foreground" Value="#9EACBC" />
+      <Setter Property="Foreground" Value="#9DACBD" />
       <Setter Property="FontSize" Value="11" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="LetterSpacing" Value="1.1" />
     </Style>
 
     <Style Selector="TextBlock.title">
-      <Setter Property="FontSize" Value="25" />
+      <Setter Property="FontSize" Value="26" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="#EDF2F7" />
+      <Setter Property="Foreground" Value="#F0F4F8" />
+    </Style>
+
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#E5ECF4" />
     </Style>
   </Application.Styles>
 </Application>
