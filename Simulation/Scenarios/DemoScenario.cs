@@ -308,6 +308,107 @@ public static class DemoScenario
 
         state.Countries.AddRange([falkenreich, nordmark, valeria]);
 
+        ConfigurePowerBaseStrengths(falkenreich,
+            (PowerBaseType.Aristocracy, 90),
+            (PowerBaseType.Military, 75),
+            (PowerBaseType.Merchants, 40),
+            (PowerBaseType.Clergy, 70),
+            (PowerBaseType.Bureaucracy, 55),
+            (PowerBaseType.Workers, 10),
+            (PowerBaseType.Peasantry, 45),
+            (PowerBaseType.RegionalElites, 65),
+            (PowerBaseType.Party, 5),
+            (PowerBaseType.RoyalFamily, 90));
+
+        ConfigurePowerBaseStrengths(nordmark,
+            (PowerBaseType.Aristocracy, 80),
+            (PowerBaseType.Military, 72),
+            (PowerBaseType.Merchants, 48),
+            (PowerBaseType.Clergy, 58),
+            (PowerBaseType.Bureaucracy, 62),
+            (PowerBaseType.Workers, 12),
+            (PowerBaseType.Peasantry, 42),
+            (PowerBaseType.RegionalElites, 58),
+            (PowerBaseType.Party, 5),
+            (PowerBaseType.RoyalFamily, 88));
+
+        ConfigurePowerBaseStrengths(valeria,
+            (PowerBaseType.Aristocracy, 25),
+            (PowerBaseType.Military, 55),
+            (PowerBaseType.Merchants, 92),
+            (PowerBaseType.Clergy, 28),
+            (PowerBaseType.Bureaucracy, 82),
+            (PowerBaseType.Workers, 35),
+            (PowerBaseType.Peasantry, 20),
+            (PowerBaseType.RegionalElites, 60),
+            (PowerBaseType.Party, 72),
+            (PowerBaseType.RoyalFamily, 0));
+
+        ConfigureCharacterPowerBases(king,
+            (PowerBaseType.Aristocracy, 86),
+            (PowerBaseType.Military, 68),
+            (PowerBaseType.Clergy, 79),
+            (PowerBaseType.Bureaucracy, 64),
+            (PowerBaseType.RoyalFamily, 96));
+        ConfigureCharacterPowerBases(treasurer,
+            (PowerBaseType.Merchants, 82),
+            (PowerBaseType.Bureaucracy, 84),
+            (PowerBaseType.Aristocracy, 58));
+        ConfigureCharacterPowerBases(marshal,
+            (PowerBaseType.Military, 95),
+            (PowerBaseType.Aristocracy, 61),
+            (PowerBaseType.RegionalElites, 66));
+        ConfigureCharacterPowerBases(chancellor,
+            (PowerBaseType.Bureaucracy, 84),
+            (PowerBaseType.Aristocracy, 70),
+            (PowerBaseType.Clergy, 61));
+        ConfigureCharacterPowerBases(marta,
+            (PowerBaseType.Clergy, 69),
+            (PowerBaseType.Peasantry, 64),
+            (PowerBaseType.Bureaucracy, 57));
+        ConfigureCharacterPowerBases(lukas,
+            (PowerBaseType.Military, 82),
+            (PowerBaseType.Aristocracy, 76),
+            (PowerBaseType.RegionalElites, 83),
+            (PowerBaseType.RoyalFamily, 26));
+        ConfigureCharacterPowerBases(heir,
+            (PowerBaseType.RoyalFamily, 94),
+            (PowerBaseType.Aristocracy, 78),
+            (PowerBaseType.Clergy, 68));
+
+        ConfigureCharacterPowerBases(nordmarkQueen,
+            (PowerBaseType.RoyalFamily, 95),
+            (PowerBaseType.Aristocracy, 82),
+            (PowerBaseType.Clergy, 67));
+        ConfigureCharacterPowerBases(nordmarkMarshal,
+            (PowerBaseType.Military, 93));
+        ConfigureCharacterPowerBases(nordmarkChancellor,
+            (PowerBaseType.Bureaucracy, 83));
+        ConfigureCharacterPowerBases(nordmarkTreasurer,
+            (PowerBaseType.Merchants, 77),
+            (PowerBaseType.Bureaucracy, 86));
+        ConfigureCharacterPowerBases(nordmarkHeir,
+            (PowerBaseType.RoyalFamily, 91),
+            (PowerBaseType.Aristocracy, 74));
+
+        ConfigureCharacterPowerBases(valerianDoge,
+            (PowerBaseType.Merchants, 91),
+            (PowerBaseType.Party, 78),
+            (PowerBaseType.Bureaucracy, 69));
+        ConfigureCharacterPowerBases(valerianChancellor,
+            (PowerBaseType.Bureaucracy, 91),
+            (PowerBaseType.Party, 73));
+        ConfigureCharacterPowerBases(valerianTreasurer,
+            (PowerBaseType.Merchants, 94),
+            (PowerBaseType.Bureaucracy, 88));
+        ConfigureCharacterPowerBases(valerianMarshal,
+            (PowerBaseType.Military, 92),
+            (PowerBaseType.Party, 58));
+        ConfigureCharacterPowerBases(valerianSuccessor,
+            (PowerBaseType.Merchants, 83),
+            (PowerBaseType.Party, 84),
+            (PowerBaseType.RegionalElites, 67));
+
         ConfigureFalkenreichPolitics(
             state,
             falkenreich,
@@ -406,6 +507,22 @@ public static class DemoScenario
             tension: 34);
 
         return state;
+    }
+
+    private static void ConfigurePowerBaseStrengths(
+        Country country,
+        params (PowerBaseType Type, int Strength)[] values)
+    {
+        foreach (var (type, strength) in values)
+            country.SetPowerBaseStrength(type, strength);
+    }
+
+    private static void ConfigureCharacterPowerBases(
+        Character character,
+        params (PowerBaseType Type, int Standing)[] values)
+    {
+        foreach (var (type, standing) in values)
+            character.SetPowerBaseStanding(type, standing);
     }
 
     private static void ConfigureFalkenreichPolitics(
