@@ -283,6 +283,115 @@
               </StackPanel>
             </Grid>
 
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+              <Border Classes="card" Background="#141A22">
+                <StackPanel Spacing="9">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel>
+                      <TextBlock Text="ORDERS DESK" Classes="eyebrow" Foreground="#D8A657" />
+                      <TextBlock Text="Awaiting execution" FontWeight="SemiBold" />
+                    </StackPanel>
+                    <Border Grid.Column="1" Classes="badge" Background="#2A2115" VerticalAlignment="Top">
+                      <TextBlock
+                          Text="{Binding View.PendingOrders}"
+                          Foreground="#E1B66F"
+                          FontWeight="Bold"
+                          FontSize="11" />
+                    </Border>
+                  </Grid>
+
+                  <ItemsControl ItemsSource="{Binding View.PendingOrderDetails}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Border
+                            Background="#0E151D"
+                            BorderBrush="#26313D"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="9"
+                            Margin="0,0,0,6">
+                          <StackPanel Spacing="4">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                              <Border Classes="badge" Background="#3A2C16">
+                                <TextBlock
+                                    Text="{Binding Type}"
+                                    FontSize="9"
+                                    FontWeight="Bold"
+                                    Foreground="#E1B66F" />
+                              </Border>
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="{Binding Recipient}"
+                                  Margin="8,0,0,0"
+                                  VerticalAlignment="Center"
+                                  FontSize="11"
+                                  Classes="muted" />
+                              <TextBlock
+                                  Grid.Column="2"
+                                  Text="{Binding IssuedOn}"
+                                  FontSize="10"
+                                  Classes="muted" />
+                            </Grid>
+                            <TextBlock
+                                Text="{Binding Description}"
+                                TextWrapping="Wrap"
+                                Foreground="#D7E0E9" />
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+
+              <Border Grid.Column="1" Classes="card" Background="#141A22">
+                <StackPanel Spacing="9">
+                  <StackPanel>
+                    <TextBlock Text="ORDER RESULTS" Classes="eyebrow" Foreground="#86CBD6" />
+                    <TextBlock Text="Recent resolutions" FontWeight="SemiBold" />
+                  </StackPanel>
+
+                  <ItemsControl ItemsSource="{Binding View.RecentOrderOutcomes}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Border
+                            Background="{Binding NeedsAttention, Converter={StaticResource AttentionBackground}}"
+                            BorderBrush="#26313D"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="9"
+                            Margin="0,0,0,6">
+                          <Grid ColumnDefinitions="5,*">
+                            <Border
+                                Background="{Binding NeedsAttention, Converter={StaticResource StaleBrush}}"
+                                CornerRadius="3" />
+                            <StackPanel Grid.Column="1" Margin="8,0,0,0" Spacing="4">
+                              <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock
+                                    Text="{Binding Title}"
+                                    FontWeight="SemiBold"
+                                    TextWrapping="Wrap" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Text="{Binding Date}"
+                                    FontSize="10"
+                                    Classes="muted" />
+                              </Grid>
+                              <TextBlock
+                                  Text="{Binding Details}"
+                                  TextWrapping="Wrap"
+                                  FontSize="11"
+                                  Foreground="#B7C2CE" />
+                            </StackPanel>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </Grid>
+
             <ItemsControl ItemsSource="{Binding View.Briefings}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
