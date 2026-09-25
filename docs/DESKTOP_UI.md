@@ -57,6 +57,19 @@ Navigation shows a coloured selection rail for the active screen.
 
 ## Current desktop surfaces
 
+### Campaign chooser
+
+A fresh desktop launch begins at a campaign chooser rather than immediately starting one country.
+
+The chooser currently offers:
+
+- **The Falken Crown** — Friedrich von Falken / Falkenreich / House von Falken;
+- **The Valerian Republic** — Marco Vieri / Valeria / Vieri Coalition;
+- continuing the manual save;
+- recovering the latest turn autosave.
+
+The same simulated world exists behind both starts, but the player country, lineage, initial intelligence and victory objectives differ.
+
 ### Briefing
 
 The home screen includes:
@@ -70,6 +83,8 @@ The home screen includes:
 - queued-order and pending-inquiry counts;
 - a dedicated orders desk showing queued instructions and recent resolutions;
 - cabinet recommendations that can be accepted or rejected;
+- campaign objectives with consecutive-month progress and completion state;
+- explicit campaign victory / political defeat banners;
 - live adviser cards showing qualitative ability, trust, obedience and political risk;
 - advancing the simulation by one month and returning directly to the new briefing.
 
@@ -232,7 +247,7 @@ The interface should remain readable and game-like rather than becoming a litera
 
 With the primary screens now covered, the next priorities are:
 
-1. **Multiple named save slots** and campaign selection; manual save/load and turn autosave already work.
+1. **Multiple named save slots** and better save-slot management; scenario selection, manual save/load and turn autosave already work.
 2. **Deeper court interaction** such as investigations, arrests, prisoners and direct political responses.
 3. **Richer autonomous agendas** so advisers, factions and foreign governments create more decision pressure.
 4. **Economy visualisation** using reported historical series rather than hidden data.
