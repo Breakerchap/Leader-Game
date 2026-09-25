@@ -285,6 +285,8 @@ public sealed class PoliticalPlotSnapshot
 
 public sealed class PowerBaseDemandSnapshot
 {
+    public Guid Id { get; init; }
+
     public required string CountryId { get; init; }
 
     public PowerBaseType PowerBase { get; init; }
@@ -298,6 +300,12 @@ public sealed class PowerBaseDemandSnapshot
     public int MonthsOpen { get; init; }
 
     public int EscalationLevel { get; init; }
+
+    public bool AcknowledgedByRuler { get; init; }
+
+    public bool IsRejected { get; init; }
+
+    public DateSnapshot? ResolvedOn { get; init; }
 
     public bool IsResolved { get; init; }
 }
