@@ -3,6 +3,7 @@ using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Persistence;
+using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
 
 namespace LeaderGame.Tests;
@@ -136,6 +137,38 @@ public class SaveGameTests
                 state.InformationRandom.NextDouble(),
                 loaded.InformationRandom.NextDouble());
         }
+    }
+
+    [Fact]
+    public void SaveRoundTrip_PreservesPendingCabinetRecommendationReferences()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var chancellor = country.GetOfficeHolder(Position.Chancellor)!;
+        var target = state.FindCountry("valeria")!;
+
+        state.CabinetProposals.Add(new CabinetProposal
+        {
+            Country = country,
+            Advisor = chancellor,
+            Type = CabinetProposalType.ImproveRelations,
+            TargetCountry = target,
+            CreatedOn = state.Date,
+            MonthsOpen = 2
+        });
+
+        var loaded = GameSaveService.Deserialize(
+            GameSaveService.Serialize(state));
+
+        var proposal = Assert.Single(loaded.CabinetProposals);
+
+        Assert.Equal(CabinetProposalStatus.Pending, proposal.Status);
+        Assert.Equal(2, proposal.MonthsOpen);
+        Assert.Same(loaded.Player.Country, proposal.Country);
+        Assert.Same(
+            loaded.Player.Country.GetOfficeHolder(Position.Chancellor),
+            proposal.Advisor);
+        Assert.Same(loaded.FindCountry("valeria"), proposal.TargetCountry);
     }
 
     [Fact]
