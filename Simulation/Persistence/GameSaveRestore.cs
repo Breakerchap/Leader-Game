@@ -186,6 +186,9 @@ public static partial class GameSaveService
         {
             state.PowerBaseDemands.Add(new PowerBaseDemand
             {
+                Id = saved.Id == Guid.Empty
+                    ? Guid.NewGuid()
+                    : saved.Id,
                 Country = RequireCountry(countries, saved.CountryId),
                 PowerBase = saved.PowerBase,
                 Type = saved.Type,
@@ -195,6 +198,11 @@ public static partial class GameSaveService
                 TargetValue = saved.TargetValue,
                 MonthsOpen = saved.MonthsOpen,
                 EscalationLevel = saved.EscalationLevel,
+                AcknowledgedByRuler = saved.AcknowledgedByRuler,
+                IsRejected = saved.IsRejected,
+                ResolvedOn = saved.ResolvedOn is { } resolvedOn
+                    ? GameDate(resolvedOn)
+                    : null,
                 IsResolved = saved.IsResolved
             });
         }
