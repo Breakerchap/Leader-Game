@@ -21,6 +21,8 @@ internal static class OrderProcessor
         {
             ChangeTaxOrder taxOrder => ProcessChangeTaxOrder(state, taxOrder),
             AppointAdvisorOrder appointmentOrder => ProcessAppointAdvisorOrder(state, appointmentOrder),
+            DismissAdvisorOrder dismissalOrder => ProcessDismissAdvisorOrder(state, dismissalOrder),
+            InvestigateCharacterOrder investigationOrder => ProcessInvestigationOrder(state, investigationOrder),
             _ => RejectUnknownOrder(state, order)
         };
     }
@@ -153,19 +155,7 @@ internal static class OrderProcessor
         var previousHolder = order.Country.GetOfficeHolder(order.Position);
 
         if (previousHolder is not null)
-        {
-            previousHolder.Position = null;
-
-            var dismissedToRuler =
-                state.Relationships.GetOrCreate(previousHolder, order.Issuer);
-            dismissedToRuler.ChangeOpinion(-25);
-            dismissedToRuler.ChangeTrust(-15);
-            dismissedToRuler.ChangeFear(5);
-
-            previousHolder.ChangeAllegiance(
-                PoliticalKeys.Lineage(state.Player.Lineage.Id),
-                -5);
-        }
+            ApplyDismissalConsequences(state, order.Country, order.Issuer, previousHolder);
 
         candidate.Position = order.Position;
 
@@ -186,6 +176,177 @@ internal static class OrderProcessor
             ReportCategory.Order,
             $"{candidate.FullName} appointed {order.Position}",
             $"{candidate.FullName} now serves as {order.Position}. {replacementText}");
+    }
+
+    private static SimulationReport ProcessDismissAdvisorOrder(
+        GameState state,
+        DismissAdvisorOrder order)
+    {
+        var target = order.Recipient;
+
+        if (!ReferenceEquals(order.Issuer, order.Country.Ruler) ||
+            !target.IsAlive ||
+            !order.Country.ContainsPoliticalFigure(target) ||
+            !target.Position.HasValue ||
+            ReferenceEquals(target, order.Country.Ruler))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Dismissal rejected",
+                "Only the ruler may dismiss a living office-holder serving this country.");
+        }
+
+        var oldPosition = target.Position.Value;
+        var oldInfluence = target.Influence;
+
+        ApplyDismissalConsequences(state, order.Country, order.Issuer, target);
+
+        order.Status = OrderStatus.Completed;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Politics,
+            $"{target.FullName} dismissed as {oldPosition}",
+            $"{target.FullName} loses the office of {oldPosition}. Their immediate " +
+            $"influence falls from {oldInfluence} to {target.Influence}, but the " +
+            "dismissal creates a personal grievance against the ruler.");
+    }
+
+    private static SimulationReport ProcessInvestigationOrder(
+        GameState state,
+        InvestigateCharacterOrder order)
+    {
+        var chancellor = order.Recipient;
+        var subject = order.Subject;
+
+        if (chancellor.Position != Position.Chancellor ||
+            !chancellor.IsAlive ||
+            !order.Country.ContainsPoliticalFigure(chancellor))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Investigation rejected",
+                "A living Chancellor serving the target country must conduct the investigation.");
+        }
+
+        if (!subject.IsAlive ||
+            !order.Country.ContainsPoliticalFigure(subject) ||
+            ReferenceEquals(subject, order.Country.Ruler))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Investigation rejected",
+                "The subject must be a living political figure other than the ruler.");
+        }
+
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.Country,
+            chancellor,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                $"{chancellor.FullName} refuses the investigation",
+                $"{chancellor.FullName} will not investigate {subject.FullName}. " +
+                $"Their willingness to obey is only {willingness:F0}/100.");
+        }
+
+        var effectiveness =
+            chancellor.Competence * 0.60 +
+            willingness * 0.40;
+
+        var plot = state.Plots.FirstOrDefault(candidate =>
+            !candidate.IsResolved &&
+            ReferenceEquals(candidate.Country, order.Country) &&
+            ReferenceEquals(candidate.Instigator, subject));
+
+        var subjectToRuler = state.Relationships.GetOrCreate(subject, order.Issuer);
+        subjectToRuler.ChangeOpinion(-10);
+        subjectToRuler.ChangeTrust(-5);
+        subjectToRuler.ChangeFear(8);
+
+        order.Status = OrderStatus.Completed;
+
+        if (plot is null)
+        {
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Politics,
+                $"Investigation of {subject.FullName}",
+                effectiveness >= 70
+                    ? $"{chancellor.FullName} conducts a thorough investigation and finds " +
+                      $"no evidence of an organised plot by {subject.FullName}. The scrutiny " +
+                      "has nevertheless damaged their relationship with the ruler."
+                    : $"{chancellor.FullName}'s investigation of {subject.FullName} is " +
+                      "inconclusive. The scrutiny has damaged their relationship with the ruler.");
+        }
+
+        var disruption = 5 + effectiveness * 0.15;
+        plot.Progress -= disruption;
+
+        if (effectiveness >= 75)
+        {
+            plot.DiscoveryStage = Math.Max(plot.DiscoveryStage, 2);
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Politics,
+                $"Plot by {subject.FullName} exposed",
+                $"{chancellor.FullName} uncovers credible evidence of a coup plot. " +
+                $"The investigation disrupts its organisation substantially.");
+        }
+
+        if (effectiveness >= 50)
+        {
+            plot.DiscoveryStage = Math.Max(plot.DiscoveryStage, 1);
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Politics,
+                $"Suspicious activity around {subject.FullName}",
+                $"{chancellor.FullName} uncovers suspicious contacts and meetings, " +
+                "but not enough evidence to prove a coup plot. The investigation still " +
+                "disrupts some of the subject's political activity.");
+        }
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Politics,
+            $"Investigation of {subject.FullName} inconclusive",
+            $"{chancellor.FullName} fails to establish anything useful. Unknown to the " +
+            "government, the investigation still disrupts some political activity.");
+    }
+
+    private static void ApplyDismissalConsequences(
+        GameState state,
+        Countries.Country country,
+        Character ruler,
+        Character dismissed)
+    {
+        dismissed.Position = null;
+        dismissed.Influence = Math.Max(0, dismissed.Influence - 8);
+
+        var dismissedToRuler =
+            state.Relationships.GetOrCreate(dismissed, ruler);
+        dismissedToRuler.ChangeOpinion(-25);
+        dismissedToRuler.ChangeTrust(-15);
+        dismissedToRuler.ChangeFear(5);
+
+        dismissed.ChangeAllegiance(
+            PoliticalKeys.Lineage(state.Player.Lineage.Id),
+            -5);
     }
 
     private static SimulationReport RejectUnknownOrder(GameState state, Order order)
