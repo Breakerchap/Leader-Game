@@ -31,11 +31,14 @@ Implemented systems include:
 - explicit political power bases: aristocracy, military, merchants, clergy, bureaucracy, workers, peasantry, regional elites, parties and royal families;
 - country-specific power structures and character standing within those power bases;
 - autonomous domestic demands from dissatisfied power bases;
+- multiple power bases able to maintain simultaneous grievances and demands;
+- organised opposition blocs that form around shared rival leaders when major groups become alienated;
+- bloc cohesion and membership feeding back into political threat and conspiracy co-operation;
 - escalating political pressure when important groups are ignored, including rivals gaining support;
 - material conditions such as underfunding, high taxes, unrest and war exhaustion changing political backing over time;
 - calculated willingness to obey orders;
 - advisers and offices including Treasurer, Marshal and Chancellor;
-- appointment and dismissal of advisers;
+- appointment and dismissal of advisers, with patronage and dismissal reshaping power-base support;
 - political threat calculations and court coalitions;
 - investigations and discoverable coup plots;
 - arrests, political imprisonment and prisoner release;
@@ -164,6 +167,8 @@ A ruler can ask a Treasurer to change spending, a Marshal to conduct an arrest o
 The best person for a job may also be politically dangerous.
 
 A highly competent subordinate can execute an order efficiently while using the resulting office, army, information or prestige to build their own power.
+
+Appointments are therefore political bargains as well as staffing decisions. Bringing a well-backed figure into government can improve the ruler's standing with their supporters, while the office itself gives that figure more access and prestige. Dismissing a popular office-holder can have the opposite effect.
 
 ### Fear is not loyalty
 
