@@ -15,7 +15,7 @@ player decision
 
 The country is deliberately separate from the player. A state can survive a ruler, dynasty, party or faction losing power.
 
-> **Project status:** early playable simulation with both a console host and an Avalonia desktop client. Briefing, Intelligence, Government, Court and Foreign Affairs are interactive; Economy, Military and Archive are still being migrated.
+> **Project status:** early playable simulation with both a console host and an Avalonia desktop client. All primary desktop surfaces are interactive: Briefing, Government, Court, Economy, Foreign Affairs, Military, Intelligence and Archive.
 
 See **[docs/FINAL_GOAL.md](docs/FINAL_GOAL.md)** for the intended final game.
 
@@ -170,7 +170,7 @@ Leader-Game/
 
 - **`Program.cs`** — legacy/current console host.
 - **`LeaderGame.Core/`** — reusable simulation assembly plus the player-safe `GameSession` presentation boundary.
-- **`LeaderGame.Desktop/`** — Avalonia desktop client. Briefing, Intelligence, Government, Court and Foreign Affairs are functional; Economy, Military and Archive remain to be migrated.
+- **`LeaderGame.Desktop/`** — Avalonia desktop client with functional Briefing, Government, Court, Economy, Foreign Affairs, Military, Intelligence and Archive surfaces.
 - **`Simulation/GameState.cs`** — the central hidden world state.
 - **`Simulation/GameSimulation.cs`** — monthly simulation orchestration and order processing.
 - **`Simulation/Information/`** — player knowledge, adviser reports, uncertainty, report requests and hidden historical snapshots.
@@ -246,7 +246,7 @@ It does **not** yet provide:
 - a knowledge/capability/adoption model for technology;
 - dynamic time compression;
 - save/load and campaign persistence;
-- a graphical interface.
+- a geographic map and map-based territorial interface.
 
 Those belong to the longer-term design rather than the current prototype.
 
