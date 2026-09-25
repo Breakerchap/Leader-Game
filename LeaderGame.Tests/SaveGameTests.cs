@@ -242,6 +242,32 @@ public class SaveGameTests
     }
 
     [Fact]
+    public void SaveRoundTrip_PreservesRepublicanElectionClock()
+    {
+        var state = DemoScenario.Create(
+            ScenarioCatalog.ValeriaId);
+
+        state.Player.Country.Government.MonthsUntilElection = 5;
+        state.Player.ElectionsWon = 2;
+
+        var loaded = GameSaveService.Deserialize(
+            GameSaveService.Serialize(state));
+
+        Assert.True(
+            loaded.Player.Country.Government.HoldsScheduledElections);
+        Assert.Equal(
+            48,
+            loaded.Player.Country.Government.ElectionIntervalMonths);
+        Assert.Equal(
+            5,
+            loaded.Player.Country.Government.MonthsUntilElection);
+        Assert.Equal(
+            6,
+            loaded.Player.Country.Government.ElectionCampaignMonths);
+        Assert.Equal(2, loaded.Player.ElectionsWon);
+    }
+
+    [Fact]
     public void SaveToFile_WritesAndReloadsAtomicSlot()
     {
         var state = DemoScenario.Create();
