@@ -174,4 +174,26 @@ If the demand is ignored and escalates:
 
 If the spokesperson becomes politically inactive, the group can find a replacement.
 
+The ruler has three meaningful responses:
+
+- **concede** — acknowledge the demand and queue the real policy order; the petition remains active until that order actually produces the requested condition;
+- **reject** — close the immediate petition but take an immediate hit to constituency backing, stability, unrest and the spokesperson relationship;
+- **ignore** — allow the existing escalation clock to continue.
+
+A rejected group cannot immediately submit the same petition again; there is a six-month cooldown. The grievance itself may still matter to opposition formation because rejection usually worsens underlying backing.
+
 This is intended to turn abstract political pressure into relationships between people rather than a collection of disconnected meters.
+
+## Organised opposition actions
+
+An opposition bloc is no longer only a modifier to threat and coup calculations.
+
+Every third month that an active bloc survives, it takes one explainable political action:
+
+- **institutional obstruction** when the bloc has office-holders inside government, reducing state capacity and confidence;
+- **coordinated public pressure** when cohesion is high, strengthening the bloc leader while weakening the ruler with aligned constituencies;
+- **recruitment and consolidation** when the bloc is still building, drawing other political figures closer to its leader.
+
+These actions apply to AI countries as well as the player country. The player receives reports only for politically visible activity in their own government.
+
+The effects are intentionally incremental. Blocs should create a deteriorating political environment that can still be repaired rather than jumping directly from opposition to coup.
