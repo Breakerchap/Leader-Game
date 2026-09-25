@@ -104,6 +104,75 @@ public class PresentationBoundaryTests
     }
 
     [Fact]
+    public void ForeignAffairsView_UsesReportedRelationsInsteadOfHiddenTruth()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var foreign = state.Countries.First(other =>
+            !ReferenceEquals(other, country));
+
+        state.Diplomacy.GetOrCreate(country, foreign).Relations = 99;
+
+        state.Knowledge.Update(new KnownInformation
+        {
+            Key = new InformationKey(
+                InformationMetric.DiplomaticRelations,
+                foreign.Id,
+                country.Id),
+            Estimate = 12,
+            Margin = 5,
+            ReportedConfidence = 70,
+            AsOf = state.Date,
+            ReceivedOn = state.Date,
+            SourceAdvisorId = country.Ruler.Id,
+            SourceAdvisorName = "Test Chancellor",
+            WasRequested = false
+        });
+
+        var session = new GameSession(new GameSimulation(state));
+        var view = session.View.ForeignAffairs.Countries.Single(item =>
+            item.Id == foreign.Id);
+
+        Assert.Contains("+12", view.Relations);
+        Assert.DoesNotContain("+99", view.Relations);
+    }
+
+    [Fact]
+    public void ForeignAffairsActions_QueueDiplomaticOrders()
+    {
+        var state = DemoScenario.Create();
+        var session = new GameSession(new GameSimulation(state));
+        var target = session.View.ForeignAffairs.Countries.First();
+
+        session.ImproveRelations(target.Id);
+        session.ToggleTradeAgreement(target.Id);
+
+        Assert.Contains(
+            state.PendingOrders,
+            order => order is ImproveRelationsOrder);
+
+        Assert.Contains(
+            state.PendingOrders,
+            order => order is NegotiateTradeAgreementOrder or EndTradeAgreementOrder);
+    }
+
+    [Fact]
+    public void WarButton_QueuesDeclarationForKnownValidNeighbour()
+    {
+        var state = DemoScenario.Create();
+        var session = new GameSession(new GameSimulation(state));
+        var target = session.View.ForeignAffairs.Countries.First(country =>
+            country.CanDeclareWar);
+
+        session.DeclareWar(target.Id);
+
+        var order = Assert.IsType<DeclareWarOrder>(
+            Assert.Single(state.PendingOrders));
+
+        Assert.Equal(target.Id, order.TargetCountry.Id);
+    }
+
+    [Fact]
     public void AdvancingMonth_RefreshesDesktopBriefing()
     {
         var state = DemoScenario.Create();
