@@ -1065,6 +1065,39 @@ public sealed class GameSession
                     treasurer,
                     ruler));
 
+        var governmentType = country.Government.Type switch
+        {
+            GovernmentType.FeudalMonarchy => "Feudal monarchy",
+            GovernmentType.AbsoluteMonarchy => "Absolute monarchy",
+            GovernmentType.Republic => "Republic",
+            _ => country.Government.Type.ToString()
+        };
+
+        var hasElection = country.Government.HoldsScheduledElections;
+        var politicalCycle = hasElection
+            ? country.Government.MonthsUntilElection switch
+            {
+                <= 1 => "Election next month",
+                var months => $"Election in {months} months"
+            }
+            : "Hereditary succession";
+
+        var politicalCycleDetail = hasElection
+            ? country.Government.MonthsUntilElection <=
+              country.Government.ElectionCampaignMonths
+                ? "Campaign underway. Visible field: " +
+                  string.Join(
+                      ", ",
+                      ElectionSystem
+                          .GetCandidateField(state, country)
+                          .Select(candidate => candidate.FullName))
+                : $"Campaign season begins in " +
+                  $"{Math.Max(0, country.Government.MonthsUntilElection - country.Government.ElectionCampaignMonths)} months."
+            : country.SuccessionOrder.FirstOrDefault(candidate =>
+                  candidate.IsPoliticallyActive) is { } successor
+                ? $"Current first successor: {successor.FullName}."
+                : "No eligible successor is currently identified.";
+
         var government = new GovernmentPolicyView(
             (double)country.TaxRate * 100,
             (double)country.ArmyFunding * 100,
@@ -1073,7 +1106,11 @@ public sealed class GameSession
             treasurer?.FullName ?? "Vacant",
             treasurerObedience,
             "These are formal government settings, so the ruler knows what was officially enacted. " +
-            "Their real effects still have to be learned through reports.");
+            "Their real effects still have to be learned through reports.",
+            governmentType,
+            politicalCycle,
+            politicalCycleDetail,
+            hasElection);
 
         var offices = Enum.GetValues<Position>()
             .Select(position =>
