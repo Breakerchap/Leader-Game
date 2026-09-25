@@ -101,6 +101,24 @@ public sealed record ForeignAffairsView(
     IReadOnlyList<ForeignStateView> Countries,
     IReadOnlyList<DiplomaticProposalView> IncomingProposals);
 
+public sealed record EconomyReportSnapshotView(
+    string Delivered,
+    string DataAge,
+    string Source,
+    string Origin,
+    string Treasury,
+    string Debt,
+    string Revenue,
+    string Expenses,
+    string Balance,
+    bool HasCaveats);
+
+public sealed record EconomyView(
+    string TreasurerName,
+    string TreasurerObedience,
+    IReadOnlyList<MetricCardView> Summary,
+    IReadOnlyList<EconomyReportSnapshotView> History);
+
 public sealed record GovernmentPolicyView(
     double TaxPercent,
     double ArmyFundingPercent,
@@ -157,4 +175,5 @@ public sealed record PlayerViewState(
     CourtPoliticsView Court,
     ForeignAffairsView ForeignAffairs,
     MilitaryView Military,
+    EconomyView Economy,
     string StatusMessage);
