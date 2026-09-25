@@ -66,16 +66,28 @@ internal static class DomesticPoliticsSystem
             return;
 
         var demand = CreateDemand(state, country, candidate.PowerBase);
+        demand.Spokesperson = FindSpokesperson(
+            state,
+            country,
+            candidate.PowerBase);
         state.PowerBaseDemands.Add(demand);
 
         if (!ReferenceEquals(country, state.Player.Country))
             return;
 
+        var spokespersonText = demand.Spokesperson is null
+            ? $"{FormatPowerBase(candidate.PowerBase)} demands action"
+            : $"{demand.Spokesperson.FullName} presents " +
+              $"{FormatPowerBase(candidate.PowerBase).ToLowerInvariant()} demands";
+
         reports.Add(new SimulationReport(
             state.Date,
             ReportCategory.Politics,
-            $"{FormatPowerBase(candidate.PowerBase)} demands action",
-            DescribeDemand(demand, initial: true)));
+            spokespersonText,
+            DescribeDemand(demand, initial: true) +
+            (demand.Spokesperson is null
+                ? string.Empty
+                : $" {demand.Spokesperson.FullName} has become the visible advocate for the demand.")));
     }
 
     private static void ProcessDemand(
@@ -83,11 +95,36 @@ internal static class DomesticPoliticsSystem
         PowerBaseDemand demand,
         List<SimulationReport> reports)
     {
+        if (demand.Spokesperson is not null &&
+            !demand.Spokesperson.IsPoliticallyActive)
+        {
+            demand.Spokesperson = FindSpokesperson(
+                state,
+                demand.Country,
+                demand.PowerBase);
+        }
+
         if (IsSatisfied(state, demand))
         {
             demand.IsResolved = true;
             demand.Country.Ruler.ChangePowerBaseStanding(demand.PowerBase, 10);
             demand.Country.Government.Stability += 1.5;
+
+            if (demand.Spokesperson is not null)
+            {
+                demand.Spokesperson.ChangePowerBaseStanding(
+                    demand.PowerBase,
+                    2);
+                demand.Spokesperson.Influence = Math.Min(
+                    100,
+                    demand.Spokesperson.Influence + 1);
+
+                var towardRuler = state.Relationships.GetOrCreate(
+                    demand.Spokesperson,
+                    demand.Country.Ruler);
+                towardRuler.ChangeOpinion(5);
+                towardRuler.ChangeTrust(4);
+            }
 
             if (ReferenceEquals(demand.Country, state.Player.Country))
             {
@@ -97,7 +134,10 @@ internal static class DomesticPoliticsSystem
                     $"{FormatPowerBase(demand.PowerBase)} demand satisfied",
                     $"{DescribeDemand(demand, initial: false)} The concession improves " +
                     $"the ruler's standing with the {FormatPowerBase(demand.PowerBase).ToLowerInvariant()} " +
-                    "and eases political pressure."));
+                    "and eases political pressure." +
+                    (demand.Spokesperson is null
+                        ? string.Empty
+                        : $" {demand.Spokesperson.FullName} receives political credit for securing it.")));
             }
 
             return;
@@ -119,12 +159,24 @@ internal static class DomesticPoliticsSystem
         demand.Country.PublicUnrest += strength / 40.0 * severity;
         demand.Country.Government.Stability -= strength / 50.0 * severity;
 
-        var rival = FindBestRival(state, demand.Country, demand.PowerBase);
+        var rival = demand.Spokesperson is { IsPoliticallyActive: true }
+            ? demand.Spokesperson
+            : FindBestRival(state, demand.Country, demand.PowerBase);
+
         if (rival is not null)
         {
             rival.ChangePowerBaseStanding(
                 demand.PowerBase,
                 3 + severity * 2);
+            rival.Influence = Math.Min(
+                100,
+                rival.Influence + 1);
+
+            var towardRuler = state.Relationships.GetOrCreate(
+                rival,
+                demand.Country.Ruler);
+            towardRuler.ChangeOpinion(-(3 + severity));
+            towardRuler.ChangeTrust(-2);
         }
 
         if (!ReferenceEquals(demand.Country, state.Player.Country))
@@ -355,6 +407,56 @@ internal static class DomesticPoliticsSystem
             ReportCategory.Politics,
             $"{bloc.Leader.FullName}'s opposition bloc fractures",
             $"The organised opposition around {bloc.Leader.FullName} has broken apart because {reason}."));
+    }
+
+    private static Character? FindSpokesperson(
+        GameState state,
+        Countries.Country country,
+        PowerBaseType powerBase)
+    {
+        return country.PoliticalFigures
+            .Where(character =>
+                character.IsPoliticallyActive &&
+                !ReferenceEquals(character, country.Ruler))
+            .Select(character => new
+            {
+                Character = character,
+                Standing = character.GetPowerBaseStanding(powerBase),
+                OfficeBonus = RelevantOfficeBonus(
+                    character.Position,
+                    powerBase),
+                Willingness = PoliticalCalculations.GetOrderWillingness(
+                    state,
+                    country,
+                    character,
+                    country.Ruler)
+            })
+            .Where(entry => entry.Standing >= 55)
+            .OrderByDescending(entry =>
+                entry.Standing * 0.50 +
+                entry.Character.Influence * 0.20 +
+                entry.Character.Ambition * 0.15 +
+                (100 - entry.Willingness) * 0.10 +
+                entry.OfficeBonus)
+            .Select(entry => entry.Character)
+            .FirstOrDefault();
+    }
+
+    private static int RelevantOfficeBonus(
+        Position? position,
+        PowerBaseType powerBase)
+    {
+        return (position, powerBase) switch
+        {
+            (Position.Marshal, PowerBaseType.Military) => 12,
+            (Position.Treasurer, PowerBaseType.Merchants) => 10,
+            (Position.Treasurer, PowerBaseType.Bureaucracy) => 8,
+            (Position.Chancellor, PowerBaseType.Bureaucracy) => 10,
+            (Position.Chancellor, PowerBaseType.Party) => 10,
+            (Position.Chancellor, PowerBaseType.RegionalElites) => 8,
+            (Position.Chancellor, PowerBaseType.Aristocracy) => 6,
+            _ => 0
+        };
     }
 
     private static PowerBaseDemand CreateDemand(
