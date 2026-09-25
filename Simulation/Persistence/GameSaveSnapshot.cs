@@ -42,6 +42,8 @@ public sealed class GameSaveSnapshot
 
     public List<PoliticalBlocSnapshot> PoliticalBlocs { get; init; } = [];
 
+    public List<CabinetProposalSnapshot> CabinetProposals { get; init; } = [];
+
     public List<DiplomaticProposalSnapshot> DiplomaticProposals { get; init; } = [];
 
     public List<SimulationReportSnapshot> Reports { get; init; } = [];
@@ -270,6 +272,29 @@ public sealed class PoliticalBlocSnapshot
     public double Cohesion { get; init; }
 
     public bool IsActive { get; init; }
+}
+
+public sealed class CabinetProposalSnapshot
+{
+    public Guid Id { get; init; }
+
+    public required string CountryId { get; init; }
+
+    public int AdvisorId { get; init; }
+
+    public CabinetProposalType Type { get; init; }
+
+    public string? TargetCountryId { get; init; }
+
+    public Guid? WarId { get; init; }
+
+    public decimal TargetValue { get; init; }
+
+    public required DateSnapshot CreatedOn { get; init; }
+
+    public int MonthsOpen { get; init; }
+
+    public CabinetProposalStatus Status { get; init; }
 }
 
 public sealed class DiplomaticProposalSnapshot
