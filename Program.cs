@@ -731,7 +731,9 @@ static void ReviewDiplomaticProposals(
         .Where(proposal =>
             proposal.Status == DiplomaticProposalStatus.Pending &&
             ReferenceEquals(proposal.TargetCountry, country))
-        .OrderByDescending(proposal => proposal.MonthsOpen)
+        .OrderByDescending(proposal =>
+            proposal.Type == DiplomaticProposalType.TributeUltimatum)
+        .ThenByDescending(proposal => proposal.MonthsOpen)
         .ToList();
 
     if (proposals.Count == 0)
@@ -752,9 +754,16 @@ static void ReviewDiplomaticProposals(
             proposal.SourceCountry,
             country);
 
+        var description = proposal.Type switch
+        {
+            DiplomaticProposalType.TributeUltimatum =>
+                $"ULTIMATUM — demands {proposal.DemandedPayment:N0}",
+            _ => "trade agreement"
+        };
+
         Console.WriteLine(
             $"[{i + 1}] {proposal.SourceCountry.Name,-12} " +
-            $"{proposal.Type}  open {proposal.MonthsOpen} month(s)");
+            $"{description}  open {proposal.MonthsOpen} month(s)");
         Console.WriteLine(
             $"    Relations {relation.Relations}, trust {relation.Trust}, " +
             $"tension {relation.Tension}");
@@ -774,10 +783,26 @@ static void ReviewDiplomaticProposals(
     var selected = proposals[number - 1];
 
     Console.WriteLine();
-    Console.WriteLine(
-        $"{selected.SourceCountry.Name} proposes a trade agreement with {country.Name}.");
-    Console.WriteLine("[A] Accept");
-    Console.WriteLine("[R] Reject");
+
+    if (selected.Type == DiplomaticProposalType.TributeUltimatum)
+    {
+        Console.WriteLine(
+            $"{selected.SourceCountry.Name} demands {selected.DemandedPayment:N0} " +
+            $"from {country.Name}.");
+        Console.WriteLine(
+            "Rejecting or ignoring the demand can cause the foreign government to " +
+            "escalate to war if it believes it has enough military leverage.");
+        Console.WriteLine("[A] Yield and pay");
+        Console.WriteLine("[R] Reject the ultimatum");
+    }
+    else
+    {
+        Console.WriteLine(
+            $"{selected.SourceCountry.Name} proposes a trade agreement with {country.Name}.");
+        Console.WriteLine("[A] Accept");
+        Console.WriteLine("[R] Reject");
+    }
+
     Console.WriteLine("[Enter] Leave unanswered");
     Console.Write("Response: ");
 
@@ -803,7 +828,8 @@ static void ReviewDiplomaticProposals(
 
     Pause(
         $"{(accept ? "Acceptance" : "Rejection")} of {selected.SourceCountry.Name}'s " +
-        $"proposal queued through {chancellor.FullName}.");
+        $"{(selected.Type == DiplomaticProposalType.TributeUltimatum ? "ultimatum" : "proposal")} " +
+        $"queued through {chancellor.FullName}.");
 }
 
 static void ShowForeignCountry(
