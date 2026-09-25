@@ -4,7 +4,8 @@ namespace LeaderGame.Simulation.Diplomacy;
 
 public enum DiplomaticProposalType
 {
-    TradeAgreement
+    TradeAgreement,
+    TributeUltimatum
 }
 
 public enum DiplomaticProposalStatus
@@ -13,7 +14,8 @@ public enum DiplomaticProposalStatus
     Accepted,
     Rejected,
     Expired,
-    Withdrawn
+    Withdrawn,
+    EscalatedToWar
 }
 
 public sealed class DiplomaticProposal
@@ -27,6 +29,12 @@ public sealed class DiplomaticProposal
     public required Country TargetCountry { get; init; }
 
     public required GameDate CreatedOn { get; init; }
+
+    /// <summary>
+    /// Monetary demand attached to coercive proposals. Zero for proposals
+    /// without a payment component.
+    /// </summary>
+    public decimal DemandedPayment { get; init; }
 
     public int MonthsOpen { get; internal set; }
 

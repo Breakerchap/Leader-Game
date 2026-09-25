@@ -903,7 +903,7 @@ internal static class OrderProcessor
 
             case Military.PeaceOfferTerms.DemandReparations:
                 order.War.Status = Military.WarStatus.NegotiatedPeace;
-                transfer = TransferReparations(
+                transfer = TransferPayment(
                     opponent,
                     order.Country,
                     opponent.Gdp * 0.005m);
@@ -913,7 +913,7 @@ internal static class OrderProcessor
 
             case Military.PeaceOfferTerms.OfferReparations:
                 order.War.Status = Military.WarStatus.NegotiatedPeace;
-                transfer = TransferReparations(
+                transfer = TransferPayment(
                     order.Country,
                     opponent,
                     order.Country.Gdp * 0.005m);
@@ -946,7 +946,7 @@ internal static class OrderProcessor
             $"{order.War.MonthsActive} months of war.{reparationsText}");
     }
 
-    private static decimal TransferReparations(
+    private static decimal TransferPayment(
         Countries.Country payer,
         Countries.Country receiver,
         decimal amount)
@@ -1080,50 +1080,11 @@ internal static class OrderProcessor
                 $"{willingness:F0}/100.");
         }
 
-        var relation = state.Diplomacy.GetOrCreate(
+        var war = Military.WarDeclarationService.Declare(
+            state,
             order.SourceCountry,
             order.TargetCountry);
-        var preWarRelations = relation.Relations;
 
-        relation.HasTradeAgreement = false;
-        relation.TradeAgreementStartedOn = null;
-        relation.Relations = Math.Min(-70, relation.Relations - 30);
-        relation.Trust = Math.Max(0, relation.Trust - 40);
-        relation.Tension = 100;
-
-        var pendingProposals = state.DiplomaticProposals.Where(proposal =>
-            proposal.Status == Diplomacy.DiplomaticProposalStatus.Pending &&
-            ((ReferenceEquals(proposal.SourceCountry, order.SourceCountry) &&
-              ReferenceEquals(proposal.TargetCountry, order.TargetCountry)) ||
-             (ReferenceEquals(proposal.SourceCountry, order.TargetCountry) &&
-              ReferenceEquals(proposal.TargetCountry, order.SourceCountry))));
-
-        foreach (var proposal in pendingProposals)
-            proposal.Status = Diplomacy.DiplomaticProposalStatus.Withdrawn;
-
-        ApplyWarDeclarationPoliticalCost(order.SourceCountry, preWarRelations);
-
-        var targetToSource = state.Relationships.GetOrCreate(
-            order.TargetCountry.Ruler,
-            order.SourceCountry.Ruler);
-        targetToSource.ChangeOpinion(-35);
-        targetToSource.Trust = 0;
-        targetToSource.ChangeFear(10);
-
-        var sourceToTarget = state.Relationships.GetOrCreate(
-            order.SourceCountry.Ruler,
-            order.TargetCountry.Ruler);
-        sourceToTarget.ChangeOpinion(-20);
-        sourceToTarget.ChangeTrust(-20);
-
-        var war = new Military.War
-        {
-            Attacker = order.SourceCountry,
-            Defender = order.TargetCountry,
-            StartedOn = state.Date
-        };
-
-        state.Wars.Add(war);
         order.Status = OrderStatus.Completed;
 
         return new SimulationReport(
@@ -1132,29 +1093,6 @@ internal static class OrderProcessor
             $"{order.SourceCountry.Name} declares war on {order.TargetCountry.Name}",
             $"{chancellor.FullName} delivers the declaration. Trade and pending " +
             $"diplomatic offers between the two states end immediately. War score begins at 0.");
-    }
-
-    private static void ApplyWarDeclarationPoliticalCost(
-        Countries.Country country,
-        int previousRelations)
-    {
-        if (previousRelations >= 25)
-        {
-            country.Ruler.Legitimacy -= 5;
-            country.Government.Stability -= 4;
-            country.PublicUnrest += 4;
-        }
-        else if (previousRelations >= 0)
-        {
-            country.Ruler.Legitimacy -= 3;
-            country.Government.Stability -= 2;
-            country.PublicUnrest += 2;
-        }
-        else
-        {
-            country.Government.Stability -= 1;
-            country.PublicUnrest += 1;
-        }
     }
 
     private static SimulationReport ProcessDiplomaticProposalResponse(
@@ -1197,6 +1135,15 @@ internal static class OrderProcessor
         var relation = state.Diplomacy.GetOrCreate(
             proposal.SourceCountry,
             proposal.TargetCountry);
+
+        if (proposal.Type == Diplomacy.DiplomaticProposalType.TributeUltimatum)
+        {
+            return ProcessTributeUltimatumResponse(
+                state,
+                order,
+                proposal,
+                relation);
+        }
 
         if (!order.Accept)
         {
@@ -1248,6 +1195,68 @@ internal static class OrderProcessor
             $"Trade proposal from {proposal.SourceCountry.Name} accepted",
             $"{proposal.SourceCountry.Name} and {proposal.TargetCountry.Name} " +
             "enter a trade agreement. Both countries begin receiving trade income this month.");
+    }
+
+    private static SimulationReport ProcessTributeUltimatumResponse(
+        GameState state,
+        RespondToDiplomaticProposalOrder order,
+        Diplomacy.DiplomaticProposal proposal,
+        Diplomacy.DiplomaticRelation relation)
+    {
+        if (!order.Accept)
+        {
+            proposal.Status = Diplomacy.DiplomaticProposalStatus.Rejected;
+            relation.ChangeRelations(-6);
+            relation.ChangeTrust(-8);
+            relation.Tension = 100;
+
+            var sourceToTarget = state.Relationships.GetOrCreate(
+                proposal.SourceCountry.Ruler,
+                proposal.TargetCountry.Ruler);
+            sourceToTarget.ChangeOpinion(-15);
+            sourceToTarget.ChangeTrust(-10);
+
+            order.Status = OrderStatus.Completed;
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"{order.Country.Name} rejects {proposal.SourceCountry.Name}'s ultimatum",
+                $"{order.Country.Ruler.FullName} rejects a demand for " +
+                $"{proposal.DemandedPayment:N0}. Tension reaches a breaking point; " +
+                "the foreign government may now choose war.");
+        }
+
+        var payment = TransferPayment(
+            order.Country,
+            proposal.SourceCountry,
+            proposal.DemandedPayment);
+
+        proposal.Status = Diplomacy.DiplomaticProposalStatus.Accepted;
+        relation.ChangeRelations(-2);
+        relation.ChangeTrust(-2);
+        relation.ChangeTension(-30);
+
+        order.Country.Ruler.Legitimacy -= 3;
+        order.Country.Government.Stability -= 2;
+        order.Country.PublicUnrest += 1;
+
+        var targetToSource = state.Relationships.GetOrCreate(
+            proposal.TargetCountry.Ruler,
+            proposal.SourceCountry.Ruler);
+        targetToSource.ChangeOpinion(-12);
+        targetToSource.ChangeTrust(-8);
+        targetToSource.ChangeFear(8);
+
+        order.Status = OrderStatus.Completed;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Diplomacy,
+            $"{order.Country.Name} yields to {proposal.SourceCountry.Name}",
+            $"{order.Country.Name} pays {payment:N0} under the ultimatum. " +
+            "Immediate tension falls, but the concession damages the ruler's " +
+            "domestic legitimacy and may require new debt.");
     }
 
     private static bool IsServingChancellor(
