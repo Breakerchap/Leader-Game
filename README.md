@@ -15,13 +15,13 @@ player decision
 
 The country is deliberately separate from the player. A state can survive a ruler, dynasty, party or faction losing power.
 
-> **Project status:** early playable console prototype. The simulation architecture and several connected political systems exist, but this is not yet the full historical grand-strategy game described in the long-term design.
+> **Project status:** early playable simulation with both a console host and a new Avalonia desktop prototype. The desktop client currently focuses on the ruler's briefing and unreliable-information workflow; many management screens are still being migrated.
 
 See **[docs/FINAL_GOAL.md](docs/FINAL_GOAL.md)** for the intended final game.
 
 ## Current prototype
 
-The current build is a .NET 9 console application with a three-country demo scenario and monthly simulation ticks.
+The current build uses a shared .NET 9 simulation core with two hosts: the original console client and an Avalonia desktop client. Both run the same three-country demo scenario and monthly simulation.
 
 Implemented systems include:
 
@@ -110,11 +110,19 @@ git clone https://github.com/Breakerchap/Leader-Game.git
 cd Leader-Game
 ```
 
-Run the game:
+Run the desktop client:
 
 ```bash
-dotnet run
+dotnet run --project LeaderGame.Desktop/LeaderGame.Desktop.csproj
 ```
+
+The console client remains available:
+
+```bash
+dotnet run --project LeaderGame.csproj
+```
+
+The desktop client is the intended direction for normal play; the console remains useful as a fallback and debugging surface.
 
 ## Tests
 
@@ -132,6 +140,8 @@ The tests cover the major simulation systems, including appointments, budgets, t
 Leader-Game/
 ├── Program.cs
 ├── LeaderGame.csproj
+├── LeaderGame.Core/
+├── LeaderGame.Desktop/
 ├── Simulation/
 │   ├── Characters/
 │   ├── Countries/
@@ -156,8 +166,10 @@ Leader-Game/
 
 ### Important pieces
 
-- **`Program.cs`** — current console UI and player interaction.
-- **`Simulation/GameState.cs`** — the central world state.
+- **`Program.cs`** — legacy/current console host.
+- **`LeaderGame.Core/`** — reusable simulation assembly plus the player-safe `GameSession` presentation boundary.
+- **`LeaderGame.Desktop/`** — Avalonia desktop client. Briefing and Intelligence are already functional; other navigation surfaces are being migrated.
+- **`Simulation/GameState.cs`** — the central hidden world state.
 - **`Simulation/GameSimulation.cs`** — monthly simulation orchestration and order processing.
 - **`Simulation/Information/`** — player knowledge, adviser reports, uncertainty, report requests and hidden historical snapshots.
 - **`Simulation/Orders/`** — player intentions represented as structured orders.
@@ -166,6 +178,7 @@ Leader-Game/
 - **`LeaderGame.Tests/`** — xUnit simulation tests.
 - **`docs/FINAL_GOAL.md`** — long-term game design target.
 - **`docs/INFORMATION_SYSTEM.md`** — design and implementation rules for unreliable adviser reports and player knowledge.
+- **`docs/DESKTOP_UI.md`** — desktop architecture, information-boundary rules and GUI roadmap.
 
 ## Design rules
 
