@@ -115,4 +115,30 @@ public class CabinetProposalTests
         Assert.Equal("Budget", pending.Type);
         Assert.Contains("administration", pending.Description, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void ElectionSeason_CanGeneratePoliticallyMotivatedTaxAdvice()
+    {
+        var state = DemoScenario.Create(
+            Simulation.Scenarios.ScenarioCatalog.ValeriaId);
+        var country = state.Player.Country;
+
+        country.Government.MonthsUntilElection = 4;
+        country.TaxRate = 0.12m;
+        country.LastMonthlyBalance = 50_000m;
+        state.Date = new GameDate(1450, 4);
+
+        new GameSimulation(state).AdvanceMonth();
+
+        var proposal = Assert.Single(state.CabinetProposals.Where(candidate =>
+            candidate.Status == CabinetProposalStatus.Pending));
+
+        Assert.Equal(CabinetProposalType.LowerTaxes, proposal.Type);
+        Assert.NotNull(proposal.Rationale);
+        Assert.Contains(
+            "election",
+            proposal.Rationale!,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
 }
