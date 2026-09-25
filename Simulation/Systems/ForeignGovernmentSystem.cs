@@ -22,7 +22,11 @@ internal static class ForeignGovernmentSystem
         }
 
         if (state.Date.Month % 6 == 0)
+        {
             AdaptAiTradeNetwork(state);
+            EvolveAiRivalries(state);
+            ConsiderAiWars(state);
+        }
     }
 
     private static void AdaptDomesticPolicy(
@@ -108,6 +112,140 @@ internal static class ForeignGovernmentSystem
                 0.90m,
                 country.CourtFunding - 0.05m);
         }
+    }
+
+    private static void EvolveAiRivalries(GameState state)
+    {
+        var playerCountry = state.Player.Country;
+
+        foreach (var relation in state.Diplomacy.All)
+        {
+            var first = state.FindCountry(relation.CountryAId);
+            var second = state.FindCountry(relation.CountryBId);
+
+            if (first is null ||
+                second is null ||
+                ReferenceEquals(first, playerCountry) ||
+                ReferenceEquals(second, playerCountry))
+            {
+                continue;
+            }
+
+            if (relation.HasTradeAgreement)
+                continue;
+
+            var firstToSecond =
+                state.Relationships.GetOrCreate(first.Ruler, second.Ruler);
+            var secondToFirst =
+                state.Relationships.GetOrCreate(second.Ruler, first.Ruler);
+
+            var averageOpinion =
+                (firstToSecond.Opinion + secondToFirst.Opinion) / 2.0;
+
+            if (relation.Relations < 0 &&
+                averageOpinion < 0)
+            {
+                relation.ChangeTension(
+                    relation.Relations <= -30 ? 2 : 1);
+            }
+
+            if (relation.Tension >= 60 &&
+                relation.Relations < -20)
+            {
+                relation.ChangeRelations(-1);
+                relation.ChangeTrust(-1);
+            }
+        }
+    }
+
+    private static void ConsiderAiWars(GameState state)
+    {
+        var playerCountry = state.Player.Country;
+
+        foreach (var relation in state.Diplomacy.All.ToList())
+        {
+            var first = state.FindCountry(relation.CountryAId);
+            var second = state.FindCountry(relation.CountryBId);
+
+            if (first is null ||
+                second is null ||
+                ReferenceEquals(first, playerCountry) ||
+                ReferenceEquals(second, playerCountry) ||
+                !first.IsNeighbor(second) ||
+                relation.Relations > -60 ||
+                relation.Tension < 75 ||
+                AreAtWar(state, first, second))
+            {
+                continue;
+            }
+
+            var firstLeverage = MilitaryLeverage(first, second);
+            var secondLeverage = MilitaryLeverage(second, first);
+
+            var firstAggression =
+                first.Ruler.Ambition +
+                Math.Max(0, firstLeverage - 1.0) * 45;
+            var secondAggression =
+                second.Ruler.Ambition +
+                Math.Max(0, secondLeverage - 1.0) * 45;
+
+            var attacker = firstAggression >= secondAggression
+                ? first
+                : second;
+            var defender = ReferenceEquals(attacker, first)
+                ? second
+                : first;
+            var leverage = ReferenceEquals(attacker, first)
+                ? firstLeverage
+                : secondLeverage;
+
+            if (attacker.Ruler.Ambition < 65 ||
+                leverage < 1.08)
+            {
+                continue;
+            }
+
+            Military.WarDeclarationService.Declare(
+                state,
+                attacker,
+                defender);
+
+            relation.Tension = 100;
+            relation.Relations = Math.Min(
+                relation.Relations,
+                -75);
+            relation.Trust = Math.Min(
+                relation.Trust,
+                10);
+        }
+    }
+
+    private static bool AreAtWar(
+        GameState state,
+        Country first,
+        Country second)
+    {
+        return state.Wars.Any(war =>
+            war.Status == WarStatus.Active &&
+            war.IsParticipant(first) &&
+            war.IsParticipant(second));
+    }
+
+    private static double MilitaryLeverage(
+        Country source,
+        Country target)
+    {
+        var sourcePower =
+            source.ArmySize *
+            (0.50 + source.ArmyReadiness / 200.0) *
+            (0.80 + (double)source.ArmyFunding * 0.20);
+
+        var targetPower =
+            target.ArmySize *
+            (0.50 + target.ArmyReadiness / 200.0) *
+            (0.80 + (double)target.ArmyFunding * 0.20);
+
+        return sourcePower / Math.Max(1.0, targetPower);
     }
 
     private static void AdaptAiTradeNetwork(GameState state)
