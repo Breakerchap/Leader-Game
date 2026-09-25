@@ -20,8 +20,14 @@ jobs:
       - name: Restore app
         run: dotnet restore LeaderGame.csproj
 
-      - name: Build app
+      - name: Build console app
         run: dotnet build LeaderGame.csproj --configuration Release --no-restore
+
+      - name: Restore desktop app
+        run: dotnet restore LeaderGame.Desktop/LeaderGame.Desktop.csproj
+
+      - name: Build desktop app
+        run: dotnet build LeaderGame.Desktop/LeaderGame.Desktop.csproj --configuration Release --no-restore
 
       - name: Test
         run: dotnet test LeaderGame.Tests/LeaderGame.Tests.csproj --configuration Release
