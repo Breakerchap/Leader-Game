@@ -204,6 +204,27 @@ public static partial class GameSaveService
             state.PoliticalBlocs.Add(bloc);
         }
 
+        foreach (var saved in snapshot.CabinetProposals)
+        {
+            state.CabinetProposals.Add(new CabinetProposal
+            {
+                Id = saved.Id,
+                Country = RequireCountry(countries, saved.CountryId),
+                Advisor = RequireCharacter(characters, saved.AdvisorId),
+                Type = saved.Type,
+                TargetCountry = saved.TargetCountryId is { } targetId
+                    ? RequireCountry(countries, targetId)
+                    : null,
+                War = saved.WarId is { } warId
+                    ? RequireWar(wars, warId)
+                    : null,
+                TargetValue = saved.TargetValue,
+                CreatedOn = GameDate(saved.CreatedOn),
+                MonthsOpen = saved.MonthsOpen,
+                Status = saved.Status
+            });
+        }
+
         var proposals = new Dictionary<Guid, DiplomaticProposal>();
 
         foreach (var saved in snapshot.DiplomaticProposals)
