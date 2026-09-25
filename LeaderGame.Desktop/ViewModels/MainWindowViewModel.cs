@@ -10,15 +10,30 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private readonly GameSession _session = new();
     private string _currentSection = "Briefing";
     private ForeignCountryOptionView? _selectedForeignCountry;
+    private CourtFigureView? _selectedCourtFigure;
+    private string _selectedOffice = "Chancellor";
+    private double _targetTaxPercent;
+    private double _targetArmyFundingPercent;
+    private double _targetAdministrationFundingPercent;
+    private double _targetCourtFundingPercent;
 
     private readonly RelayCommand _advanceMonthCommand;
 
     public MainWindowViewModel()
     {
         _selectedForeignCountry = View.ForeignCountries.FirstOrDefault();
+        _selectedCourtFigure = View.Court.Figures.FirstOrDefault(figure =>
+            figure.IsAvailableForOffice);
+
+        SyncPolicyTargets();
 
         _advanceMonthCommand = new RelayCommand(
-            _ => RunAndRefresh(_session.AdvanceMonth),
+            _ =>
+            {
+                _session.AdvanceMonth();
+                SyncPolicyTargets();
+                RefreshBindings();
+            },
             _ => !View.HasLost);
 
         NavigateCommand = new RelayCommand(parameter =>
@@ -60,6 +75,36 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             RunAndRefresh(() =>
                 _session.RequestForeignAffairsReport(SelectedForeignCountry.Id));
         });
+
+        ApplyTaxCommand = new RelayCommand(_ =>
+            RunAndRefresh(() =>
+                _session.SetTaxRate(TargetTaxPercent)));
+
+        ApplyBudgetCommand = new RelayCommand(_ =>
+            RunAndRefresh(() =>
+                _session.SetBudget(
+                    TargetArmyFundingPercent,
+                    TargetAdministrationFundingPercent,
+                    TargetCourtFundingPercent)));
+
+        AppointAdvisorCommand = new RelayCommand(_ =>
+        {
+            if (SelectedCourtFigure is null)
+            {
+                RunAndRefresh(() =>
+                    _session.Refresh("Choose a political figure to appoint."));
+                return;
+            }
+
+            RunAndRefresh(() =>
+                _session.AppointAdvisor(
+                    SelectedCourtFigure.Id,
+                    SelectedOffice));
+        });
+
+        DismissAdvisorCommand = new RelayCommand(_ =>
+            RunAndRefresh(() =>
+                _session.DismissAdvisor(SelectedOffice)));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -80,6 +125,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ICommand RequestForeignAffairsReportCommand { get; }
 
+    public ICommand ApplyTaxCommand { get; }
+
+    public ICommand ApplyBudgetCommand { get; }
+
+    public ICommand AppointAdvisorCommand { get; }
+
+    public ICommand DismissAdvisorCommand { get; }
+
     public string CurrentSection
     {
         get => _currentSection;
@@ -91,33 +144,52 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             _currentSection = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsBriefingVisible));
+            OnPropertyChanged(nameof(IsGovernmentVisible));
+            OnPropertyChanged(nameof(IsCourtVisible));
             OnPropertyChanged(nameof(IsIntelligenceVisible));
             OnPropertyChanged(nameof(IsPlaceholderVisible));
+            OnPropertyChanged(nameof(IsBriefingSelected));
+            OnPropertyChanged(nameof(IsGovernmentSelected));
+            OnPropertyChanged(nameof(IsCourtSelected));
+            OnPropertyChanged(nameof(IsEconomySelected));
+            OnPropertyChanged(nameof(IsForeignAffairsSelected));
+            OnPropertyChanged(nameof(IsMilitarySelected));
+            OnPropertyChanged(nameof(IsIntelligenceSelected));
+            OnPropertyChanged(nameof(IsArchiveSelected));
             OnPropertyChanged(nameof(SectionTitle));
             OnPropertyChanged(nameof(SectionDescription));
         }
     }
 
-    public bool IsBriefingVisible =>
-        CurrentSection == "Briefing";
+    public bool IsBriefingVisible => CurrentSection == "Briefing";
 
-    public bool IsIntelligenceVisible =>
-        CurrentSection == "Intelligence";
+    public bool IsGovernmentVisible => CurrentSection == "Government";
+
+    public bool IsCourtVisible => CurrentSection == "Court";
+
+    public bool IsIntelligenceVisible => CurrentSection == "Intelligence";
 
     public bool IsPlaceholderVisible =>
-        !IsBriefingVisible && !IsIntelligenceVisible;
+        !IsBriefingVisible &&
+        !IsGovernmentVisible &&
+        !IsCourtVisible &&
+        !IsIntelligenceVisible;
 
-    public bool HasPendingReports =>
-        View.PendingReports > 0;
+    public bool IsBriefingSelected => CurrentSection == "Briefing";
+    public bool IsGovernmentSelected => CurrentSection == "Government";
+    public bool IsCourtSelected => CurrentSection == "Court";
+    public bool IsEconomySelected => CurrentSection == "Economy";
+    public bool IsForeignAffairsSelected => CurrentSection == "Foreign Affairs";
+    public bool IsMilitarySelected => CurrentSection == "Military";
+    public bool IsIntelligenceSelected => CurrentSection == "Intelligence";
+    public bool IsArchiveSelected => CurrentSection == "Archive";
+
+    public bool HasPendingReports => View.PendingReports > 0;
 
     public string SectionTitle => CurrentSection;
 
     public string SectionDescription => CurrentSection switch
     {
-        "Government" =>
-            "Policies, institutions, budgets and the machinery through which orders become state action.",
-        "Court" =>
-            "People, offices, personal relationships, political impressions, factions and patronage.",
         "Economy" =>
             "Reported economic history and fiscal estimates, including disagreement between successive reports.",
         "Foreign Affairs" =>
@@ -133,6 +205,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public IReadOnlyList<ForeignCountryOptionView> ForeignCountries =>
         View.ForeignCountries;
 
+    public IReadOnlyList<CourtFigureView> AppointmentCandidates =>
+        View.Court.Figures
+            .Where(figure => figure.IsAvailableForOffice)
+            .ToList();
+
+    public IReadOnlyList<string> OfficeOptions { get; } =
+        ["Chancellor", "Treasurer", "Marshal"];
+
     public ForeignCountryOptionView? SelectedForeignCountry
     {
         get => _selectedForeignCountry;
@@ -146,10 +226,92 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public CourtFigureView? SelectedCourtFigure
+    {
+        get => _selectedCourtFigure;
+        set
+        {
+            if (Equals(_selectedCourtFigure, value))
+                return;
+
+            _selectedCourtFigure = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string SelectedOffice
+    {
+        get => _selectedOffice;
+        set
+        {
+            if (_selectedOffice == value)
+                return;
+
+            _selectedOffice = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public double TargetTaxPercent
+    {
+        get => _targetTaxPercent;
+        set
+        {
+            if (Math.Abs(_targetTaxPercent - value) < 0.01)
+                return;
+
+            _targetTaxPercent = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public double TargetArmyFundingPercent
+    {
+        get => _targetArmyFundingPercent;
+        set
+        {
+            if (Math.Abs(_targetArmyFundingPercent - value) < 0.01)
+                return;
+
+            _targetArmyFundingPercent = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public double TargetAdministrationFundingPercent
+    {
+        get => _targetAdministrationFundingPercent;
+        set
+        {
+            if (Math.Abs(_targetAdministrationFundingPercent - value) < 0.01)
+                return;
+
+            _targetAdministrationFundingPercent = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public double TargetCourtFundingPercent
+    {
+        get => _targetCourtFundingPercent;
+        set
+        {
+            if (Math.Abs(_targetCourtFundingPercent - value) < 0.01)
+                return;
+
+            _targetCourtFundingPercent = value;
+            OnPropertyChanged();
+        }
+    }
+
     private void RunAndRefresh(Action action)
     {
         action();
+        RefreshBindings();
+    }
 
+    private void RefreshBindings()
+    {
         if (SelectedForeignCountry is null ||
             !View.ForeignCountries.Any(country =>
                 country.Id == SelectedForeignCountry.Id))
@@ -157,11 +319,36 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             SelectedForeignCountry = View.ForeignCountries.FirstOrDefault();
         }
 
+        if (SelectedCourtFigure is null ||
+            !View.Court.Figures.Any(figure =>
+                figure.Id == SelectedCourtFigure.Id &&
+                figure.IsAvailableForOffice))
+        {
+            SelectedCourtFigure = View.Court.Figures.FirstOrDefault(figure =>
+                figure.IsAvailableForOffice);
+        }
+        else
+        {
+            SelectedCourtFigure = View.Court.Figures.First(figure =>
+                figure.Id == SelectedCourtFigure.Id);
+        }
+
         OnPropertyChanged(nameof(View));
         OnPropertyChanged(nameof(ForeignCountries));
+        OnPropertyChanged(nameof(AppointmentCandidates));
         OnPropertyChanged(nameof(SelectedForeignCountry));
+        OnPropertyChanged(nameof(SelectedCourtFigure));
         OnPropertyChanged(nameof(HasPendingReports));
         _advanceMonthCommand.RaiseCanExecuteChanged();
+    }
+
+    private void SyncPolicyTargets()
+    {
+        TargetTaxPercent = View.Government.TaxPercent;
+        TargetArmyFundingPercent = View.Government.ArmyFundingPercent;
+        TargetAdministrationFundingPercent =
+            View.Government.AdministrationFundingPercent;
+        TargetCourtFundingPercent = View.Government.CourtFundingPercent;
     }
 
     private void OnPropertyChanged(
