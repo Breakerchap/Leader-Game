@@ -20,6 +20,8 @@ public class GameState
 
     public List<PoliticalPlot> Plots { get; } = [];
 
+    public List<PowerBaseDemand> PowerBaseDemands { get; } = [];
+
     public List<DiplomaticProposal> DiplomaticProposals { get; } = [];
 
     public List<War> Wars { get; } = [];
