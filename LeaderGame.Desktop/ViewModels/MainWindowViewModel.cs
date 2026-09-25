@@ -237,6 +237,42 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             }
         });
 
+        ConcedePoliticalDemandCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is PoliticalDemandView demand)
+            {
+                RunAndRefresh(() =>
+                    _session.RespondToPowerBaseDemand(demand.Id, concede: true));
+            }
+        });
+
+        RejectPoliticalDemandCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is PoliticalDemandView demand)
+            {
+                RunAndRefresh(() =>
+                    _session.RespondToPowerBaseDemand(demand.Id, concede: false));
+            }
+        });
+
+        InvestigateCharacterCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is CourtFigureView figure)
+                RunAndRefresh(() => _session.InvestigateCharacter(figure.Id));
+        });
+
+        ArrestCharacterCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is CourtFigureView figure)
+                RunAndRefresh(() => _session.ArrestCharacter(figure.Id));
+        });
+
+        ReleasePrisonerCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is CourtFigureView figure)
+                RunAndRefresh(() => _session.ReleasePrisoner(figure.Id));
+        });
+
         ApplyWarStanceCommand = new RelayCommand(_ =>
         {
             if (SelectedCampaign is null)
@@ -343,6 +379,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public ICommand AcceptCabinetProposalCommand { get; }
 
     public ICommand RejectCabinetProposalCommand { get; }
+
+    public ICommand ConcedePoliticalDemandCommand { get; }
+
+    public ICommand RejectPoliticalDemandCommand { get; }
+
+    public ICommand InvestigateCharacterCommand { get; }
+
+    public ICommand ArrestCharacterCommand { get; }
+
+    public ICommand ReleasePrisonerCommand { get; }
 
     public ICommand ApplyWarStanceCommand { get; }
 
