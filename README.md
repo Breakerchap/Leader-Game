@@ -28,6 +28,11 @@ The prototype now links court politics and state capacity rather than treating t
 - relationships between courtiers, coalition-building and rival blocs;
 - deterministic coup plots that grow or decay from political conditions;
 - investigations, dismissals and the grievances they create;
+- Marshal-mediated arrests whose success depends on competence, willingness and army readiness;
+- political imprisonment that removes characters from office, plots and succession while confined;
+- arbitrary arrests that cost legitimacy, stability and relationships;
+- failed arrests that can harden opposition into an active coup plot;
+- release and political rehabilitation of prisoners;
 - player lineage continuity, succession and usurpation;
 - monthly taxes and recurring government expenditure;
 - army, administration and court/patronage budgets;
