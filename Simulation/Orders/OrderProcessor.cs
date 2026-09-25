@@ -24,6 +24,7 @@ internal static class OrderProcessor
             ImproveRelationsOrder diplomacyOrder => ProcessImproveRelationsOrder(state, diplomacyOrder),
             NegotiateTradeAgreementOrder tradeOrder => ProcessTradeAgreementOrder(state, tradeOrder),
             EndTradeAgreementOrder endTradeOrder => ProcessEndTradeAgreementOrder(state, endTradeOrder),
+            RespondToDiplomaticProposalOrder responseOrder => ProcessDiplomaticProposalResponse(state, responseOrder),
             AppointAdvisorOrder appointmentOrder => ProcessAppointAdvisorOrder(state, appointmentOrder),
             DismissAdvisorOrder dismissalOrder => ProcessDismissAdvisorOrder(state, dismissalOrder),
             InvestigateCharacterOrder investigationOrder => ProcessInvestigationOrder(state, investigationOrder),
@@ -830,6 +831,99 @@ internal static class OrderProcessor
             $"Trade agreement with {order.TargetCountry.Name} ended",
             $"{order.SourceCountry.Name} terminates its trade agreement with " +
             $"{order.TargetCountry.Name}. The decision damages trust and raises tension.");
+    }
+
+    private static SimulationReport ProcessDiplomaticProposalResponse(
+        GameState state,
+        RespondToDiplomaticProposalOrder order)
+    {
+        var proposal = order.Proposal;
+        var chancellor = order.Recipient;
+
+        if (proposal.Status != Diplomacy.DiplomaticProposalStatus.Pending ||
+            !ReferenceEquals(proposal.TargetCountry, order.Country) ||
+            !ReferenceEquals(order.Issuer, order.Country.Ruler) ||
+            !IsServingChancellor(order.Country, chancellor))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Diplomatic response rejected",
+                "The proposal is no longer pending or cannot be handled by the current Chancellor.");
+        }
+
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.Country,
+            chancellor,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"{chancellor.FullName} refuses to formalise the response",
+                $"{chancellor.FullName} refuses to deliver the ruler's response to " +
+                $"{proposal.SourceCountry.Name}. The proposal remains pending.");
+        }
+
+        var relation = state.Diplomacy.GetOrCreate(
+            proposal.SourceCountry,
+            proposal.TargetCountry);
+
+        if (!order.Accept)
+        {
+            proposal.Status = Diplomacy.DiplomaticProposalStatus.Rejected;
+            relation.ChangeRelations(-2);
+            relation.ChangeTrust(-3);
+            relation.ChangeTension(2);
+
+            var proposerToRuler = state.Relationships.GetOrCreate(
+                proposal.SourceCountry.Ruler,
+                proposal.TargetCountry.Ruler);
+            proposerToRuler.ChangeOpinion(-4);
+            proposerToRuler.ChangeTrust(-3);
+
+            order.Status = OrderStatus.Completed;
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"Trade proposal from {proposal.SourceCountry.Name} rejected",
+                $"{order.Country.Name} rejects the proposed trade agreement. " +
+                "The refusal causes a small deterioration in relations.");
+        }
+
+        relation.HasTradeAgreement = true;
+        relation.TradeAgreementStartedOn = state.Date;
+        relation.ChangeRelations(3);
+        relation.ChangeTrust(5);
+        relation.ChangeTension(-3);
+
+        var sourceToTarget = state.Relationships.GetOrCreate(
+            proposal.SourceCountry.Ruler,
+            proposal.TargetCountry.Ruler);
+        sourceToTarget.ChangeOpinion(3);
+        sourceToTarget.ChangeTrust(5);
+
+        var targetToSource = state.Relationships.GetOrCreate(
+            proposal.TargetCountry.Ruler,
+            proposal.SourceCountry.Ruler);
+        targetToSource.ChangeOpinion(2);
+        targetToSource.ChangeTrust(3);
+
+        proposal.Status = Diplomacy.DiplomaticProposalStatus.Accepted;
+        order.Status = OrderStatus.Completed;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Diplomacy,
+            $"Trade proposal from {proposal.SourceCountry.Name} accepted",
+            $"{proposal.SourceCountry.Name} and {proposal.TargetCountry.Name} " +
+            "enter a trade agreement. Both countries begin receiving trade income this month.");
     }
 
     private static bool IsServingChancellor(

@@ -84,4 +84,37 @@ public static class DiplomaticCalculations
             0,
             100);
     }
+
+    public static double GetTradeDesirabilityScore(
+        GameState state,
+        Country sourceCountry,
+        Country targetCountry,
+        Character sourceChancellor)
+    {
+        var relation = state.Diplomacy.GetOrCreate(sourceCountry, targetCountry);
+        var rulerToTarget = state.Relationships.GetOrCreate(
+            sourceCountry.Ruler,
+            targetCountry.Ruler);
+
+        var personalPreference =
+            rulerToTarget.Opinion / 100.0 * 12.0 +
+            (rulerToTarget.Trust - 50) / 50.0 * 8.0;
+
+        var debtToGdp = sourceCountry.Gdp <= 0
+            ? 0
+            : (double)(sourceCountry.Debt / sourceCountry.Gdp);
+
+        var economicNeedBonus = Math.Min(12, debtToGdp * 45);
+
+        return Math.Clamp(
+            42 +
+            relation.Relations * 0.30 +
+            relation.Trust * 0.20 -
+            relation.Tension * 0.35 +
+            sourceChancellor.Competence * 0.08 +
+            personalPreference +
+            economicNeedBonus,
+            0,
+            100);
+    }
 }

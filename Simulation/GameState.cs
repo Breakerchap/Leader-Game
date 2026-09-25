@@ -19,16 +19,14 @@ public class GameState
 
     public List<PoliticalPlot> Plots { get; } = [];
 
+    public List<DiplomaticProposal> DiplomaticProposals { get; } = [];
+
     public List<SimulationReport> Reports { get; } = [];
 
     public RelationshipGraph Relationships { get; } = new();
 
     public DiplomaticGraph Diplomacy { get; } = new();
 
-    /// <summary>
-    /// Seeded simulation randomness. Tests and future save loading can replace
-    /// or restore this source without changing simulation systems.
-    /// </summary>
     public IRandomSource Random { get; set; } = new SimulationRandom(42);
 
     public required PlayerState Player { get; set; }
