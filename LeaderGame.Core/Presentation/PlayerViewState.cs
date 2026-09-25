@@ -182,7 +182,11 @@ public sealed record GovernmentPolicyView(
     double CourtFundingPercent,
     string TreasurerName,
     string TreasurerObedience,
-    string PolicyNote);
+    string PolicyNote,
+    string Regime,
+    string PoliticalCycle,
+    string PoliticalCycleDetail,
+    bool HasElection);
 
 public sealed record OfficeView(
     string Position,
