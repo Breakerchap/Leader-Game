@@ -47,6 +47,42 @@ public sealed record ForeignCountryOptionView(
     string Id,
     string Name);
 
+public sealed record GovernmentPolicyView(
+    double TaxPercent,
+    double ArmyFundingPercent,
+    double AdministrationFundingPercent,
+    double CourtFundingPercent,
+    string TreasurerName,
+    string TreasurerObedience,
+    string PolicyNote);
+
+public sealed record OfficeView(
+    string Position,
+    string HolderName,
+    string Ability,
+    string Trust,
+    string Obedience,
+    string Risk);
+
+public sealed record CourtFigureView(
+    int Id,
+    string Name,
+    string Role,
+    string Ability,
+    string Ambition,
+    string Influence,
+    string Trust,
+    string Obedience,
+    string Risk,
+    string Constituencies,
+    bool IsAvailableForOffice);
+
+public sealed record CourtPoliticsView(
+    IReadOnlyList<OfficeView> Offices,
+    IReadOnlyList<CourtFigureView> Figures,
+    string KnownOpposition,
+    string KnownPressure);
+
 public sealed record PlayerViewState(
     string CountryName,
     string Date,
@@ -63,4 +99,6 @@ public sealed record PlayerViewState(
     IReadOnlyList<PendingInquiryView> PendingInquiries,
     IReadOnlyList<IntelligenceReportView> IntelligenceReports,
     IReadOnlyList<ForeignCountryOptionView> ForeignCountries,
+    GovernmentPolicyView Government,
+    CourtPoliticsView Court,
     string StatusMessage);
