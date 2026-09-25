@@ -27,10 +27,14 @@ public class InformationSystemTests
             InformationMetric.DiplomaticRelations,
             nordmark.Id,
             country.Id);
+        var foreignGdp = state.Knowledge.Get(
+            InformationMetric.Gdp,
+            nordmark.Id);
 
         Assert.NotNull(treasury);
         Assert.NotNull(army);
         Assert.NotNull(foreignRelations);
+        Assert.NotNull(foreignGdp);
         Assert.True(treasury!.AgeInMonths(state.Date) >= 1);
         Assert.True(foreignRelations!.AgeInMonths(state.Date) >= 1);
         Assert.NotEmpty(state.AdvisorReports);
