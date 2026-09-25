@@ -1,10 +1,10 @@
 # Leader Game
 
-An experimental grand-strategy simulation where the player controls a ruler or political lineage rather than directly controlling a state.
+A simulation-first grand-strategy prototype about **political power rather than direct control of a country**.
 
-The core chain is:
+The player controls a ruler and the political lineage behind them. Decisions are normally issued as orders to real characters inside the simulation, who may carry them out well, badly, reluctantly or not at all depending on their competence, loyalties, relationships, fear, ambition and circumstances.
 
-```
+```text
 player decision
     -> order
     -> character willingness / interpretation / competence
@@ -13,94 +13,208 @@ player decision
     -> report to the player
 ```
 
-The player should not be able to directly set the world state just because they clicked a button.
+The country is deliberately separate from the player. A state can survive a ruler, dynasty, party or faction losing power.
 
-A second important distinction is that **the player is not the country**. The state can continue after the player's dynasty, party or faction has lost power.
+> **Project status:** early playable console prototype. The simulation architecture and several connected political systems exist, but this is not yet the full historical grand-strategy game described in the long-term design.
+
+See **[docs/FINAL_GOAL.md](docs/FINAL_GOAL.md)** for the intended final game.
 
 ## Current prototype
 
-The prototype now links court politics and state capacity rather than treating them as separate minigames:
+The current build is a .NET 9 console application with a three-country demo scenario and monthly simulation ticks.
 
-- directional personal relationships: opinion, trust and fear;
+Implemented systems include:
+
+- character attributes including competence, ambition, legitimacy, influence, age and health;
+- directional personal relationships with separate opinion, trust and fear;
 - allegiance to countries and political lineages;
-- competence, ambition, legitimacy and political influence;
 - calculated willingness to obey orders;
-- relationships between courtiers, coalition-building and rival blocs;
-- deterministic coup plots that grow or decay from political conditions;
-- investigations, dismissals and the grievances they create;
-- Marshal-mediated arrests whose success depends on competence, willingness and army readiness;
-- political imprisonment that removes characters from office, plots and succession while confined;
-- arbitrary arrests that cost legitimacy, stability and relationships;
-- failed arrests that can harden opposition into an active coup plot;
-- release and political rehabilitation of prisoners;
-- deterministic seeded ageing, illness, recovery and natural mortality;
-- natural ruler death flowing directly into the succession system in the same monthly tick;
-- player lineage continuity, succession and usurpation;
-- three fully simulated countries in the prototype world, each with its own ruler, court, economy and succession;
-- bilateral state relations tracking relations, trust, tension, borders and trade agreements;
-- Chancellor-mediated diplomatic outreach and trade negotiation;
-- trade agreements that generate bilateral monthly income and slowly build trust;
-- ruler-to-ruler personal relationships that influence diplomacy and change with succession;
-- autonomous foreign governments that can initiate trade proposals without deciding for the player;
-- pending proposals that can be accepted, rejected or allowed to expire through the Foreign Affairs screen;
-- monthly taxes and recurring government expenditure;
+- advisers and offices including Treasurer, Marshal and Chancellor;
+- appointment and dismissal of advisers;
+- political threat calculations and court coalitions;
+- investigations and discoverable coup plots;
+- arrests, political imprisonment and prisoner release;
+- failed or arbitrary repression producing political consequences;
+- deterministic coups and usurpation;
+- seeded illness, recovery, ageing and natural mortality;
+- succession after a ruler's death;
+- player lineage continuity and loss of political control;
+- population, GDP, treasury, debt and tax revenue;
 - army, administration and court/patronage budgets;
-- Treasurer-mediated budget changes rather than direct sliders;
-- administrative efficiency and army readiness that respond to funding;
-- cash reserves, deficits, debt and monthly debt interest;
-- fiscal stress feeding back into unrest and government stability;
-- reports and court information that expose what the player could reasonably know.
+- administrative efficiency and army readiness responding to funding;
+- deficits, debt and monthly debt interest;
+- fiscal stress feeding into unrest and stability;
+- bilateral diplomatic relations, trust and tension;
+- borders/neighbours and trade agreements;
+- Chancellor-mediated diplomatic outreach;
+- autonomous foreign trade proposals and responses;
+- tribute ultimatums and foreign pressure;
+- ruler-to-ruler personal relationships affecting diplomacy;
+- war declarations and autonomous military behaviour;
+- campaign stances;
+- army losses, readiness, war score and war exhaustion;
+- peace negotiation with multiple terms;
+- reports exposing the consequences the player could reasonably know about;
+- deterministic/random-source injection for reproducible simulation tests.
 
-Run it with:
+## How the simulation advances
+
+A month currently processes roughly in this order:
+
+1. character life, illness and mortality;
+2. succession;
+3. queued player orders;
+4. economy;
+5. domestic politics;
+6. diplomacy;
+7. foreign military AI;
+8. active wars;
+9. foreign policy;
+10. political plots;
+11. advance the date.
+
+This order matters. For example, a ruler can die and succession can be resolved before that month's queued orders are processed.
+
+## Requirements
+
+- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- Any terminal supported by .NET
+
+The project has no external runtime package dependencies at present.
+
+## Run
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Breakerchap/Leader-Game.git
+cd Leader-Game
+```
+
+Run the game:
 
 ```bash
 dotnet run
 ```
 
-Run the tests with:
+## Tests
+
+Run the test project with:
 
 ```bash
 dotnet test LeaderGame.Tests/LeaderGame.Tests.csproj
 ```
 
-## Design principles
+The tests cover the major simulation systems, including appointments, budgets, taxes, relationships, politics, plots, succession, life simulation, diplomacy, foreign policy, war and peace.
 
-### People, not buttons
+## Project structure
 
-A player action usually creates an intention or order. A character then carries it out. Their competence determines how well they can do it; their relationships, fear, ambition and allegiances determine how willing they are.
+```text
+Leader-Game/
+├── Program.cs
+├── LeaderGame.csproj
+├── Simulation/
+│   ├── Characters/
+│   ├── Countries/
+│   ├── Diplomacy/
+│   ├── Military/
+│   ├── Orders/
+│   ├── Player/
+│   ├── Politics/
+│   ├── Randomness/
+│   ├── Reports/
+│   ├── Scenarios/
+│   ├── Systems/
+│   ├── GameDate.cs
+│   ├── GameSimulation.cs
+│   └── GameState.cs
+├── LeaderGame.Tests/
+├── docs/
+│   └── FINAL_GOAL.md
+└── .github/workflows/
+```
+
+### Important pieces
+
+- **`Program.cs`** — current console UI and player interaction.
+- **`Simulation/GameState.cs`** — the central world state.
+- **`Simulation/GameSimulation.cs`** — monthly simulation orchestration and order processing.
+- **`Simulation/Orders/`** — player intentions represented as structured orders.
+- **`Simulation/Systems/`** — economy, politics, life, succession, diplomacy, plots, foreign policy, military AI and war processing.
+- **`Simulation/Scenarios/DemoScenario.cs`** — the current hand-built prototype world.
+- **`LeaderGame.Tests/`** — xUnit simulation tests.
+- **`docs/FINAL_GOAL.md`** — long-term game design target.
+
+## Design rules
+
+### The player is not omnipotent
+
+Player actions should normally enter the world as orders, not direct edits to simulation values.
+
+A ruler can ask a Treasurer to change spending, a Marshal to conduct an arrest or campaign, or a Chancellor to negotiate abroad. The relevant character still has to execute the instruction.
+
+### Competence and loyalty are different
+
+The best person for a job may also be politically dangerous.
+
+A highly competent subordinate can execute an order efficiently while using the resulting office, army, information or prestige to build their own power.
 
 ### Fear is not loyalty
 
-A character may hate the ruler and still obey because they are afraid. That can make the government effective in the short term while leaving a dangerous political structure behind.
+A character can dislike or distrust the ruler and still comply because they are afraid. That may make a government effective in the short term while making its political foundations more brittle.
 
 ### Politics is a network
 
-Characters do not relate only to the ruler. Friendship, trust and shared hostility between courtiers can turn an isolated rival into the centre of a coalition. Player actions can reshape that network unintentionally.
+Characters have relationships with one another, not just with the ruler. Coalitions and threats should therefore emerge from groups of people with shared interests or enemies.
+
+### State capacity costs resources
+
+Administrative efficiency and military readiness require continued funding. Cutting expenditure can improve the budget while making future orders harder to implement.
+
+### Information should be mediated
+
+The player should act on reports and assessments rather than being shown every hidden calculation.
+
+The prototype still exposes more raw information than the final game should, but the architecture is moving toward information delivered through advisers and institutions.
 
 ### Randomness must be reproducible
 
-Illness and mortality use a seeded simulation random source rather than ad-hoc random calls. The same state and RNG state reproduce the same future, and tests can inject exact random sequences.
+Random events use an injectable seeded random source. Given the same state and random sequence, the simulation should produce the same result.
 
-### State capacity costs money
+This makes failures debuggable and the simulation testable.
 
-Army readiness and administrative effectiveness require sustained funding. Cutting expenditure solves a fiscal problem now by creating a capability problem later. Debt preserves capacity temporarily, but eventually damages political stability.
+## Current limitations
 
-### Jobs are not character classes
+The current version is deliberately small compared with the intended game.
 
-Ruler, Marshal and Treasurer are roles held by people. Characters can gain and lose offices without becoming a different object type.
+It does **not** yet provide:
 
-### The country is not the player
+- a historical world or historical start dates;
+- a geographic world map;
+- hundreds of states or large populations of political actors;
+- deep social groups, parties, religions or regional politics;
+- dynamic constitutional institutions;
+- a full production/trade/resource economy;
+- detailed military logistics or territorial occupation;
+- a knowledge/capability/adoption model for technology;
+- dynamic time compression;
+- save/load and campaign persistence;
+- a graphical interface.
 
-The simulation continues to model a country even if the player's political lineage is removed from power. Losing political control is a player loss, not destruction of the state.
+Those belong to the longer-term design rather than the current prototype.
 
-## Near-term direction
+## Long-term direction
 
-The next systems should continue to grow from the same model:
+The project is intended to grow by deepening the same simulation model rather than replacing it with unrelated systems.
 
-1. diplomacy mediated through the Chancellor and diplomats;
-2. mortality, illness, abdication and other causes of succession;
-3. imprisonment, exile, pardons and legal/political consequences for conspirators;
-4. succession laws and institutions that derive candidates instead of using a fixed list;
-5. larger factions and interest groups built from the relationship network;
-6. trade and economic shocks that make fiscal policy react to the outside world;
-7. only then, a first minimal war system.
+The long-term goal is a centuries-spanning political simulation in which:
+
+- rulers depend on imperfectly loyal people and institutions;
+- information is incomplete and politically mediated;
+- governments and regimes can change form;
+- political lineages can survive deposition, opposition and exile;
+- domestic politics, economics, diplomacy and war feed into one another;
+- technology is modelled through knowledge, capability and adoption rather than a simple tech tree;
+- alternate history emerges from simulated conditions instead of scripted event branches.
+
+The full design target is documented in **[docs/FINAL_GOAL.md](docs/FINAL_GOAL.md)**.
