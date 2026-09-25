@@ -24,6 +24,26 @@ public static class DiplomaticCalculations
             100);
     }
 
+    public static double GetPersonalRulerModifier(
+        GameState state,
+        Country sourceCountry,
+        Country targetCountry)
+    {
+        var targetToSource = state.Relationships.GetOrCreate(
+            targetCountry.Ruler,
+            sourceCountry.Ruler);
+
+        var opinionContribution =
+            targetToSource.Opinion / 100.0 * 12.0;
+        var trustContribution =
+            (targetToSource.Trust - 50) / 50.0 * 8.0;
+
+        return Math.Clamp(
+            opinionContribution + trustContribution,
+            -20,
+            20);
+    }
+
     public static double GetTradeAcceptanceScore(
         GameState state,
         Country sourceCountry,
@@ -47,6 +67,10 @@ public static class DiplomaticCalculations
             : (double)(targetCountry.Debt / targetCountry.Gdp);
 
         var economicNeedBonus = Math.Min(10, debtToGdp * 40);
+        var personalModifier = GetPersonalRulerModifier(
+            state,
+            sourceCountry,
+            targetCountry);
 
         return Math.Clamp(
             40 +
@@ -55,7 +79,8 @@ public static class DiplomaticCalculations
             relation.Tension * 0.35 +
             missionEffectiveness * 0.15 +
             foreignAdministrativeJudgement * 0.10 +
-            economicNeedBonus,
+            economicNeedBonus +
+            personalModifier,
             0,
             100);
     }

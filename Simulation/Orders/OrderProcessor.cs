@@ -660,6 +660,12 @@ internal static class OrderProcessor
         relation.ChangeTrust(Math.Max(1, improvement / 3));
         relation.ChangeTension(-Math.Max(1, improvement / 2));
 
+        var foreignRulerToIssuer = state.Relationships.GetOrCreate(
+            order.TargetCountry.Ruler,
+            order.SourceCountry.Ruler);
+        foreignRulerToIssuer.ChangeOpinion(Math.Max(1, improvement));
+        foreignRulerToIssuer.ChangeTrust(Math.Max(1, improvement / 2));
+
         order.Status = OrderStatus.Completed;
 
         return new SimulationReport(
@@ -757,6 +763,12 @@ internal static class OrderProcessor
         relation.ChangeTrust(5);
         relation.ChangeTension(-3);
 
+        var foreignRulerToIssuer = state.Relationships.GetOrCreate(
+            order.TargetCountry.Ruler,
+            order.SourceCountry.Ruler);
+        foreignRulerToIssuer.ChangeOpinion(3);
+        foreignRulerToIssuer.ChangeTrust(5);
+
         order.Status = OrderStatus.Completed;
 
         return new SimulationReport(
@@ -803,6 +815,12 @@ internal static class OrderProcessor
         relation.ChangeRelations(-3);
         relation.ChangeTrust(-5);
         relation.ChangeTension(4);
+
+        var foreignRulerToIssuer = state.Relationships.GetOrCreate(
+            order.TargetCountry.Ruler,
+            order.SourceCountry.Ruler);
+        foreignRulerToIssuer.ChangeOpinion(-5);
+        foreignRulerToIssuer.ChangeTrust(-8);
 
         order.Status = OrderStatus.Completed;
 

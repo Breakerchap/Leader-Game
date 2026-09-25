@@ -342,6 +342,48 @@ public static class DemoScenario
                 (valerianSuccessor, 79, 19, 59, 5)
             ]);
 
+        // Personal relationships between rulers are distinct from state relations.
+        // Succession therefore changes diplomatic chemistry without erasing treaties
+        // or the accumulated history between states.
+        state.Relationships.Set(
+            nordmarkQueen,
+            king,
+            opinion: 44,
+            trust: 68,
+            fear: 0);
+        state.Relationships.Set(
+            king,
+            nordmarkQueen,
+            opinion: 36,
+            trust: 61,
+            fear: 0);
+
+        state.Relationships.Set(
+            valerianDoge,
+            king,
+            opinion: -34,
+            trust: 26,
+            fear: 4);
+        state.Relationships.Set(
+            king,
+            valerianDoge,
+            opinion: -21,
+            trust: 33,
+            fear: 2);
+
+        state.Relationships.Set(
+            nordmarkQueen,
+            valerianDoge,
+            opinion: -12,
+            trust: 39,
+            fear: 1);
+        state.Relationships.Set(
+            valerianDoge,
+            nordmarkQueen,
+            opinion: -18,
+            trust: 35,
+            fear: 2);
+
         state.Diplomacy.Set(
             falkenreich,
             nordmark,
