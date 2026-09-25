@@ -52,6 +52,28 @@ public sealed class MetricAccentBrushConverter : IValueConverter
         AvaloniaProperty.UnsetValue;
 }
 
+public sealed class AdvisorRoleBrushConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var text = value?.ToString()?.ToLowerInvariant() ?? string.Empty;
+
+        if (text.Contains("treasurer"))
+            return Brush.Parse("#4FAE78");
+
+        if (text.Contains("marshal"))
+            return Brush.Parse("#D96C6C");
+
+        if (text.Contains("chancellor"))
+            return Brush.Parse("#5E9DD9");
+
+        return Brush.Parse("#A77BD7");
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        AvaloniaProperty.UnsetValue;
+}
+
 public sealed class RiskBrushConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
