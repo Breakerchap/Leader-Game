@@ -1,4 +1,6 @@
 using LeaderGame.Simulation;
+using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Scenarios;
 
 namespace LeaderGame.Tests;
@@ -55,9 +57,9 @@ public class SuccessionTests
         var simulation = new GameSimulation(state);
         var country = state.Player.Country;
         var oldRuler = country.Ruler;
-        var treasurer = country.GetOfficeHolder(Characters.Position.Treasurer)!;
+        var treasurer = country.GetOfficeHolder(Position.Treasurer)!;
 
-        var order = new Orders.ChangeTaxOrder
+        var order = new ChangeTaxOrder
         {
             Issuer = oldRuler,
             Recipient = treasurer,
@@ -71,7 +73,7 @@ public class SuccessionTests
 
         simulation.AdvanceMonth();
 
-        Assert.Equal(Orders.OrderStatus.Rejected, order.Status);
+        Assert.Equal(OrderStatus.Rejected, order.Status);
         Assert.Equal(0.10m, country.TaxRate);
     }
 }
