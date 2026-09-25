@@ -251,6 +251,11 @@ internal static class OrderProcessor
             ApplyDismissalConsequences(state, order.Country, order.Issuer, previousHolder);
 
         candidate.Position = order.Position;
+        ApplyAppointmentPowerBaseConsequences(
+            order.Country,
+            order.Issuer,
+            candidate,
+            order.Position);
 
         var candidateToRuler =
             state.Relationships.GetOrCreate(candidate, order.Issuer);
@@ -1359,12 +1364,78 @@ internal static class OrderProcessor
         return current + (target - current) * implementationFactor;
     }
 
+    private static void ApplyAppointmentPowerBaseConsequences(
+        Countries.Country country,
+        Character ruler,
+        Character candidate,
+        Position position)
+    {
+        foreach (var powerBase in Enum.GetValues<PowerBaseType>())
+        {
+            if (country.GetPowerBaseStrength(powerBase) < 40)
+                continue;
+
+            var candidateBacking = candidate.GetPowerBaseStanding(powerBase);
+
+            if (candidateBacking < 65)
+                continue;
+
+            var representationGain = Math.Clamp(
+                1 + (candidateBacking - 65) / 15,
+                1,
+                3);
+
+            ruler.ChangePowerBaseStanding(powerBase, representationGain);
+        }
+
+        // Office gives a politician access, visibility and patronage of its own.
+        // Placating a group by appointing its favourite can therefore create a
+        // stronger future rival rather than being a free political concession.
+        switch (position)
+        {
+            case Position.Marshal:
+                candidate.ChangePowerBaseStanding(PowerBaseType.Military, 6);
+                break;
+
+            case Position.Treasurer:
+                candidate.ChangePowerBaseStanding(PowerBaseType.Merchants, 4);
+                candidate.ChangePowerBaseStanding(PowerBaseType.Bureaucracy, 4);
+                break;
+
+            case Position.Chancellor:
+                candidate.ChangePowerBaseStanding(PowerBaseType.Bureaucracy, 4);
+                candidate.ChangePowerBaseStanding(PowerBaseType.Aristocracy, 2);
+                candidate.ChangePowerBaseStanding(PowerBaseType.RegionalElites, 2);
+                candidate.ChangePowerBaseStanding(PowerBaseType.Party, 3);
+                break;
+        }
+    }
+
     private static void ApplyDismissalConsequences(
         GameState state,
         Countries.Country country,
         Character ruler,
         Character dismissed)
     {
+        foreach (var powerBase in Enum.GetValues<PowerBaseType>())
+        {
+            if (country.GetPowerBaseStrength(powerBase) < 40)
+                continue;
+
+            var dismissedBacking = dismissed.GetPowerBaseStanding(powerBase);
+
+            if (dismissedBacking < 65)
+                continue;
+
+            var politicalCost = Math.Clamp(
+                1 + (dismissedBacking - 65) / 15,
+                1,
+                3);
+
+            ruler.ChangePowerBaseStanding(powerBase, -politicalCost);
+            dismissed.ChangePowerBaseStanding(powerBase, 1);
+        }
+
         dismissed.Position = null;
         dismissed.Influence = Math.Max(0, dismissed.Influence - 8);
 
