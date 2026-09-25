@@ -22,7 +22,7 @@ public sealed class War
 {
     private double _warScore;
 
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public required Country Attacker { get; init; }
 
