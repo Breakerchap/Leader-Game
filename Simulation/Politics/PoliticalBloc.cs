@@ -10,7 +10,7 @@ namespace LeaderGame.Simulation.Politics;
 /// </summary>
 public sealed class PoliticalBloc
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public required Country Country { get; init; }
 
