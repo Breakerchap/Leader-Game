@@ -2,6 +2,7 @@ using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Player;
+using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Reports;
 
 namespace LeaderGame.Simulation;
@@ -13,6 +14,8 @@ public class GameState
     public List<Country> Countries { get; } = [];
 
     public List<Order> PendingOrders { get; } = [];
+
+    public List<PoliticalPlot> Plots { get; } = [];
 
     public List<SimulationReport> Reports { get; } = [];
 
