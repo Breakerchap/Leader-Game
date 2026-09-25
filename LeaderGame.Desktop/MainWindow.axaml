@@ -86,27 +86,51 @@
                 Classes="eyebrow"
                 Margin="10,0,0,8" />
 
-            <Button Classes="nav" Content="◆  Briefing" Foreground="#86CBD6"
-                    Command="{Binding NavigateCommand}" CommandParameter="Briefing" />
-            <Button Classes="nav" Content="▣  Government" Foreground="#B9C5D3"
-                    Command="{Binding NavigateCommand}" CommandParameter="Government" />
-            <Button Classes="nav" Content="♟  Court" Foreground="#C8ACE1"
-                    Command="{Binding NavigateCommand}" CommandParameter="Court" />
-            <Button Classes="nav" Content="▥  Economy" Foreground="#92CAA5"
-                    Command="{Binding NavigateCommand}" CommandParameter="Economy" />
+            <Grid ColumnDefinitions="4,*">
+              <Border IsVisible="{Binding IsBriefingSelected}" Background="#55B8C7" CornerRadius="3" />
+              <Button Grid.Column="1" Classes="nav" Content="◆  Briefing" Foreground="#86CBD6"
+                      Command="{Binding NavigateCommand}" CommandParameter="Briefing" />
+            </Grid>
+            <Grid ColumnDefinitions="4,*">
+              <Border IsVisible="{Binding IsGovernmentSelected}" Background="#AAB5C2" CornerRadius="3" />
+              <Button Grid.Column="1" Classes="nav" Content="▣  Government" Foreground="#B9C5D3"
+                      Command="{Binding NavigateCommand}" CommandParameter="Government" />
+            </Grid>
+            <Grid ColumnDefinitions="4,*">
+              <Border IsVisible="{Binding IsCourtSelected}" Background="#A77BD7" CornerRadius="3" />
+              <Button Grid.Column="1" Classes="nav" Content="♟  Court" Foreground="#C8ACE1"
+                      Command="{Binding NavigateCommand}" CommandParameter="Court" />
+            </Grid>
+            <Grid ColumnDefinitions="4,*">
+              <Border IsVisible="{Binding IsEconomySelected}" Background="#4FAE78" CornerRadius="3" />
+              <Button Grid.Column="1" Classes="nav" Content="▥  Economy" Foreground="#92CAA5"
+                      Command="{Binding NavigateCommand}" CommandParameter="Economy" />
+            </Grid>
 
             <TextBlock
                 Text="STATE"
                 Classes="eyebrow"
                 Margin="10,18,0,8" />
-            <Button Classes="nav" Content="◇  Foreign Affairs" Foreground="#8CBCE8"
-                    Command="{Binding NavigateCommand}" CommandParameter="Foreign Affairs" />
-            <Button Classes="nav" Content="⚑  Military" Foreground="#E99B9B"
-                    Command="{Binding NavigateCommand}" CommandParameter="Military" />
-            <Button Classes="nav" Content="◉  Intelligence" Foreground="#86CBD6"
-                    Command="{Binding NavigateCommand}" CommandParameter="Intelligence" />
-            <Button Classes="nav" Content="▤  Archive" Foreground="#AAB5C2"
-                    Command="{Binding NavigateCommand}" CommandParameter="Archive" />
+            <Grid ColumnDefinitions="4,*">
+              <Border IsVisible="{Binding IsForeignAffairsSelected}" Background="#5E9DD9" CornerRadius="3" />
+              <Button Grid.Column="1" Classes="nav" Content="◇  Foreign Affairs" Foreground="#8CBCE8"
+                      Command="{Binding NavigateCommand}" CommandParameter="Foreign Affairs" />
+            </Grid>
+            <Grid ColumnDefinitions="4,*">
+              <Border IsVisible="{Binding IsMilitarySelected}" Background="#D96C6C" CornerRadius="3" />
+              <Button Grid.Column="1" Classes="nav" Content="⚑  Military" Foreground="#E99B9B"
+                      Command="{Binding NavigateCommand}" CommandParameter="Military" />
+            </Grid>
+            <Grid ColumnDefinitions="4,*">
+              <Border IsVisible="{Binding IsIntelligenceSelected}" Background="#55B8C7" CornerRadius="3" />
+              <Button Grid.Column="1" Classes="nav" Content="◉  Intelligence" Foreground="#86CBD6"
+                      Command="{Binding NavigateCommand}" CommandParameter="Intelligence" />
+            </Grid>
+            <Grid ColumnDefinitions="4,*">
+              <Border IsVisible="{Binding IsArchiveSelected}" Background="#7F8A98" CornerRadius="3" />
+              <Button Grid.Column="1" Classes="nav" Content="▤  Archive" Foreground="#AAB5C2"
+                      Command="{Binding NavigateCommand}" CommandParameter="Archive" />
+            </Grid>
           </StackPanel>
 
           <Border
@@ -298,6 +322,297 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- Government -->
+        <ScrollViewer IsVisible="{Binding IsGovernmentVisible}">
+          <StackPanel Spacing="20">
+            <StackPanel Spacing="5">
+              <TextBlock Text="GOVERNMENT" Classes="eyebrow" Foreground="#AAB5C2" />
+              <TextBlock Text="Policy and administration" Classes="title" />
+              <TextBlock
+                  Text="You know what policy was formally enacted. Its real effects remain something your officials must report back to you."
+                  TextWrapping="Wrap"
+                  Classes="muted" />
+            </StackPanel>
+
+            <Border Classes="panel">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="TREASURY" Classes="eyebrow" Foreground="#75C493" />
+                  <TextBlock
+                      Text="{Binding View.Government.TreasurerName}"
+                      FontSize="18"
+                      FontWeight="SemiBold" />
+                  <TextBlock
+                      Text="{Binding View.Government.PolicyNote}"
+                      MaxWidth="680"
+                      TextWrapping="Wrap"
+                      Classes="muted" />
+                </StackPanel>
+                <Border Grid.Column="1" Classes="badge" Background="#171E27" VerticalAlignment="Top">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="Obedience" Classes="muted" FontSize="11" />
+                    <TextBlock
+                        Text="{Binding View.Government.TreasurerObedience}"
+                        FontWeight="SemiBold"
+                        FontSize="11"
+                        Foreground="{Binding View.Government.TreasurerObedience, Converter={StaticResource SemanticStatusBrush}}" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+              <Border Classes="card">
+                <StackPanel Spacing="12">
+                  <TextBlock Text="TAX POLICY" Classes="eyebrow" Foreground="#75C493" />
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Official tax rate" Classes="muted" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="{Binding View.Government.TaxPercent, StringFormat='{}{0:F0}%'}"
+                        FontSize="20"
+                        FontWeight="SemiBold"
+                        Foreground="#8FD2A8" />
+                  </Grid>
+                  <Slider
+                      Minimum="0"
+                      Maximum="60"
+                      TickFrequency="1"
+                      Value="{Binding TargetTaxPercent, Mode=TwoWay}" />
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock
+                        Text="{Binding TargetTaxPercent, StringFormat='Target: {0:F0}%'}"
+                        VerticalAlignment="Center"
+                        Foreground="#C6D0DB" />
+                    <Button
+                        Grid.Column="1"
+                        Classes="action economy"
+                        Command="{Binding ApplyTaxCommand}"
+                        Content="Issue tax directive" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+
+              <Border Grid.Column="1" Classes="card">
+                <StackPanel Spacing="12">
+                  <TextBlock Text="FORMAL FUNDING" Classes="eyebrow" Foreground="#D8A657" />
+                  <TextBlock
+                      Text="The budget is an order to the Treasury. What is actually achieved can still differ."
+                      TextWrapping="Wrap"
+                      Classes="muted"
+                      FontSize="12" />
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Army" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="{Binding TargetArmyFundingPercent, StringFormat='{}{0:F0}%'}"
+                        Foreground="#E99B9B"
+                        FontWeight="SemiBold" />
+                  </Grid>
+                  <Slider Minimum="50" Maximum="150" TickFrequency="5"
+                          Value="{Binding TargetArmyFundingPercent, Mode=TwoWay}" />
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Administration" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="{Binding TargetAdministrationFundingPercent, StringFormat='{}{0:F0}%'}"
+                        Foreground="#8CBCE8"
+                        FontWeight="SemiBold" />
+                  </Grid>
+                  <Slider Minimum="50" Maximum="150" TickFrequency="5"
+                          Value="{Binding TargetAdministrationFundingPercent, Mode=TwoWay}" />
+
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Court &amp; patronage" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="{Binding TargetCourtFundingPercent, StringFormat='{}{0:F0}%'}"
+                        Foreground="#C8ACE1"
+                        FontWeight="SemiBold" />
+                  </Grid>
+                  <Slider Minimum="50" Maximum="150" TickFrequency="5"
+                          Value="{Binding TargetCourtFundingPercent, Mode=TwoWay}" />
+
+                  <Button
+                      Classes="action politics"
+                      HorizontalAlignment="Right"
+                      Command="{Binding ApplyBudgetCommand}"
+                      Content="Issue budget directive" />
+                </StackPanel>
+              </Border>
+            </Grid>
+
+            <Border Background="#151D26" CornerRadius="8" Padding="12">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <TextBlock Text="◆" Foreground="#86CBD6" />
+                <TextBlock
+                    Text="Orders are queued. Advance the month to see whether your officials obey, moderate or refuse them."
+                    TextWrapping="Wrap"
+                    Foreground="#AEBAC8" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- Court -->
+        <ScrollViewer IsVisible="{Binding IsCourtVisible}">
+          <StackPanel Spacing="20">
+            <StackPanel Spacing="5">
+              <TextBlock Text="COURT" Classes="eyebrow" Foreground="#C096E2" />
+              <TextBlock Text="People who can make or break the regime" Classes="title" />
+              <TextBlock
+                  Text="Political traits are impressions, not instrument readings. Appointing a popular figure can buy support while making that person more dangerous."
+                  TextWrapping="Wrap"
+                  Classes="muted" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+              <Border Classes="card" Background="#17131C" BorderBrush="#513A62">
+                <StackPanel Spacing="7">
+                  <TextBlock Text="ORGANISED OPPOSITION" Classes="eyebrow" Foreground="#C096E2" />
+                  <TextBlock
+                      Text="{Binding View.Court.KnownOpposition}"
+                      TextWrapping="Wrap"
+                      Foreground="#D8C9E4" />
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="1" Classes="card" Background="#211A12" BorderBrush="#6D542D">
+                <StackPanel Spacing="7">
+                  <TextBlock Text="POLITICAL PRESSURE" Classes="eyebrow" Foreground="#D8A657" />
+                  <TextBlock
+                      Text="{Binding View.Court.KnownPressure}"
+                      TextWrapping="Wrap"
+                      Foreground="#DDC79E" />
+                </StackPanel>
+              </Border>
+            </Grid>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="OFFICES" Classes="eyebrow" />
+              <ItemsControl ItemsSource="{Binding View.Court.Offices}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="card" Width="245" Margin="0,0,10,10">
+                      <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding Position}" Classes="eyebrow" Foreground="#C096E2" />
+                        <TextBlock Text="{Binding HolderName}" FontSize="17" FontWeight="SemiBold" />
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4" ColumnSpacing="12">
+                          <TextBlock Text="Ability" Classes="muted" />
+                          <TextBlock Grid.Column="1" Text="{Binding Ability}"
+                                     Foreground="{Binding Ability, Converter={StaticResource SemanticStatusBrush}}" />
+                          <TextBlock Grid.Row="1" Text="Trust" Classes="muted" />
+                          <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Trust}"
+                                     Foreground="{Binding Trust, Converter={StaticResource SemanticStatusBrush}}" />
+                          <TextBlock Grid.Row="2" Text="Obedience" Classes="muted" />
+                          <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Obedience}"
+                                     Foreground="{Binding Obedience, Converter={StaticResource SemanticStatusBrush}}" />
+                          <TextBlock Grid.Row="3" Text="Risk" Classes="muted" />
+                          <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Risk}"
+                                     Foreground="{Binding Risk, Converter={StaticResource RiskBrush}}" FontWeight="Bold" />
+                        </Grid>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+
+            <Border Classes="panel">
+              <StackPanel Spacing="12">
+                <TextBlock Text="PATRONAGE &amp; APPOINTMENTS" Classes="eyebrow" Foreground="#C096E2" />
+                <Grid ColumnDefinitions="*,180,Auto,Auto" ColumnSpacing="8">
+                  <ComboBox
+                      ItemsSource="{Binding AppointmentCandidates}"
+                      SelectedItem="{Binding SelectedCourtFigure}"
+                      PlaceholderText="Choose political figure">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <StackPanel>
+                          <TextBlock Text="{Binding Name}" />
+                          <TextBlock
+                              Text="{Binding Risk, StringFormat='Risk: {0}'}"
+                              FontSize="10"
+                              Foreground="{Binding Risk, Converter={StaticResource RiskBrush}}" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <ComboBox
+                      Grid.Column="1"
+                      ItemsSource="{Binding OfficeOptions}"
+                      SelectedItem="{Binding SelectedOffice}" />
+                  <Button
+                      Grid.Column="2"
+                      Classes="action politics"
+                      Command="{Binding AppointAdvisorCommand}"
+                      Content="Appoint" />
+                  <Button
+                      Grid.Column="3"
+                      Classes="action"
+                      Command="{Binding DismissAdvisorCommand}"
+                      Content="Dismiss holder" />
+                </Grid>
+                <TextBlock
+                    Text="Appointments and dismissals are political acts: supporters notice, office creates access, and grievances can become organised opposition."
+                    TextWrapping="Wrap"
+                    FontSize="12"
+                    Classes="muted" />
+              </StackPanel>
+            </Border>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="POLITICAL FIGURES" Classes="eyebrow" />
+              <ItemsControl ItemsSource="{Binding View.Court.Figures}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="card" Margin="0,0,0,9">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                        <StackPanel Spacing="5">
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" />
+                            <Border Classes="badge" Background="#1C1722">
+                              <TextBlock Text="{Binding Role}" FontSize="10" Foreground="#C8ACE1" />
+                            </Border>
+                          </StackPanel>
+                          <TextBlock Text="{Binding Constituencies}" FontSize="11" Classes="muted" />
+                          <WrapPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Ability, StringFormat='Ability {0}'}" Margin="0,0,14,0"
+                                       Foreground="{Binding Ability, Converter={StaticResource SemanticStatusBrush}}" />
+                            <TextBlock Text="{Binding Ambition, StringFormat='Ambition {0}'}" Margin="0,0,14,0" />
+                            <TextBlock Text="{Binding Influence, StringFormat='Influence {0}'}" Margin="0,0,14,0" />
+                            <TextBlock Text="{Binding Trust, StringFormat='Trust {0}'}"
+                                       Foreground="{Binding Trust, Converter={StaticResource SemanticStatusBrush}}" />
+                          </WrapPanel>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="5">
+                          <Border Classes="badge" Background="#171E27">
+                            <TextBlock
+                                Text="{Binding Risk, StringFormat='Risk {0}'}"
+                                Foreground="{Binding Risk, Converter={StaticResource RiskBrush}}"
+                                FontWeight="Bold"
+                                FontSize="11" />
+                          </Border>
+                          <TextBlock
+                              Text="{Binding Obedience, StringFormat='Obedience: {0}'}"
+                              FontSize="11"
+                              HorizontalAlignment="Right"
+                              Foreground="{Binding Obedience, Converter={StaticResource SemanticStatusBrush}}" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
           </StackPanel>
         </ScrollViewer>
 
