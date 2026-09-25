@@ -7,7 +7,8 @@ public enum WarStatus
     Active,
     AttackerVictory,
     DefenderVictory,
-    WhitePeace
+    WhitePeace,
+    NegotiatedPeace
 }
 
 public enum WarStance

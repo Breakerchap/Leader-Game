@@ -27,6 +27,7 @@ internal static class OrderProcessor
             RespondToDiplomaticProposalOrder responseOrder => ProcessDiplomaticProposalResponse(state, responseOrder),
             DeclareWarOrder warOrder => ProcessDeclareWarOrder(state, warOrder),
             SetWarStanceOrder stanceOrder => ProcessSetWarStanceOrder(state, stanceOrder),
+            OfferPeaceOrder peaceOrder => ProcessOfferPeaceOrder(state, peaceOrder),
             AppointAdvisorOrder appointmentOrder => ProcessAppointAdvisorOrder(state, appointmentOrder),
             DismissAdvisorOrder dismissalOrder => ProcessDismissAdvisorOrder(state, dismissalOrder),
             InvestigateCharacterOrder investigationOrder => ProcessInvestigationOrder(state, investigationOrder),
@@ -833,6 +834,134 @@ internal static class OrderProcessor
             $"Trade agreement with {order.TargetCountry.Name} ended",
             $"{order.SourceCountry.Name} terminates its trade agreement with " +
             $"{order.TargetCountry.Name}. The decision damages trust and raises tension.");
+    }
+
+    private static SimulationReport ProcessOfferPeaceOrder(
+        GameState state,
+        OfferPeaceOrder order)
+    {
+        var chancellor = order.Recipient;
+
+        if (order.War.Status != Military.WarStatus.Active ||
+            !order.War.IsParticipant(order.Country) ||
+            !IsServingChancellor(order.Country, chancellor))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Peace offer rejected",
+                "An active Chancellor can only negotiate peace in an active war their country is fighting.");
+        }
+
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.Country,
+            chancellor,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"{chancellor.FullName} refuses to negotiate peace",
+                $"{chancellor.FullName} refuses to deliver the proposed peace terms. " +
+                $"Their willingness to obey is only {willingness:F0}/100.");
+        }
+
+        var opponent = order.War.OpponentOf(order.Country);
+        var acceptance = Military.PeaceCalculations.GetAcceptanceScore(
+            state,
+            order.War,
+            order.Country,
+            order.Terms);
+
+        if (acceptance < 55)
+        {
+            order.Status = OrderStatus.Failed;
+
+            var relation = state.Diplomacy.GetOrCreate(order.Country, opponent);
+            relation.ChangeTension(1);
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"{opponent.Name} rejects the peace offer",
+                $"{chancellor.FullName} presents the proposed {order.Terms} settlement, " +
+                $"but {opponent.Name} believes continuing the war is preferable.");
+        }
+
+        var transfer = 0m;
+
+        switch (order.Terms)
+        {
+            case Military.PeaceOfferTerms.WhitePeace:
+                order.War.Status = Military.WarStatus.WhitePeace;
+                break;
+
+            case Military.PeaceOfferTerms.DemandReparations:
+                order.War.Status = Military.WarStatus.NegotiatedPeace;
+                transfer = TransferReparations(
+                    opponent,
+                    order.Country,
+                    opponent.Gdp * 0.005m);
+                order.Country.Government.Stability += 1;
+                opponent.Government.Stability -= 1;
+                break;
+
+            case Military.PeaceOfferTerms.OfferReparations:
+                order.War.Status = Military.WarStatus.NegotiatedPeace;
+                transfer = TransferReparations(
+                    order.Country,
+                    opponent,
+                    order.Country.Gdp * 0.005m);
+                opponent.Government.Stability += 1;
+                order.Country.Government.Stability -= 1;
+                break;
+        }
+
+        order.Country.WarExhaustion -= 5;
+        opponent.WarExhaustion -= 5;
+
+        var postWarRelation = state.Diplomacy.GetOrCreate(order.Country, opponent);
+        postWarRelation.Relations = Math.Min(postWarRelation.Relations, -55);
+        postWarRelation.Trust = Math.Min(postWarRelation.Trust, 20);
+        postWarRelation.Tension = 65;
+
+        order.Status = OrderStatus.Completed;
+
+        var reparationsText = transfer > 0
+            ? order.Terms == Military.PeaceOfferTerms.DemandReparations
+                ? $" {opponent.Name} pays {transfer:N0} in reparations."
+                : $" {order.Country.Name} pays {transfer:N0} in reparations."
+            : string.Empty;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Diplomacy,
+            $"{order.Country.Name} and {opponent.Name} make peace",
+            $"{opponent.Name} accepts the {order.Terms} settlement after " +
+            $"{order.War.MonthsActive} months of war.{reparationsText}");
+    }
+
+    private static decimal TransferReparations(
+        Countries.Country payer,
+        Countries.Country receiver,
+        decimal amount)
+    {
+        var fromTreasury = Math.Min(payer.Treasury, amount);
+        payer.Treasury -= fromTreasury;
+
+        var borrowed = amount - fromTreasury;
+
+        if (borrowed > 0)
+            payer.Debt += borrowed;
+
+        receiver.Treasury += amount;
+
+        return amount;
     }
 
     private static SimulationReport ProcessSetWarStanceOrder(
