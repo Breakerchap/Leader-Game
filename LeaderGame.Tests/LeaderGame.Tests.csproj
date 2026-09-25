@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../LeaderGame.csproj" />
+    <ProjectReference Include="../LeaderGame.Core/LeaderGame.Core.csproj" />
   </ItemGroup>
 
 </Project>
