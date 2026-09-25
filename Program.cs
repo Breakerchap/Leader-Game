@@ -34,6 +34,7 @@ while (true)
     Console.WriteLine("[A] Appoint or replace an adviser");
     Console.WriteLine("[D] Dismiss an office-holder");
     Console.WriteLine("[I] Investigate a political figure");
+    Console.WriteLine("[P] Prison and arrests");
     Console.WriteLine("[C] Inspect the court");
     Console.WriteLine("[R] Read recent reports");
     Console.WriteLine("[Q] Quit");
@@ -70,6 +71,12 @@ while (true)
     if (string.Equals(input, "i", StringComparison.OrdinalIgnoreCase))
     {
         QueueInvestigationOrder(simulation, country);
+        continue;
+    }
+
+    if (string.Equals(input, "p", StringComparison.OrdinalIgnoreCase))
+    {
+        ManagePrison(simulation, country);
         continue;
     }
 
@@ -126,6 +133,10 @@ static void PrintDashboard(GameState state)
 
     if (knownPlots > 0)
         Console.WriteLine($"Known political threats: {knownPlots}");
+
+    var prisonerCount = country.Prisoners.Count();
+    if (prisonerCount > 0)
+        Console.WriteLine($"Political prisoners: {prisonerCount}");
 
     Console.WriteLine();
     Console.WriteLine("Office-holders:");
@@ -421,7 +432,7 @@ static void QueueInvestigationOrder(GameSimulation simulation, Country country)
 
     var subjects = country.PoliticalFigures
         .Where(character =>
-            character.IsAlive &&
+            character.IsPoliticallyActive &&
             !ReferenceEquals(character, country.Ruler) &&
             !ReferenceEquals(character, chancellor))
         .OrderByDescending(character =>
@@ -481,6 +492,164 @@ static void QueueInvestigationOrder(GameSimulation simulation, Country country)
     Pause(
         $"Investigation of {subjectToInvestigate.FullName} queued through " +
         $"{chancellor.FullName}.");
+}
+
+
+static void ManagePrison(GameSimulation simulation, Country country)
+{
+    Console.Clear();
+    Console.WriteLine("Prison and arrests");
+    Console.WriteLine("==================");
+    Console.WriteLine();
+    Console.WriteLine("[1] Order an arrest");
+    Console.WriteLine("[2] Release a prisoner");
+    Console.WriteLine("[Enter] Cancel");
+    Console.Write("Choose action: ");
+
+    var input = Console.ReadLine()?.Trim();
+
+    if (input == "1")
+        QueueArrestOrder(simulation, country);
+    else if (input == "2")
+        QueueReleaseOrder(simulation, country);
+}
+
+static void QueueArrestOrder(GameSimulation simulation, Country country)
+{
+    var marshal = country.GetOfficeHolder(Position.Marshal);
+
+    if (marshal is null)
+    {
+        Pause("There is no active Marshal to carry out an arrest.");
+        return;
+    }
+
+    var subjects = country.PoliticalFigures
+        .Where(character =>
+            character.IsPoliticallyActive &&
+            !ReferenceEquals(character, country.Ruler) &&
+            !ReferenceEquals(character, marshal))
+        .OrderByDescending(character =>
+            PoliticalCalculations.GetThreatScore(simulation.State, country, character))
+        .ToList();
+
+    if (subjects.Count == 0)
+    {
+        Pause("There is nobody available to arrest.");
+        return;
+    }
+
+    Console.Clear();
+    Console.WriteLine($"Arrest order through {marshal.FullName}");
+    Console.WriteLine(new string('=', 21 + marshal.FullName.Length));
+    Console.WriteLine();
+    Console.WriteLine(
+        $"Army readiness: {country.ArmyReadiness:F0}/100. A failed arrest can strengthen " +
+        "the target and destabilise the government.");
+    Console.WriteLine();
+
+    for (var i = 0; i < subjects.Count; i++)
+    {
+        var subject = subjects[i];
+        var threat = PoliticalCalculations.GetThreatScore(
+            simulation.State,
+            country,
+            subject);
+
+        var plot = simulation.State.Plots.FirstOrDefault(candidate =>
+            !candidate.IsResolved &&
+            ReferenceEquals(candidate.Country, country) &&
+            ReferenceEquals(candidate.Instigator, subject));
+
+        var evidence = plot?.DiscoveryStage switch
+        {
+            >= 2 => "credible evidence",
+            1 => "rumours",
+            _ => "no evidence"
+        };
+
+        Console.WriteLine(
+            $"[{i + 1}] {subject.FullName,-20} " +
+            $"Influence {subject.Influence,3}  Threat {threat,5:F0}  {evidence}");
+    }
+
+    Console.WriteLine();
+    Console.Write("Choose subject: ");
+
+    if (!int.TryParse(Console.ReadLine(), out var number) ||
+        number < 1 ||
+        number > subjects.Count)
+    {
+        Pause("Invalid choice.");
+        return;
+    }
+
+    var subjectToArrest = subjects[number - 1];
+
+    simulation.SubmitOrder(new ArrestCharacterOrder
+    {
+        Issuer = country.Ruler,
+        Recipient = marshal,
+        Subject = subjectToArrest,
+        IssuedOn = simulation.State.Date,
+        Country = country
+    });
+
+    Pause(
+        $"Arrest of {subjectToArrest.FullName} queued through {marshal.FullName}. " +
+        "Without credible evidence, even a successful arrest will cost legitimacy.");
+}
+
+static void QueueReleaseOrder(GameSimulation simulation, Country country)
+{
+    var prisoners = country.Prisoners.ToList();
+
+    if (prisoners.Count == 0)
+    {
+        Pause("There are no political prisoners to release.");
+        return;
+    }
+
+    Console.Clear();
+    Console.WriteLine("Release a prisoner");
+    Console.WriteLine("==================");
+    Console.WriteLine();
+
+    for (var i = 0; i < prisoners.Count; i++)
+    {
+        var prisoner = prisoners[i];
+        var relationship = simulation.State.Relationships.GetOrCreate(
+            prisoner,
+            country.Ruler);
+
+        Console.WriteLine(
+            $"[{i + 1}] {prisoner.FullName,-20} " +
+            $"Influence {prisoner.Influence,3}  Opinion {relationship.Opinion,4}  " +
+            $"Fear {relationship.Fear,3}");
+    }
+
+    Console.WriteLine();
+    Console.Write("Choose prisoner: ");
+
+    if (!int.TryParse(Console.ReadLine(), out var number) ||
+        number < 1 ||
+        number > prisoners.Count)
+    {
+        Pause("Invalid choice.");
+        return;
+    }
+
+    var prisonerToRelease = prisoners[number - 1];
+
+    simulation.SubmitOrder(new ReleasePrisonerOrder
+    {
+        Issuer = country.Ruler,
+        Recipient = prisonerToRelease,
+        IssuedOn = simulation.State.Date,
+        Country = country
+    });
+
+    Pause($"Release of {prisonerToRelease.FullName} queued.");
 }
 
 static void PrintCourt(GameState state)
@@ -543,7 +712,11 @@ static void PrintCourt(GameState state)
     {
         var role = ReferenceEquals(character, country.Ruler)
             ? "Ruler"
-            : character.Position?.ToString() ?? "Courtier";
+            : character.Status == PoliticalStatus.Imprisoned
+                ? "Imprisoned"
+                : character.Status == PoliticalStatus.Exiled
+                    ? "Exiled"
+                    : character.Position?.ToString() ?? "Courtier";
 
         Console.WriteLine($"{character.FullName} — {role}");
         Console.WriteLine(
