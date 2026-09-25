@@ -1,11 +1,11 @@
-name: Build
+name: Build and test
 
 on:
   push:
   pull_request:
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,8 +17,11 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Restore
-        run: dotnet restore
+      - name: Restore app
+        run: dotnet restore LeaderGame.csproj
 
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
+      - name: Build app
+        run: dotnet build LeaderGame.csproj --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test LeaderGame.Tests/LeaderGame.Tests.csproj --configuration Release
