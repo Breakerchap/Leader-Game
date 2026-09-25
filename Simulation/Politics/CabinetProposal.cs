@@ -43,6 +43,8 @@ public sealed class CabinetProposal
 
     public decimal TargetValue { get; init; }
 
+    public string? Rationale { get; init; }
+
     public required GameDate CreatedOn { get; init; }
 
     public int MonthsOpen { get; set; }
