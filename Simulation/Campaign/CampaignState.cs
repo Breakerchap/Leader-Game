@@ -6,7 +6,8 @@ public enum CampaignObjectiveType
     SolventTreasury,
     TradeNetwork,
     DiplomaticStanding,
-    PeacefulRealm
+    PeacefulRealm,
+    ElectoralMandate
 }
 
 public sealed class CampaignObjective
