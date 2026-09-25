@@ -6,6 +6,7 @@ public class Character
     private int _ambition;
     private int _legitimacy;
     private int _influence;
+    private int _health = 100;
     private readonly Dictionary<string, int> _allegiances =
         new(StringComparer.Ordinal);
 
@@ -15,6 +16,16 @@ public class Character
     public required string LastName { get; set; }
 
     public int Age { get; set; }
+
+    /// <summary>
+    /// General physical health from 0 to 100. Health below 90 represents some
+    /// degree of illness or frailty and changes mortality risk.
+    /// </summary>
+    public int Health
+    {
+        get => _health;
+        set => _health = Math.Clamp(value, 0, 100);
+    }
 
     public int Competence
     {

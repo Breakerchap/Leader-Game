@@ -5,6 +5,7 @@ public enum ReportCategory
     Order,
     Economy,
     Politics,
+    Personal,
     System
 }
 

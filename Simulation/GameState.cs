@@ -3,6 +3,7 @@ using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Player;
 using LeaderGame.Simulation.Politics;
+using LeaderGame.Simulation.Randomness;
 using LeaderGame.Simulation.Reports;
 
 namespace LeaderGame.Simulation;
@@ -20,6 +21,12 @@ public class GameState
     public List<SimulationReport> Reports { get; } = [];
 
     public RelationshipGraph Relationships { get; } = new();
+
+    /// <summary>
+    /// Seeded simulation randomness. Tests and future save loading can replace
+    /// or restore this source without changing simulation systems.
+    /// </summary>
+    public IRandomSource Random { get; set; } = new SimulationRandom(42);
 
     public required PlayerState Player { get; set; }
 }

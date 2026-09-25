@@ -28,6 +28,8 @@ public class GameSimulation
 
     public void AdvanceMonth()
     {
+        State.Reports.AddRange(LifeSystem.ProcessMonth(State));
+
         State.Reports.AddRange(SuccessionSystem.Process(State));
 
         ProcessOrders();
