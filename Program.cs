@@ -6,6 +6,7 @@ using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
+using LeaderGame.Simulation.Systems;
 
 var state = DemoScenario.Create();
 var simulation = new GameSimulation(state);
@@ -704,14 +705,40 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
     if (action == "4" && country.IsNeighbor(target))
     {
         Console.WriteLine();
+        Console.WriteLine("Choose a war goal:");
+        Console.WriteLine("[1] Reparations — force a major financial settlement");
+
+        if (targetRelation.BorderDisputeSeverity > 0)
+            Console.WriteLine("[2] Settle border dispute — force concessions on the disputed frontier");
+
+        Console.WriteLine("[3] Humiliate rival — damage the enemy ruler's legitimacy and influence");
+        Console.Write("War goal: ");
+
+        var goalInput = Console.ReadLine()?.Trim();
+        WarGoalType? goal = goalInput switch
+        {
+            "1" => WarGoalType.Reparations,
+            "2" when targetRelation.BorderDisputeSeverity > 0 =>
+                WarGoalType.SettleBorderDispute,
+            "3" => WarGoalType.HumiliateRival,
+            _ => null
+        };
+
+        if (!goal.HasValue)
+        {
+            Pause("Invalid war goal.");
+            return;
+        }
+
+        Console.WriteLine();
         var pactWarning = targetRelation.HasNonAggressionPact
             ? " This will also break the active non-aggression pact and carry a major " +
               "additional legitimacy and trust penalty."
             : string.Empty;
 
         Console.WriteLine(
-            $"Declaring war will destroy trade, drive tension to its maximum, " +
-            $"and may carry a serious domestic political cost.{pactWarning}");
+            $"Declaring war for {goal.Value} will destroy trade, drive tension to its " +
+            $"maximum, and may carry a serious domestic political cost.{pactWarning}");
         Console.Write("Type DECLARE to confirm: ");
 
         if (!string.Equals(
@@ -728,11 +755,13 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
             Recipient = chancellor,
             IssuedOn = simulation.State.Date,
             SourceCountry = country,
-            TargetCountry = target
+            TargetCountry = target,
+            Goal = goal.Value
         });
 
         Pause(
-            $"Declaration of war on {target.Name} queued through {chancellor.FullName}.");
+            $"Declaration of war on {target.Name} for {goal.Value} queued through " +
+            $"{chancellor.FullName}.");
         return;
     }
 
@@ -952,7 +981,8 @@ static void ManageMilitary(GameSimulation simulation, Country country)
 
         Console.WriteLine(
             $"[{i + 1}] {opponent.Name,-12} score {score,+6:0.0;-0.0;0.0}  " +
-            $"month {war.MonthsActive,2}  stance {war.GetStance(country)}");
+            $"month {war.MonthsActive,2}  stance {war.GetStance(country)}  " +
+            $"goal {war.AttackerGoal}");
     }
 
     Console.WriteLine();
@@ -969,6 +999,7 @@ static void ManageMilitary(GameSimulation simulation, Country country)
     var selected = wars[number - 1];
     var enemy = selected.OpponentOf(country);
     var marshal = country.GetOfficeHolder(Position.Marshal);
+    var chancellor = country.GetOfficeHolder(Position.Chancellor);
 
     Console.Clear();
     Console.WriteLine($"{country.Name} vs {enemy.Name}");
@@ -980,39 +1011,55 @@ static void ManageMilitary(GameSimulation simulation, Country country)
         : -selected.WarScore;
 
     Console.WriteLine($"War score: {scoreFromPlayer:+0.0;-0.0;0.0}");
+    Console.WriteLine($"Attacker's war goal: {selected.AttackerGoal}");
     Console.WriteLine($"Months active: {selected.MonthsActive}");
     Console.WriteLine(
         $"Your army: {country.ArmySize:N0}, readiness {country.ArmyReadiness:F0}/100, " +
         $"exhaustion {country.WarExhaustion:F1}/100");
     Console.WriteLine(
-        $"Enemy army: {enemy.ArmySize:N0}, readiness {enemy.ArmyReadiness:F0}/100");
+        $"Enemy army: {enemy.ArmySize:N0}, readiness {enemy.ArmyReadiness:F0}/100, " +
+        $"exhaustion {enemy.WarExhaustion:F1}/100");
     Console.WriteLine($"Current stance: {selected.GetStance(country)}");
+    Console.WriteLine();
 
-    if (marshal is null)
+    if (marshal is not null)
     {
-        Pause(
-            "There is no active Marshal. The ruler is acting as commander and no " +
-            "formal campaign-stance order can be issued.");
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            simulation.State,
+            country,
+            marshal,
+            country.Ruler);
+
+        Console.WriteLine(
+            $"Marshal: {marshal.FullName} — competence {marshal.Competence}/100, " +
+            $"willingness {willingness:F0}/100");
+        Console.WriteLine("[1] Defensive — lower losses, weaker pressure");
+        Console.WriteLine("[2] Balanced");
+        Console.WriteLine("[3] Aggressive — stronger pressure, higher losses/cost");
+    }
+    else
+    {
+        Console.WriteLine(
+            "No active Marshal: the ruler commands by default, so no stance order can be issued.");
+    }
+
+    if (chancellor is not null)
+        Console.WriteLine("[P] Open peace negotiations through the Chancellor");
+
+    Console.WriteLine("[Enter] Cancel");
+    Console.Write("Action: ");
+
+    var input = Console.ReadLine()?.Trim();
+
+    if (string.Equals(input, "p", StringComparison.OrdinalIgnoreCase) &&
+        chancellor is not null)
+    {
+        QueuePeaceOffer(simulation, country, selected, chancellor);
         return;
     }
 
-    var willingness = PoliticalCalculations.GetOrderWillingness(
-        simulation.State,
-        country,
-        marshal,
-        country.Ruler);
-
-    Console.WriteLine(
-        $"Marshal: {marshal.FullName} — competence {marshal.Competence}/100, " +
-        $"willingness {willingness:F0}/100");
-    Console.WriteLine();
-    Console.WriteLine("[1] Defensive — lower losses, weaker pressure");
-    Console.WriteLine("[2] Balanced");
-    Console.WriteLine("[3] Aggressive — stronger pressure, higher losses/cost");
-    Console.WriteLine("[Enter] Cancel");
-    Console.Write("Order stance: ");
-
-    var input = Console.ReadLine()?.Trim();
+    if (marshal is null)
+        return;
 
     var stance = input switch
     {
@@ -1038,6 +1085,100 @@ static void ManageMilitary(GameSimulation simulation, Country country)
     Pause(
         $"{stance.Value} campaign directive queued through {marshal.FullName}. " +
         "A sufficiently unwilling Marshal may refuse or moderate the instruction.");
+}
+
+static void QueuePeaceOffer(
+    GameSimulation simulation,
+    Country country,
+    War war,
+    Character chancellor)
+{
+    var enemy = war.OpponentOf(country);
+    var playerIsAttacker = ReferenceEquals(country, war.Attacker);
+
+    Console.Clear();
+    Console.WriteLine($"Peace negotiations with {enemy.Name}");
+    Console.WriteLine(new string('=', 24 + enemy.Name.Length));
+    Console.WriteLine();
+    Console.WriteLine(
+        $"Current war score from your perspective: " +
+        $"{(playerIsAttacker ? war.WarScore : -war.WarScore):+0.0;-0.0;0.0}");
+    Console.WriteLine($"Your exhaustion: {country.WarExhaustion:F1}/100");
+    Console.WriteLine($"Enemy exhaustion: {enemy.WarExhaustion:F1}/100");
+    Console.WriteLine();
+
+    Console.WriteLine("[1] Offer white peace");
+
+    if (playerIsAttacker)
+    {
+        Console.WriteLine($"[2] Demand your war goal: {war.AttackerGoal}");
+        Console.WriteLine("[3] Concede defender victory terms");
+    }
+    else
+    {
+        Console.WriteLine("[2] Demand defender victory terms");
+        Console.WriteLine($"[3] Concede the attacker's war goal: {war.AttackerGoal}");
+    }
+
+    Console.Write("[Enter] Cancel");
+    Console.WriteLine();
+    Console.Write("Settlement: ");
+
+    var input = Console.ReadLine()?.Trim();
+
+    PeaceSettlementType? settlement = input switch
+    {
+        "1" => PeaceSettlementType.WhitePeace,
+        "2" when playerIsAttacker => PeaceSettlementType.AttackerWarGoal,
+        "2" => PeaceSettlementType.DefenderTerms,
+        "3" when playerIsAttacker => PeaceSettlementType.DefenderTerms,
+        "3" => PeaceSettlementType.AttackerWarGoal,
+        _ => null
+    };
+
+    if (!settlement.HasValue)
+        return;
+
+    var acceptance = WarSystem.GetPeaceAcceptanceScore(
+        war,
+        country,
+        settlement.Value);
+
+    var assessment = acceptance switch
+    {
+        >= 75 => "very likely to accept",
+        >= 55 => "likely to accept",
+        >= 40 => "unlikely to accept",
+        _ => "very unlikely to accept"
+    };
+
+    Console.WriteLine();
+    Console.WriteLine(
+        $"Chancellor's assessment: {enemy.Name} is {assessment} " +
+        $"({acceptance:F0}/100).");
+    Console.Write("Type OFFER to send these terms: ");
+
+    if (!string.Equals(
+            Console.ReadLine()?.Trim(),
+            "OFFER",
+            StringComparison.OrdinalIgnoreCase))
+    {
+        return;
+    }
+
+    simulation.SubmitOrder(new OfferPeaceOrder
+    {
+        Issuer = country.Ruler,
+        Recipient = chancellor,
+        IssuedOn = simulation.State.Date,
+        Country = country,
+        War = war,
+        RequestedSettlement = settlement.Value
+    });
+
+    Pause(
+        $"{settlement.Value} peace offer queued through {chancellor.FullName}. " +
+        "If accepted, the war will end before another campaign month is fought.");
 }
 
 static void ManagePrison(GameSimulation simulation, Country country)
