@@ -8,6 +8,7 @@ namespace LeaderGame.Desktop.ViewModels;
 public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
     private readonly GameSession _session = new();
+    private bool _isCampaignSetupVisible = true;
     private string _currentSection = "Briefing";
     private ForeignCountryOptionView? _selectedForeignCountry;
     private CourtFigureView? _selectedCourtFigure;
@@ -43,7 +44,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 SyncPolicyTargets();
                 RefreshBindings();
             },
-            _ => !View.HasLost);
+            _ => !View.HasLost &&
+                 !View.HasWon &&
+                 !IsCampaignSetupVisible);
 
         SaveCommand = new RelayCommand(_ =>
         {
@@ -52,10 +55,36 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             _loadCommand.RaiseCanExecuteChanged();
         });
 
+        StartScenarioCommand = new RelayCommand(parameter =>
+        {
+            var scenarioId = parameter switch
+            {
+                ScenarioOptionView scenario => scenario.Id,
+                string id => id,
+                _ => null
+            };
+
+            if (string.IsNullOrWhiteSpace(scenarioId))
+                return;
+
+            _session.StartNewCampaign(scenarioId);
+            IsCampaignSetupVisible = false;
+            CurrentSection = "Briefing";
+            SyncSelectionsAfterCampaignChange();
+            SyncPolicyTargets();
+            RefreshBindings();
+        });
+
+        OpenCampaignSetupCommand = new RelayCommand(_ =>
+        {
+            IsCampaignSetupVisible = true;
+        });
+
         _loadCommand = new RelayCommand(
             _ =>
             {
                 _session.LoadDefault();
+                IsCampaignSetupVisible = false;
                 CurrentSection = "Briefing";
                 SyncPolicyTargets();
                 RefreshBindings();
@@ -67,6 +96,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             _ =>
             {
                 _session.LoadAutosave();
+                IsCampaignSetupVisible = false;
                 CurrentSection = "Briefing";
                 SyncPolicyTargets();
                 RefreshBindings();
@@ -248,6 +278,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ICommand SaveCommand { get; }
 
+    public ICommand StartScenarioCommand { get; }
+
+    public ICommand OpenCampaignSetupCommand { get; }
+
     public ICommand LoadCommand => _loadCommand;
 
     public ICommand RecoverAutosaveCommand => _recoverAutosaveCommand;
@@ -255,6 +289,26 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public string SaveLocation => GameSession.DefaultSavePath;
 
     public string AutosaveLocation => GameSession.AutosavePath;
+
+    public IReadOnlyList<ScenarioOptionView> ScenarioOptions =>
+        GameSession.AvailableScenarios;
+
+    public bool IsCampaignSetupVisible
+    {
+        get => _isCampaignSetupVisible;
+        private set
+        {
+            if (_isCampaignSetupVisible == value)
+                return;
+
+            _isCampaignSetupVisible = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsCampaignUiVisible));
+            _advanceMonthCommand.RaiseCanExecuteChanged();
+        }
+    }
+
+    public bool IsCampaignUiVisible => !IsCampaignSetupVisible;
 
     public ICommand NavigateCommand { get; }
 
@@ -680,6 +734,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         _advanceMonthCommand.RaiseCanExecuteChanged();
         _loadCommand.RaiseCanExecuteChanged();
         _recoverAutosaveCommand.RaiseCanExecuteChanged();
+    }
+
+    private void SyncSelectionsAfterCampaignChange()
+    {
+        SelectedForeignCountry = View.ForeignCountries.FirstOrDefault();
+        SelectedCourtFigure = View.Court.Figures.FirstOrDefault(figure =>
+            figure.IsAvailableForOffice);
+        SelectedCampaign = View.Military.Campaigns.FirstOrDefault();
     }
 
     private void SyncPolicyTargets()
