@@ -117,6 +117,34 @@ public class PowerBaseTests
     }
 
     [Fact]
+    public void RulerBacking_ChangesRegimeStabilityPressure()
+    {
+        var supportedState = DemoScenario.Create();
+        var unsupportedState = DemoScenario.Create();
+
+        var supported = supportedState.Player.Country;
+        var unsupported = unsupportedState.Player.Country;
+
+        foreach (var powerBase in Enum.GetValues<PowerBaseType>())
+        {
+            supported.SetPowerBaseStrength(powerBase, 0);
+            unsupported.SetPowerBaseStrength(powerBase, 0);
+        }
+
+        supported.SetPowerBaseStrength(PowerBaseType.Military, 100);
+        unsupported.SetPowerBaseStrength(PowerBaseType.Military, 100);
+        supported.Ruler.SetPowerBaseStanding(PowerBaseType.Military, 100);
+        unsupported.Ruler.SetPowerBaseStanding(PowerBaseType.Military, 0);
+
+        new GameSimulation(supportedState).AdvanceMonth();
+        new GameSimulation(unsupportedState).AdvanceMonth();
+
+        Assert.True(
+            supported.Government.Stability >
+            unsupported.Government.Stability);
+    }
+
+    [Fact]
     public void DemoGovernments_HaveDifferentPowerStructures()
     {
         var state = DemoScenario.Create();
