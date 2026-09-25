@@ -145,6 +145,13 @@ static void PrintDashboard(GameState state)
     if (knownPlots > 0)
         Console.WriteLine($"Known political threats: {knownPlots}");
 
+    var pendingDiplomaticOffers = state.DiplomaticProposals.Count(proposal =>
+        proposal.Status == DiplomaticProposalStatus.Pending &&
+        ReferenceEquals(proposal.TargetCountry, country));
+
+    if (pendingDiplomaticOffers > 0)
+        Console.WriteLine($"Pending diplomatic offers: {pendingDiplomaticOffers}");
+
     var prisonerCount = country.Prisoners.Count();
     if (prisonerCount > 0)
         Console.WriteLine($"Political prisoners: {prisonerCount}");
@@ -527,6 +534,19 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
     Console.WriteLine();
     Console.WriteLine(
         $"Chancellor: {chancellor.FullName} — competence {chancellor.Competence}/100");
+
+    var incoming = simulation.State.DiplomaticProposals
+        .Where(proposal =>
+            proposal.Status == DiplomaticProposalStatus.Pending &&
+            ReferenceEquals(proposal.TargetCountry, country))
+        .ToList();
+
+    if (incoming.Count > 0)
+    {
+        Console.WriteLine(
+            $"Incoming proposals: {incoming.Count} — enter O to review.");
+    }
+
     Console.WriteLine();
 
     for (var i = 0; i < foreignCountries.Count; i++)
@@ -542,9 +562,17 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
     }
 
     Console.WriteLine();
-    Console.Write("Choose country: ");
+    Console.Write("Choose country or O for offers: ");
 
-    if (!int.TryParse(Console.ReadLine(), out var number) ||
+    var selection = Console.ReadLine()?.Trim();
+
+    if (string.Equals(selection, "o", StringComparison.OrdinalIgnoreCase))
+    {
+        ReviewDiplomaticProposals(simulation, country, chancellor);
+        return;
+    }
+
+    if (!int.TryParse(selection, out var number) ||
         number < 1 ||
         number > foreignCountries.Count)
     {
@@ -615,6 +643,90 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
     Pause(
         $"Trade negotiations with {target.Name} queued. Your Chancellor can carry out " +
         "the talks well and still be rejected by the foreign government.");
+}
+
+static void ReviewDiplomaticProposals(
+    GameSimulation simulation,
+    Country country,
+    Character chancellor)
+{
+    var proposals = simulation.State.DiplomaticProposals
+        .Where(proposal =>
+            proposal.Status == DiplomaticProposalStatus.Pending &&
+            ReferenceEquals(proposal.TargetCountry, country))
+        .OrderByDescending(proposal => proposal.MonthsOpen)
+        .ToList();
+
+    if (proposals.Count == 0)
+    {
+        Pause("There are no pending diplomatic proposals.");
+        return;
+    }
+
+    Console.Clear();
+    Console.WriteLine("Incoming diplomatic proposals");
+    Console.WriteLine("=============================");
+    Console.WriteLine();
+
+    for (var i = 0; i < proposals.Count; i++)
+    {
+        var proposal = proposals[i];
+        var relation = simulation.State.Diplomacy.GetOrCreate(
+            proposal.SourceCountry,
+            country);
+
+        Console.WriteLine(
+            $"[{i + 1}] {proposal.SourceCountry.Name,-12} " +
+            $"{proposal.Type}  open {proposal.MonthsOpen} month(s)");
+        Console.WriteLine(
+            $"    Relations {relation.Relations}, trust {relation.Trust}, " +
+            $"tension {relation.Tension}");
+    }
+
+    Console.WriteLine();
+    Console.Write("Choose proposal: ");
+
+    if (!int.TryParse(Console.ReadLine(), out var number) ||
+        number < 1 ||
+        number > proposals.Count)
+    {
+        Pause("Invalid proposal.");
+        return;
+    }
+
+    var selected = proposals[number - 1];
+
+    Console.WriteLine();
+    Console.WriteLine(
+        $"{selected.SourceCountry.Name} proposes a trade agreement with {country.Name}.");
+    Console.WriteLine("[A] Accept");
+    Console.WriteLine("[R] Reject");
+    Console.WriteLine("[Enter] Leave unanswered");
+    Console.Write("Response: ");
+
+    var response = Console.ReadLine()?.Trim();
+
+    if (!string.Equals(response, "a", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(response, "r", StringComparison.OrdinalIgnoreCase))
+    {
+        return;
+    }
+
+    var accept = string.Equals(response, "a", StringComparison.OrdinalIgnoreCase);
+
+    simulation.SubmitOrder(new RespondToDiplomaticProposalOrder
+    {
+        Issuer = country.Ruler,
+        Recipient = chancellor,
+        IssuedOn = simulation.State.Date,
+        Country = country,
+        Proposal = selected,
+        Accept = accept
+    });
+
+    Pause(
+        $"{(accept ? "Acceptance" : "Rejection")} of {selected.SourceCountry.Name}'s " +
+        $"proposal queued through {chancellor.FullName}.");
 }
 
 static void ShowForeignCountry(

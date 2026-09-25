@@ -36,6 +36,13 @@ The prototype now links court politics and state capacity rather than treating t
 - deterministic seeded ageing, illness, recovery and natural mortality;
 - natural ruler death flowing directly into the succession system in the same monthly tick;
 - player lineage continuity, succession and usurpation;
+- three fully simulated countries in the prototype world, each with its own ruler, court, economy and succession;
+- bilateral state relations tracking relations, trust, tension, borders and trade agreements;
+- Chancellor-mediated diplomatic outreach and trade negotiation;
+- trade agreements that generate bilateral monthly income and slowly build trust;
+- ruler-to-ruler personal relationships that influence diplomacy and change with succession;
+- autonomous foreign governments that can initiate trade proposals without deciding for the player;
+- pending proposals that can be accepted, rejected or allowed to expire through the Foreign Affairs screen;
 - monthly taxes and recurring government expenditure;
 - army, administration and court/patronage budgets;
 - Treasurer-mediated budget changes rather than direct sliders;
