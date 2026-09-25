@@ -961,6 +961,77 @@ public sealed class GameSession
             KnownShort(state, InformationMetric.WarExhaustion, country.Id),
             campaigns);
 
+        var economySummary = new List<MetricCardView>
+        {
+            PlayerInformationFormatter.Metric(
+                state,
+                InformationMetric.Gdp,
+                country.Id,
+                "GDP"),
+            PlayerInformationFormatter.Metric(
+                state,
+                InformationMetric.Treasury,
+                country.Id,
+                "Treasury"),
+            PlayerInformationFormatter.Metric(
+                state,
+                InformationMetric.Debt,
+                country.Id,
+                "Debt"),
+            PlayerInformationFormatter.Metric(
+                state,
+                InformationMetric.MonthlyTaxRevenue,
+                country.Id,
+                "Monthly tax revenue"),
+            PlayerInformationFormatter.Metric(
+                state,
+                InformationMetric.MonthlyExpenses,
+                country.Id,
+                "Monthly expenses"),
+            PlayerInformationFormatter.Metric(
+                state,
+                InformationMetric.MonthlyBalance,
+                country.Id,
+                "Monthly balance"),
+            PlayerInformationFormatter.Metric(
+                state,
+                InformationMetric.AdministrativeEfficiency,
+                country.Id,
+                "Administrative efficiency")
+        };
+
+        var economyHistory = state.AdvisorReports
+            .Where(report =>
+                report.Topic == InformationTopic.Economy &&
+                ReferenceEquals(report.SubjectCountry, country))
+            .TakeLast(18)
+            .Reverse()
+            .Select(report => new EconomyReportSnapshotView(
+                report.ProducedOn.ToString(),
+                $"Data {PlayerInformationFormatter.Age(
+                    Math.Max(
+                        0,
+                        (state.Date.Year - report.DataAsOf.Year) * 12 +
+                        state.Date.Month -
+                        report.DataAsOf.Month))}",
+                report.Advisor.FullName,
+                report.WasRequested
+                    ? "Requested"
+                    : "Unsolicited",
+                ReportFactValue(report, InformationMetric.Treasury),
+                ReportFactValue(report, InformationMetric.Debt),
+                ReportFactValue(report, InformationMetric.MonthlyTaxRevenue),
+                ReportFactValue(report, InformationMetric.MonthlyExpenses),
+                ReportFactValue(report, InformationMetric.MonthlyBalance),
+                report.Caveats.Count > 0))
+            .ToList();
+
+        var economy = new EconomyView(
+            treasurer?.FullName ?? "Vacant",
+            treasurerObedience,
+            economySummary,
+            economyHistory);
+
         return new PlayerViewState(
             country.Name,
             state.Date.ToString(),
@@ -981,7 +1052,20 @@ public sealed class GameSession
             court,
             foreignAffairs,
             military,
+            economy,
             _statusMessage);
+    }
+
+    private static string ReportFactValue(
+        AdvisorIntelligenceReport report,
+        InformationMetric metric)
+    {
+        var fact = report.Facts.FirstOrDefault(candidate =>
+            candidate.Key.Metric == metric);
+
+        return fact is null
+            ? "—"
+            : $"~{PlayerInformationFormatter.Value(metric, fact.Estimate)}";
     }
 
     private static string KnownShort(
