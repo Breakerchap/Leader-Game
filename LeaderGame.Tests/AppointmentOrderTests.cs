@@ -8,19 +8,25 @@ namespace LeaderGame.Tests;
 public class AppointmentOrderTests
 {
     [Fact]
-    public void Appointment_ReplacesExistingOfficeHolder()
+    public void Appointment_ReplacesExistingOfficeHolderAndCreatesGrievance()
     {
         var state = DemoScenario.Create();
         var simulation = new GameSimulation(state);
         var country = state.Player.Country;
+        var ruler = country.Ruler;
         var oldTreasurer = country.GetOfficeHolder(Position.Treasurer)!;
         var candidate = country.AvailableAdvisors.First();
-        var oldLoyalty = oldTreasurer.Loyalty;
-        var candidateLoyalty = candidate.Loyalty;
+
+        var oldRelationship = state.Relationships.GetOrCreate(oldTreasurer, ruler);
+        var oldOpinion = oldRelationship.Opinion;
+        var oldTrust = oldRelationship.Trust;
+
+        var candidateRelationship = state.Relationships.GetOrCreate(candidate, ruler);
+        var candidateOpinion = candidateRelationship.Opinion;
 
         var order = new AppointAdvisorOrder
         {
-            Issuer = state.Player.CurrentCharacter,
+            Issuer = ruler,
             Recipient = candidate,
             IssuedOn = state.Date,
             Country = country,
@@ -33,8 +39,9 @@ public class AppointmentOrderTests
         Assert.Equal(OrderStatus.Completed, order.Status);
         Assert.Same(candidate, country.GetOfficeHolder(Position.Treasurer));
         Assert.Null(oldTreasurer.Position);
-        Assert.Equal(oldLoyalty - 15, oldTreasurer.Loyalty);
-        Assert.Equal(candidateLoyalty + 5, candidate.Loyalty);
+        Assert.Equal(oldOpinion - 25, oldRelationship.Opinion);
+        Assert.Equal(oldTrust - 15, oldRelationship.Trust);
+        Assert.Equal(candidateOpinion + 10, candidateRelationship.Opinion);
     }
 
     [Fact]
@@ -52,7 +59,7 @@ public class AppointmentOrderTests
             Age = 40,
             Competence = 80,
             Ambition = 50,
-            Loyalty = 50
+            Influence = 50
         };
 
         var order = new AppointAdvisorOrder

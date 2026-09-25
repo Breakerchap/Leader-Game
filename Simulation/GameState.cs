@@ -1,3 +1,4 @@
+using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Player;
@@ -14,6 +15,8 @@ public class GameState
     public List<Order> PendingOrders { get; } = [];
 
     public List<SimulationReport> Reports { get; } = [];
+
+    public RelationshipGraph Relationships { get; } = new();
 
     public required PlayerState Player { get; set; }
 }

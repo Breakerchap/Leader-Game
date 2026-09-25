@@ -1,4 +1,5 @@
 using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Reports;
 
 namespace LeaderGame.Simulation.Orders;
@@ -51,15 +52,33 @@ internal static class OrderProcessor
                 "A living Treasurer serving the target country must receive tax orders.");
         }
 
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.Country,
+            treasurer,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+
+            var relationship = state.Relationships.GetOrCreate(treasurer, order.Issuer);
+            relationship.ChangeOpinion(-5);
+            relationship.ChangeTrust(-4);
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                $"{treasurer.FullName} refuses the tax order",
+                $"{treasurer.FullName} refuses to implement the requested " +
+                $"{order.TargetTaxRate:P1} tax rate. Their willingness to obey was " +
+                $"{willingness:F0}/100.");
+        }
+
         var oldRate = order.Country.TaxRate;
         var requestedChange = order.TargetTaxRate - oldRate;
-
-        // Orders are not magical state changes. The recipient's ability and willingness
-        // determine how closely implementation matches the ruler's instruction.
         var implementationFactor =
-            0.65m +
-            (Math.Clamp(treasurer.Competence, 0, 100) / 100m * 0.25m) +
-            (Math.Clamp(treasurer.Loyalty, 0, 100) / 100m * 0.10m);
+            PoliticalCalculations.GetImplementationFactor(treasurer, willingness);
 
         var enactedChange = requestedChange * implementationFactor;
         order.Country.TaxRate = oldRate + enactedChange;
@@ -86,12 +105,19 @@ internal static class OrderProcessor
 
         order.Status = OrderStatus.Completed;
 
+        var implementationDescription = willingness < 45
+            ? "obstructed"
+            : willingness < 65
+                ? "reluctant"
+                : "co-operative";
+
         return new SimulationReport(
             state.Date,
             ReportCategory.Order,
             $"{treasurer.FullName} implements the tax order",
             $"Requested {order.TargetTaxRate:P1}; enacted {order.Country.TaxRate:P1}. " +
-            $"Competence {treasurer.Competence}, loyalty {treasurer.Loyalty}. " +
+            $"Implementation was {implementationDescription}: competence " +
+            $"{treasurer.Competence}/100, willingness {willingness:F0}/100. " +
             $"Public unrest is now {order.Country.PublicUnrest:F1} and stability " +
             $"{order.Country.Government.Stability:F1}.");
     }
@@ -129,24 +155,37 @@ internal static class OrderProcessor
         if (previousHolder is not null)
         {
             previousHolder.Position = null;
-            previousHolder.Loyalty = Math.Clamp(previousHolder.Loyalty - 15, 0, 100);
+
+            var dismissedToRuler =
+                state.Relationships.GetOrCreate(previousHolder, order.Issuer);
+            dismissedToRuler.ChangeOpinion(-25);
+            dismissedToRuler.ChangeTrust(-15);
+            dismissedToRuler.ChangeFear(5);
+
+            previousHolder.ChangeAllegiance(
+                PoliticalKeys.Lineage(state.Player.Lineage.Id),
+                -5);
         }
 
         candidate.Position = order.Position;
-        candidate.Loyalty = Math.Clamp(candidate.Loyalty + 5, 0, 100);
+
+        var candidateToRuler =
+            state.Relationships.GetOrCreate(candidate, order.Issuer);
+        candidateToRuler.ChangeOpinion(10);
+        candidateToRuler.ChangeTrust(5);
+
         order.Status = OrderStatus.Completed;
 
         var replacementText = previousHolder is null
             ? "The office was vacant."
-            : $"{previousHolder.FullName} was dismissed and their loyalty fell to " +
-              $"{previousHolder.Loyalty}.";
+            : $"{previousHolder.FullName} was dismissed; their opinion and trust of " +
+              $"{order.Issuer.FullName} have fallen.";
 
         return new SimulationReport(
             state.Date,
             ReportCategory.Order,
             $"{candidate.FullName} appointed {order.Position}",
-            $"{candidate.FullName} now serves as {order.Position}. {replacementText} " +
-            $"The new office-holder's loyalty is {candidate.Loyalty}.");
+            $"{candidate.FullName} now serves as {order.Position}. {replacementText}");
     }
 
     private static SimulationReport RejectUnknownOrder(GameState state, Order order)

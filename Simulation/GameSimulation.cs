@@ -34,6 +34,8 @@ public class GameSimulation
 
         State.Reports.AddRange(EconomySystem.ProcessMonth(State));
 
+        PoliticalSystem.ProcessMonth(State);
+
         State.Date = State.Date.NextMonth();
     }
 

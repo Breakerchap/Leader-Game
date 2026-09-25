@@ -1,6 +1,7 @@
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Player;
+using LeaderGame.Simulation.Politics;
 
 namespace LeaderGame.Simulation.Scenarios;
 
@@ -16,8 +17,8 @@ public static class DemoScenario
             Age = 41,
             Competence = 64,
             Ambition = 72,
-            Loyalty = 100,
-            Legitimacy = 78
+            Legitimacy = 78,
+            Influence = 100
         };
 
         var treasurer = new Character
@@ -28,7 +29,7 @@ public static class DemoScenario
             Age = 53,
             Competence = 84,
             Ambition = 32,
-            Loyalty = 61,
+            Influence = 63,
             Position = Position.Treasurer
         };
 
@@ -40,7 +41,7 @@ public static class DemoScenario
             Age = 47,
             Competence = 91,
             Ambition = 76,
-            Loyalty = 43,
+            Influence = 76,
             Position = Position.Marshal
         };
 
@@ -52,12 +53,10 @@ public static class DemoScenario
             Age = 58,
             Competence = 73,
             Ambition = 41,
-            Loyalty = 81,
+            Influence = 72,
             Position = Position.Chancellor
         };
 
-        // Two deliberately different candidates: one is loyal but ordinary,
-        // the other brilliant but ambitious and personally unreliable.
         var marta = new Character
         {
             Id = 5,
@@ -66,7 +65,7 @@ public static class DemoScenario
             Age = 39,
             Competence = 69,
             Ambition = 35,
-            Loyalty = 91
+            Influence = 38
         };
 
         var lukas = new Character
@@ -77,7 +76,7 @@ public static class DemoScenario
             Age = 45,
             Competence = 94,
             Ambition = 87,
-            Loyalty = 33,
+            Influence = 68,
             Legitimacy = 28
         };
 
@@ -89,7 +88,7 @@ public static class DemoScenario
             Age = 19,
             Competence = 55,
             Ambition = 58,
-            Loyalty = 88,
+            Influence = 44,
             Legitimacy = 72
         };
 
@@ -115,8 +114,6 @@ public static class DemoScenario
         country.PoliticalFigures.AddRange(
             [king, treasurer, marshal, chancellor, marta, lukas, heir]);
 
-        // For the prototype this ordering is explicit. Later it should be derived
-        // from laws, family relationships, claims, elections, coups and other systems.
         country.SuccessionOrder.AddRange([heir, lukas]);
 
         var lineage = new PoliticalLineage
@@ -141,6 +138,45 @@ public static class DemoScenario
         };
 
         state.Countries.Add(country);
+
+        var countryKey = PoliticalKeys.Country(country.Id);
+        var lineageKey = PoliticalKeys.Lineage(lineage.Id);
+
+        king.SetAllegiance(countryKey, 90);
+        king.SetAllegiance(lineageKey, 100);
+
+        treasurer.SetAllegiance(countryKey, 78);
+        treasurer.SetAllegiance(lineageKey, 62);
+
+        marshal.SetAllegiance(countryKey, 82);
+        marshal.SetAllegiance(lineageKey, 47);
+
+        chancellor.SetAllegiance(countryKey, 86);
+        chancellor.SetAllegiance(lineageKey, 79);
+
+        marta.SetAllegiance(countryKey, 76);
+        marta.SetAllegiance(lineageKey, 88);
+
+        lukas.SetAllegiance(countryKey, 70);
+        lukas.SetAllegiance(lineageKey, 28);
+
+        heir.SetAllegiance(countryKey, 85);
+        heir.SetAllegiance(lineageKey, 100);
+
+        state.Relationships.Set(treasurer, king, opinion: 35, trust: 62, fear: 20);
+        state.Relationships.Set(marshal, king, opinion: 5, trust: 43, fear: 32);
+        state.Relationships.Set(chancellor, king, opinion: 52, trust: 76, fear: 12);
+        state.Relationships.Set(marta, king, opinion: 67, trust: 81, fear: 5);
+        state.Relationships.Set(lukas, king, opinion: -22, trust: 29, fear: 11);
+        state.Relationships.Set(heir, king, opinion: 74, trust: 84, fear: 8);
+
+        // The reverse direction matters too; relationships are deliberately asymmetric.
+        state.Relationships.Set(king, treasurer, opinion: 38, trust: 67, fear: 0);
+        state.Relationships.Set(king, marshal, opinion: 18, trust: 48, fear: 4);
+        state.Relationships.Set(king, chancellor, opinion: 57, trust: 78, fear: 0);
+        state.Relationships.Set(king, marta, opinion: 41, trust: 58, fear: 0);
+        state.Relationships.Set(king, lukas, opinion: -8, trust: 31, fear: 8);
+        state.Relationships.Set(king, heir, opinion: 79, trust: 86, fear: 0);
 
         return state;
     }
