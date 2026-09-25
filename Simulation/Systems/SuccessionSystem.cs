@@ -23,19 +23,18 @@ internal static class SuccessionSystem
                 {
                     state.Player.HasLost = true;
                     state.Player.LossReason =
-                        $"{deadRuler.FullName} died and no living successor could take power.";
+                        $"{deadRuler.FullName} died and no eligible living successor could take power.";
                 }
 
                 yield return new SimulationReport(
                     state.Date,
                     ReportCategory.Politics,
                     $"The throne of {country.Name} is vacant",
-                    $"{deadRuler.FullName} has died, but no living successor is available.");
+                    $"{deadRuler.FullName} has died, but no eligible living successor is available.");
 
                 continue;
             }
 
-            // An office-holder who becomes ruler vacates their former advisory office.
             successor.Position = null;
             country.Ruler = successor;
 
@@ -80,7 +79,7 @@ internal static class SuccessionSystem
     private static Character? FindSuccessor(Country country, Character deadRuler)
     {
         return country.SuccessionOrder.FirstOrDefault(candidate =>
-            candidate.IsAlive &&
+            candidate.IsPoliticallyActive &&
             !ReferenceEquals(candidate, deadRuler));
     }
 }

@@ -11,6 +11,9 @@ public static class PoliticalCalculations
         Character actor,
         Character issuer)
     {
+        if (!actor.IsPoliticallyActive)
+            return 0;
+
         if (ReferenceEquals(actor, issuer))
             return 100;
 
@@ -49,8 +52,11 @@ public static class PoliticalCalculations
         Country country,
         Character character)
     {
-        if (!character.IsAlive || ReferenceEquals(character, country.Ruler))
+        if (!character.IsPoliticallyActive ||
+            ReferenceEquals(character, country.Ruler))
+        {
             return 0;
+        }
 
         var willingness = GetOrderWillingness(
             state,
@@ -70,17 +76,14 @@ public static class PoliticalCalculations
         return Math.Clamp(threat, 0, 100);
     }
 
-    /// <summary>
-    /// How inclined one courtier is to join another character's conspiracy.
-    /// Friendship with the instigator matters, but alienation from the ruler matters too.
-    /// </summary>
     public static double GetConspiracyAffinity(
         GameState state,
         Country country,
         Character supporter,
         Character instigator)
     {
-        if (!supporter.IsAlive ||
+        if (!supporter.IsPoliticallyActive ||
+            !instigator.IsPoliticallyActive ||
             ReferenceEquals(supporter, country.Ruler) ||
             ReferenceEquals(supporter, instigator))
         {
@@ -107,6 +110,13 @@ public static class PoliticalCalculations
 
     public static int GetInfluenceTarget(Country country, Character character)
     {
+        if (!character.IsPoliticallyActive)
+        {
+            return character.Status == PoliticalStatus.Imprisoned
+                ? 5
+                : 10;
+        }
+
         if (ReferenceEquals(character, country.Ruler))
             return 100;
 

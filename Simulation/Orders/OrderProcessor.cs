@@ -24,6 +24,8 @@ internal static class OrderProcessor
             AppointAdvisorOrder appointmentOrder => ProcessAppointAdvisorOrder(state, appointmentOrder),
             DismissAdvisorOrder dismissalOrder => ProcessDismissAdvisorOrder(state, dismissalOrder),
             InvestigateCharacterOrder investigationOrder => ProcessInvestigationOrder(state, investigationOrder),
+            ArrestCharacterOrder arrestOrder => ProcessArrestOrder(state, arrestOrder),
+            ReleasePrisonerOrder releaseOrder => ProcessReleasePrisonerOrder(state, releaseOrder),
             _ => RejectUnknownOrder(state, order)
         };
     }
@@ -49,7 +51,7 @@ internal static class OrderProcessor
                 state.Date,
                 ReportCategory.Order,
                 "Tax order rejected",
-                "A living Treasurer serving the target country must receive tax orders.");
+                "A living active Treasurer serving the target country must receive tax orders.");
         }
 
         var willingness = PoliticalCalculations.GetOrderWillingness(
@@ -147,7 +149,7 @@ internal static class OrderProcessor
                 state.Date,
                 ReportCategory.Order,
                 "Budget order rejected",
-                "A living Treasurer serving the target country must receive budget orders.");
+                "A living active Treasurer serving the target country must receive budget orders.");
         }
 
         var willingness = PoliticalCalculations.GetOrderWillingness(
@@ -202,7 +204,7 @@ internal static class OrderProcessor
     {
         var candidate = order.Recipient;
 
-        if (!candidate.IsAlive ||
+        if (!candidate.IsPoliticallyActive ||
             !order.Country.ContainsPoliticalFigure(candidate) ||
             ReferenceEquals(candidate, order.Country.Ruler))
         {
@@ -211,7 +213,7 @@ internal static class OrderProcessor
                 state.Date,
                 ReportCategory.Order,
                 "Appointment rejected",
-                "The proposed adviser must be a living political figure in the target country.");
+                "The proposed adviser must be an active political figure in the target country.");
         }
 
         if (candidate.Position.HasValue)
@@ -257,7 +259,7 @@ internal static class OrderProcessor
         var target = order.Recipient;
 
         if (!ReferenceEquals(order.Issuer, order.Country.Ruler) ||
-            !target.IsAlive ||
+            !target.IsPoliticallyActive ||
             !order.Country.ContainsPoliticalFigure(target) ||
             !target.Position.HasValue ||
             ReferenceEquals(target, order.Country.Ruler))
@@ -267,7 +269,7 @@ internal static class OrderProcessor
                 state.Date,
                 ReportCategory.Order,
                 "Dismissal rejected",
-                "Only the ruler may dismiss a living office-holder serving this country.");
+                "Only the ruler may dismiss an active office-holder serving this country.");
         }
 
         var oldPosition = target.Position.Value;
@@ -294,7 +296,7 @@ internal static class OrderProcessor
         var subject = order.Subject;
 
         if (chancellor.Position != Position.Chancellor ||
-            !chancellor.IsAlive ||
+            !chancellor.IsPoliticallyActive ||
             !order.Country.ContainsPoliticalFigure(chancellor))
         {
             order.Status = OrderStatus.Rejected;
@@ -302,10 +304,10 @@ internal static class OrderProcessor
                 state.Date,
                 ReportCategory.Order,
                 "Investigation rejected",
-                "A living Chancellor serving the target country must conduct the investigation.");
+                "An active Chancellor serving the target country must conduct the investigation.");
         }
 
-        if (!subject.IsAlive ||
+        if (!subject.IsPoliticallyActive ||
             !order.Country.ContainsPoliticalFigure(subject) ||
             ReferenceEquals(subject, order.Country.Ruler))
         {
@@ -314,7 +316,7 @@ internal static class OrderProcessor
                 state.Date,
                 ReportCategory.Order,
                 "Investigation rejected",
-                "The subject must be a living political figure other than the ruler.");
+                "The subject must be an active political figure other than the ruler.");
         }
 
         var willingness = PoliticalCalculations.GetOrderWillingness(
@@ -401,12 +403,223 @@ internal static class OrderProcessor
             "government, the investigation still disrupts some political activity.");
     }
 
+    private static SimulationReport ProcessArrestOrder(
+        GameState state,
+        ArrestCharacterOrder order)
+    {
+        var marshal = order.Recipient;
+        var subject = order.Subject;
+
+        if (!IsServingMarshal(order.Country, marshal))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Arrest rejected",
+                "An active Marshal serving the target country must carry out arrests.");
+        }
+
+        if (!subject.IsPoliticallyActive ||
+            !order.Country.ContainsPoliticalFigure(subject) ||
+            ReferenceEquals(subject, order.Country.Ruler) ||
+            ReferenceEquals(subject, marshal))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Arrest rejected",
+                "The subject must be another active political figure in this country.");
+        }
+
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.Country,
+            marshal,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                $"{marshal.FullName} refuses the arrest",
+                $"{marshal.FullName} refuses to arrest {subject.FullName}. " +
+                $"Their willingness to obey is only {willingness:F0}/100.");
+        }
+
+        var plot = state.Plots.FirstOrDefault(candidate =>
+            !candidate.IsResolved &&
+            ReferenceEquals(candidate.Country, order.Country) &&
+            ReferenceEquals(candidate.Instigator, subject));
+
+        var supporterInfluence = plot is null
+            ? 0
+            : order.Country.PoliticalFigures
+                .Where(character =>
+                    character.IsPoliticallyActive &&
+                    plot.SupporterIds.Contains(character.Id))
+                .Sum(character => character.Influence);
+
+        var enforcement =
+            marshal.Competence * 0.35 +
+            willingness * 0.35 +
+            order.Country.ArmyReadiness * 0.30;
+
+        var resistance =
+            subject.Influence * 0.45 +
+            subject.Ambition * 0.20 +
+            Math.Min(20, supporterInfluence * 0.15);
+
+        if (enforcement < resistance)
+        {
+            order.Status = OrderStatus.Failed;
+            order.Country.Government.Stability -= 3;
+            order.Country.PublicUnrest += 2;
+            subject.Influence += 5;
+
+            var subjectToRuler = state.Relationships.GetOrCreate(subject, order.Issuer);
+            subjectToRuler.ChangeOpinion(-20);
+            subjectToRuler.ChangeFear(-10);
+
+            if (plot is null)
+            {
+                plot = new PoliticalPlot
+                {
+                    Country = order.Country,
+                    Instigator = subject,
+                    Progress = 30
+                };
+                plot.DiscoveryStage = 1;
+                state.Plots.Add(plot);
+            }
+            else
+            {
+                plot.Progress += 20;
+                plot.DiscoveryStage = Math.Max(plot.DiscoveryStage, 1);
+            }
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Politics,
+                $"Attempt to arrest {subject.FullName} fails",
+                $"{marshal.FullName} cannot secure {subject.FullName}. Enforcement strength " +
+                $"{enforcement:F0} was insufficient against resistance {resistance:F0}. " +
+                "The failed arrest damages government authority and hardens opposition.");
+        }
+
+        order.Status = OrderStatus.Completed;
+        var oldPosition = subject.Position;
+        subject.Position = null;
+        subject.Status = PoliticalStatus.Imprisoned;
+        subject.Influence = Math.Max(0, subject.Influence - 25);
+
+        if (plot is not null)
+        {
+            plot.IsResolved = true;
+            plot.Succeeded = false;
+        }
+
+        var toRuler = state.Relationships.GetOrCreate(subject, order.Issuer);
+        toRuler.ChangeOpinion(-40);
+        toRuler.Trust = 0;
+        toRuler.ChangeFear(30);
+
+        var credibleEvidence = plot?.DiscoveryStage >= 2;
+
+        if (credibleEvidence)
+        {
+            order.Country.Government.Stability += 1;
+        }
+        else
+        {
+            order.Country.Ruler.Legitimacy -= 4;
+            order.Country.Government.Stability -= 3;
+            order.Country.PublicUnrest += 2;
+
+            foreach (var observer in order.Country.PoliticalFigures.Where(character =>
+                         character.IsPoliticallyActive &&
+                         !ReferenceEquals(character, order.Country.Ruler) &&
+                         !ReferenceEquals(character, subject)))
+            {
+                state.Relationships
+                    .GetOrCreate(observer, order.Country.Ruler)
+                    .ChangeOpinion(-5);
+            }
+        }
+
+        var roleText = oldPosition.HasValue
+            ? $" and is removed as {oldPosition.Value}"
+            : string.Empty;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Politics,
+            $"{subject.FullName} imprisoned",
+            credibleEvidence
+                ? $"{marshal.FullName} arrests {subject.FullName}{roleText}. Credible evidence " +
+                  "of conspiracy makes the action politically defensible."
+                : $"{marshal.FullName} arrests {subject.FullName}{roleText}, but the government " +
+                  "lacks credible evidence. The arbitrary-looking imprisonment damages " +
+                  "legitimacy and stability.");
+    }
+
+    private static SimulationReport ProcessReleasePrisonerOrder(
+        GameState state,
+        ReleasePrisonerOrder order)
+    {
+        var prisoner = order.Recipient;
+
+        if (!ReferenceEquals(order.Issuer, order.Country.Ruler) ||
+            !prisoner.IsAlive ||
+            prisoner.Status != PoliticalStatus.Imprisoned ||
+            !order.Country.ContainsPoliticalFigure(prisoner))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Release rejected",
+                "Only the ruler may release a living prisoner held in this country.");
+        }
+
+        prisoner.Status = PoliticalStatus.Active;
+
+        var prisonerToRuler =
+            state.Relationships.GetOrCreate(prisoner, order.Country.Ruler);
+        prisonerToRuler.ChangeOpinion(10);
+        prisonerToRuler.ChangeTrust(5);
+        prisonerToRuler.ChangeFear(-15);
+
+        order.Status = OrderStatus.Completed;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Politics,
+            $"{prisoner.FullName} released",
+            $"{prisoner.FullName} is released from imprisonment and may again participate " +
+            "in political life. The gesture improves the relationship somewhat, but does " +
+            "not erase the original grievance.");
+    }
+
     private static bool IsServingTreasurer(
         Countries.Country country,
         Character character)
     {
         return character.Position == Position.Treasurer &&
-               character.IsAlive &&
+               character.IsPoliticallyActive &&
+               country.ContainsPoliticalFigure(character) &&
+               !ReferenceEquals(character, country.Ruler);
+    }
+
+    private static bool IsServingMarshal(
+        Countries.Country country,
+        Character character)
+    {
+        return character.Position == Position.Marshal &&
+               character.IsPoliticallyActive &&
                country.ContainsPoliticalFigure(character) &&
                !ReferenceEquals(character, country.Ruler);
     }

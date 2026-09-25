@@ -11,16 +11,15 @@ internal static class PoliticalSystem
             foreach (var character in country.PoliticalFigures.Where(character => character.IsAlive))
             {
                 var target = PoliticalCalculations.GetInfluenceTarget(country, character);
+                var step = character.IsPoliticallyActive ? 2 : 4;
 
                 if (character.Influence < target)
-                    character.Influence = Math.Min(target, character.Influence + 2);
+                    character.Influence = Math.Min(target, character.Influence + step);
                 else if (character.Influence > target)
-                    character.Influence = Math.Max(target, character.Influence - 2);
+                    character.Influence = Math.Max(target, character.Influence - step);
             }
         }
 
-        // Immediate fear fades. Opinion and trust are much stickier, but even a
-        // bitter court gradually cools if nothing new happens.
         foreach (var relationship in state.Relationships.All)
         {
             if (relationship.Fear > 0)

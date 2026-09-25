@@ -18,9 +18,6 @@ public class Country
 
     public long Population { get; set; }
 
-    /// <summary>
-    /// Annual economic output in the scenario's abstract currency.
-    /// </summary>
     public decimal Gdp { get; set; }
 
     public decimal Treasury { get; set; }
@@ -51,10 +48,6 @@ public class Country
         set => _administrativeEfficiency = Math.Clamp(value, 0.25m, 1m);
     }
 
-    /// <summary>
-    /// Budget multipliers. 1.0 is normal funding; 0.5 is severe austerity;
-    /// 1.5 is heavy overfunding.
-    /// </summary>
     public decimal ArmyFunding
     {
         get => _armyFunding;
@@ -97,20 +90,25 @@ public class Country
 
     public IEnumerable<Character> ActiveAdvisors =>
         PoliticalFigures.Where(character =>
-            character.IsAlive &&
+            character.IsPoliticallyActive &&
             !ReferenceEquals(character, Ruler) &&
             character.Position.HasValue);
 
     public IEnumerable<Character> AvailableAdvisors =>
         PoliticalFigures.Where(character =>
-            character.IsAlive &&
+            character.IsPoliticallyActive &&
             !ReferenceEquals(character, Ruler) &&
             !character.Position.HasValue);
+
+    public IEnumerable<Character> Prisoners =>
+        PoliticalFigures.Where(character =>
+            character.IsAlive &&
+            character.Status == PoliticalStatus.Imprisoned);
 
     public Character? GetOfficeHolder(Position position)
     {
         return PoliticalFigures.FirstOrDefault(character =>
-            character.IsAlive &&
+            character.IsPoliticallyActive &&
             !ReferenceEquals(character, Ruler) &&
             character.Position == position);
     }

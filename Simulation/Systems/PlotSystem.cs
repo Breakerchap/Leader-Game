@@ -21,9 +21,18 @@ internal static class PlotSystem
             if (!country.Ruler.IsAlive)
                 continue;
 
+            foreach (var disabledPlot in state.Plots.Where(plot =>
+                         !plot.IsResolved &&
+                         ReferenceEquals(plot.Country, country) &&
+                         !plot.Instigator.IsPoliticallyActive))
+            {
+                disabledPlot.IsResolved = true;
+                disabledPlot.Succeeded = false;
+            }
+
             var candidates = country.PoliticalFigures
                 .Where(character =>
-                    character.IsAlive &&
+                    character.IsPoliticallyActive &&
                     !ReferenceEquals(character, country.Ruler))
                 .ToList();
 
@@ -70,7 +79,7 @@ internal static class PlotSystem
     {
         foreach (var character in plot.Country.PoliticalFigures)
         {
-            if (!character.IsAlive ||
+            if (!character.IsPoliticallyActive ||
                 ReferenceEquals(character, plot.Country.Ruler) ||
                 ReferenceEquals(character, plot.Instigator))
             {
@@ -312,7 +321,7 @@ internal static class PlotSystem
     {
         return country.PoliticalFigures
             .Where(character =>
-                character.IsAlive &&
+                character.IsPoliticallyActive &&
                 plot.SupporterIds.Contains(character.Id))
             .ToList();
     }

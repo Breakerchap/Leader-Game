@@ -28,35 +28,29 @@ public class Character
         set => _ambition = Math.Clamp(value, 0, 100);
     }
 
-    /// <summary>
-    /// Personal claim or perceived right to rule. It matters most while this
-    /// character is ruler or a succession candidate, but remains attached to the person.
-    /// </summary>
     public int Legitimacy
     {
         get => _legitimacy;
         set => _legitimacy = Math.Clamp(value, 0, 100);
     }
 
-    /// <summary>
-    /// Personal political weight: connections, clients, reputation and access to power.
-    /// Office affects this over time, but influence remains attached to the person.
-    /// </summary>
     public int Influence
     {
         get => _influence;
         set => _influence = Math.Clamp(value, 0, 100);
     }
 
-    /// <summary>
-    /// Advisory office currently held. Null means the character holds no advisory office.
-    /// Rulership is tracked by Country.Ruler rather than as an advisory position.
-    /// </summary>
     public Position? Position { get; set; }
+
+    public PoliticalStatus Status { get; set; } = PoliticalStatus.Active;
 
     public bool IsAlive { get; set; } = true;
 
-    public bool IsInOffice => Position.HasValue;
+    public bool IsPoliticallyActive =>
+        IsAlive && Status == PoliticalStatus.Active;
+
+    public bool IsInOffice =>
+        IsPoliticallyActive && Position.HasValue;
 
     public string FullName => $"{FirstName} {LastName}";
 
