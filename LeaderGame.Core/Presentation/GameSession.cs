@@ -534,8 +534,7 @@ public sealed class GameSession
                     PlayerInformationFormatter.Willingness(willingness),
                     PlayerInformationFormatter.Threat(threat),
                     string.Join(", ", strongestBases),
-                    character.IsPoliticallyActive)
-                ;
+                    character.IsPoliticallyActive && !character.Position.HasValue);
             })
             .ToList();
 
