@@ -4,6 +4,8 @@ using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
+using LeaderGame.Simulation.Persistence;
+using LeaderGame.Simulation.Reports;
 using LeaderGame.Simulation.Scenarios;
 
 namespace LeaderGame.Tests;
@@ -289,6 +291,53 @@ public class PresentationBoundaryTests
 
         Assert.Contains("111,000", snapshot.Treasury);
         Assert.DoesNotContain("9,999,999", snapshot.Treasury);
+    }
+
+    [Fact]
+    public void PendingOrderDesk_SurvivesSaveLoadWithReadableDescription()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var treasurer = country.GetOfficeHolder(Position.Treasurer)!;
+
+        state.PendingOrders.Add(new ChangeTaxOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = treasurer,
+            IssuedOn = state.Date,
+            Country = country,
+            TargetTaxRate = 0.16m
+        });
+
+        var loaded = GameSaveService.Deserialize(
+            GameSaveService.Serialize(state));
+
+        var session = new GameSession(new GameSimulation(loaded));
+        var pending = Assert.Single(session.View.PendingOrderDetails);
+
+        Assert.Equal("Tax", pending.Type);
+        Assert.Contains("16", pending.Description);
+        Assert.Equal(
+            loaded.Player.Country.GetOfficeHolder(Position.Treasurer)!.FullName,
+            pending.Recipient);
+    }
+
+    [Fact]
+    public void OrderOutcomes_AppearInDedicatedBriefingFeed()
+    {
+        var state = DemoScenario.Create();
+
+        state.Reports.Add(new SimulationReport(
+            state.Date,
+            ReportCategory.Order,
+            "Treasurer refuses the directive",
+            "The Treasurer refuses to carry out the order."));
+
+        var session = new GameSession(new GameSimulation(state));
+        var outcome = Assert.Single(session.View.RecentOrderOutcomes);
+
+        Assert.True(outcome.NeedsAttention);
+        Assert.Contains("refuses", outcome.Title);
     }
 
     [Fact]
