@@ -1823,6 +1823,15 @@ static void PrintAdvisorReport(
             $"confidence {fact.ReportedConfidence,2}%");
     }
 
+    if (report.Caveats.Count > 0)
+    {
+        Console.WriteLine();
+        Console.WriteLine("Problems or contradictions visible in this report:");
+
+        foreach (var caveat in report.Caveats)
+            Console.WriteLine($"  - {caveat}");
+    }
+
     Console.WriteLine();
     Console.WriteLine(
         "Confidence is the adviser's apparent confidence, not a guarantee that the estimate is honest or correct.");
@@ -1832,8 +1841,8 @@ static void PrintAdvisorReport(
 static void PrintReports(GameState state)
 {
     Console.Clear();
-    Console.WriteLine("Recent reports");
-    Console.WriteLine("==============");
+    Console.WriteLine("Recent events and order outcomes");
+    Console.WriteLine("===============================");
     Console.WriteLine();
 
     var reports = state.Reports.TakeLast(20).ToList();
