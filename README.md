@@ -63,7 +63,15 @@ Implemented systems include:
 - campaign stances;
 - army losses, readiness, war score and war exhaustion;
 - peace negotiation with multiple terms;
-- reports exposing the consequences the player could reasonably know about;
+- player knowledge stored separately from hidden simulation truth;
+- persistent last-known estimates with source, uncertainty and staleness;
+- adviser-initiated reports based on urgency and information age;
+- requestable Treasurer, Marshal and Chancellor reports with refusal and multi-month procurement delays;
+- competence, institutional quality, fog and data age affecting report accuracy;
+- deliberate misinformation and selective omission by hostile or opposition-aligned advisers;
+- visible contradictions between reports without revealing which source is correct;
+- hidden historical truth snapshots so stale reports are genuinely based on older world state;
+- a separate deterministic information RNG so reporting uncertainty does not perturb physical simulation outcomes;
 - deterministic/random-source injection for reproducible simulation tests.
 
 ## How the simulation advances
@@ -80,7 +88,9 @@ A month currently processes roughly in this order:
 8. active wars;
 9. foreign policy;
 10. political plots;
-11. advance the date.
+11. capture hidden information history;
+12. process requested and adviser-initiated reports;
+13. advance the date.
 
 This order matters. For example, a ruler can die and succession can be resolved before that month's queued orders are processed.
 
@@ -127,6 +137,7 @@ Leader-Game/
 │   ├── Countries/
 │   ├── Diplomacy/
 │   ├── Military/
+│   ├── Information/
 │   ├── Orders/
 │   ├── Player/
 │   ├── Politics/
@@ -148,11 +159,13 @@ Leader-Game/
 - **`Program.cs`** — current console UI and player interaction.
 - **`Simulation/GameState.cs`** — the central world state.
 - **`Simulation/GameSimulation.cs`** — monthly simulation orchestration and order processing.
+- **`Simulation/Information/`** — player knowledge, adviser reports, uncertainty, report requests and hidden historical snapshots.
 - **`Simulation/Orders/`** — player intentions represented as structured orders.
 - **`Simulation/Systems/`** — economy, politics, domestic power-base pressure, life, succession, diplomacy, plots, foreign policy, military AI and war processing.
 - **`Simulation/Scenarios/DemoScenario.cs`** — the current hand-built prototype world.
 - **`LeaderGame.Tests/`** — xUnit simulation tests.
 - **`docs/FINAL_GOAL.md`** — long-term game design target.
+- **`docs/INFORMATION_SYSTEM.md`** — design and implementation rules for unreliable adviser reports and player knowledge.
 
 ## Design rules
 
@@ -188,9 +201,13 @@ Administrative efficiency and military readiness require continued funding. Cutt
 
 ### Information should be mediated
 
-The player should act on reports and assessments rather than being shown every hidden calculation.
+The player and the simulation now have separate information states.
 
-The prototype still exposes more raw information than the final game should, but the architecture is moving toward information delivered through advisers and institutions.
+The simulation uses exact hidden values. The player normally sees the latest adviser estimate, including who supplied it, how old its underlying information is, an uncertainty range and the adviser's apparent confidence.
+
+Advisers may volunteer reports or be explicitly tasked. Requested work can be refused, delayed or slowed further while underway. Reports can be wrong because of incompetence, weak institutions, fog of war, ordinary mistakes, deliberate distortion or selective omission. A later report can visibly contradict an earlier one without revealing which source is correct.
+
+See **[docs/INFORMATION_SYSTEM.md](docs/INFORMATION_SYSTEM.md)** for the current design and implementation rules.
 
 ### Randomness must be reproducible
 
