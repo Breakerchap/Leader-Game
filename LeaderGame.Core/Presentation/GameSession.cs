@@ -1033,7 +1033,11 @@ public sealed class GameSession
         var pressure = activeDemands.Count == 0
             ? "No major organised demands are currently known."
             : string.Join("  ", activeDemands.Take(3).Select(demand =>
-                $"{FormatPowerBase(demand.PowerBase)}: {DescribeDemand(demand)}"));
+                $"{FormatPowerBase(demand.PowerBase)}" +
+                (demand.Spokesperson is null
+                    ? string.Empty
+                    : $" via {demand.Spokesperson.FullName}") +
+                $": {DescribeDemand(demand)}"));
 
         var court = new CourtPoliticsView(
             offices,
