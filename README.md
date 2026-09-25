@@ -181,6 +181,7 @@ Leader-Game/
 - **`docs/FINAL_GOAL.md`** — long-term game design target.
 - **`docs/INFORMATION_SYSTEM.md`** — design and implementation rules for unreliable adviser reports and player knowledge.
 - **`docs/DESKTOP_UI.md`** — desktop architecture, information-boundary rules and GUI roadmap.
+- **`docs/SAVE_SYSTEM.md`** — versioned persistence format, deterministic continuation and migration rules.
 
 ## Design rules
 
@@ -245,7 +246,7 @@ It does **not** yet provide:
 - detailed military logistics or territorial occupation;
 - a knowledge/capability/adoption model for technology;
 - dynamic time compression;
-- save/load and campaign persistence;
+- multiple named save slots and autosave (a versioned manual campaign save/load slot already exists);
 - a geographic map and map-based territorial interface.
 
 Those belong to the longer-term design rather than the current prototype.
