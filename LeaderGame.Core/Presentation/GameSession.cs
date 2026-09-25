@@ -339,6 +339,88 @@ public sealed class GameSession
             $"{(accept ? "Acceptance" : "Rejection")} of {proposal.SourceCountry.Name}'s proposal queued.");
     }
 
+    public void SetWarStance(Guid warId, string stanceName)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var marshal = country.GetOfficeHolder(Position.Marshal);
+        var war = state.Wars.FirstOrDefault(candidate =>
+            candidate.Id == warId &&
+            candidate.Status == WarStatus.Active &&
+            candidate.IsParticipant(country));
+
+        if (war is null)
+        {
+            Refresh("That campaign is no longer active.");
+            return;
+        }
+
+        if (marshal is null)
+        {
+            Refresh("The Marshal's office is vacant. There is nobody to receive a campaign directive.");
+            return;
+        }
+
+        if (!Enum.TryParse<WarStance>(stanceName, ignoreCase: true, out var stance))
+        {
+            Refresh("That campaign stance is not recognised.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new SetWarStanceOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = marshal,
+            IssuedOn = state.Date,
+            Country = country,
+            War = war,
+            RequestedStance = stance
+        });
+
+        Refresh($"{stance} campaign directive queued through {marshal.FullName}.");
+    }
+
+    public void OfferPeace(Guid warId, string termsName)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var chancellor = country.GetOfficeHolder(Position.Chancellor);
+        var war = state.Wars.FirstOrDefault(candidate =>
+            candidate.Id == warId &&
+            candidate.Status == WarStatus.Active &&
+            candidate.IsParticipant(country));
+
+        if (war is null)
+        {
+            Refresh("That campaign is no longer active.");
+            return;
+        }
+
+        if (chancellor is null)
+        {
+            Refresh("The Chancellery is vacant. There is nobody to negotiate peace.");
+            return;
+        }
+
+        if (!Enum.TryParse<PeaceOfferTerms>(termsName, ignoreCase: true, out var terms))
+        {
+            Refresh("Those peace terms are not recognised.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new OfferPeaceOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = chancellor,
+            IssuedOn = state.Date,
+            Country = country,
+            War = war,
+            Terms = terms
+        });
+
+        Refresh($"{terms} peace proposal queued through {chancellor.FullName}.");
+    }
+
     public void Refresh(string? statusMessage = null)
     {
         if (!string.IsNullOrWhiteSpace(statusMessage))
@@ -814,6 +896,71 @@ public sealed class GameSession
             foreignStates,
             incomingProposals);
 
+        var marshal = country.GetOfficeHolder(Position.Marshal);
+        var marshalObedience = marshal is null
+            ? "Vacant"
+            : PlayerInformationFormatter.Willingness(
+                PoliticalCalculations.GetOrderWillingness(
+                    state,
+                    country,
+                    marshal,
+                    ruler));
+
+        var campaigns = state.Wars
+            .Where(war =>
+                war.Status == WarStatus.Active &&
+                war.IsParticipant(country))
+            .Select(war =>
+            {
+                var enemy = war.OpponentOf(country);
+
+                return new WarCampaignView(
+                    war.Id,
+                    enemy.Id,
+                    enemy.Name,
+                    $"Month {war.MonthsActive}",
+                    war.GetStance(country).ToString(),
+                    KnownShort(
+                        state,
+                        InformationMetric.WarScore,
+                        country.Id,
+                        enemy.Id),
+                    KnownShort(
+                        state,
+                        InformationMetric.ArmySize,
+                        country.Id),
+                    KnownShort(
+                        state,
+                        InformationMetric.ArmyReadiness,
+                        country.Id),
+                    KnownShort(
+                        state,
+                        InformationMetric.WarExhaustion,
+                        country.Id),
+                    KnownShort(
+                        state,
+                        InformationMetric.ArmySize,
+                        enemy.Id),
+                    KnownShort(
+                        state,
+                        InformationMetric.ArmyReadiness,
+                        enemy.Id),
+                    marshal?.FullName ?? "Vacant",
+                    marshalObedience,
+                    chancellor?.FullName ?? "Vacant",
+                    chancellorObedience);
+            })
+            .OrderBy(campaign => campaign.OpponentName)
+            .ToList();
+
+        var military = new MilitaryView(
+            marshal?.FullName ?? "Vacant",
+            marshalObedience,
+            KnownShort(state, InformationMetric.ArmySize, country.Id),
+            KnownShort(state, InformationMetric.ArmyReadiness, country.Id),
+            KnownShort(state, InformationMetric.WarExhaustion, country.Id),
+            campaigns);
+
         return new PlayerViewState(
             country.Name,
             state.Date.ToString(),
@@ -833,6 +980,7 @@ public sealed class GameSession
             government,
             court,
             foreignAffairs,
+            military,
             _statusMessage);
     }
 
