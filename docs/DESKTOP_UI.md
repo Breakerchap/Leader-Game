@@ -112,6 +112,10 @@ The Government surface is now interactive.
 
 It includes:
 
+- the constitutional regime type;
+- hereditary succession information for monarchies;
+- scheduled-election countdowns for republics;
+- visible candidate field and player-party nominee once campaign season begins;
 - the current Treasurer and qualitative obedience assessment;
 - the formal enacted tax rate;
 - a tax target slider and tax directive order;
@@ -121,6 +125,8 @@ It includes:
 - a clear reminder that orders are queued and may be moderated or refused.
 
 Formal policy is shown exactly because it is a government act the ruler can know. Its real effects remain mediated by reports.
+
+Election dates and candidate identities are treated as public constitutional/political facts, but the UI does not expose hidden election scores or win probabilities. Players must infer strength from constituencies, political relationships and adviser reporting.
 
 ### Court
 
