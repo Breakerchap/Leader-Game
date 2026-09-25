@@ -1760,7 +1760,7 @@ static void PrintAdvisorReport(
         Console.WriteLine(
             $"{FormatMetricName(fact.Key.Metric),-28} " +
             $"{FormatKnownValue(fact.Key.Metric, fact.Estimate),16}  " +
-            $"± {FormatKnownValue(fact.Key.Metric, fact.Margin),-12} " +
+            $"± {FormatKnownMargin(fact.Key.Metric, fact.Margin),-12} " +
             $"confidence {fact.ReportedConfidence,2}%");
     }
 
@@ -1794,6 +1794,183 @@ static void PrintReports(GameState state)
     }
 
     Pause();
+}
+
+static string FormatKnown(
+    GameState state,
+    InformationMetric metric,
+    string subjectCountryId,
+    string? relatedCountryId = null)
+{
+    var known = state.Knowledge.Get(
+        metric,
+        subjectCountryId,
+        relatedCountryId);
+
+    if (known is null)
+        return "unknown";
+
+    var age = known.AgeInMonths(state.Date);
+    var stale = age >= 6
+        ? "STALE, "
+        : string.Empty;
+
+    return $"~{FormatKnownValue(metric, known.Estimate)} ±{FormatKnownMargin(metric, known.Margin)} " +
+           $"[{stale}{known.SourceAdvisorName}, {FormatAge(age)}]";
+}
+
+static string FormatKnownValue(
+    InformationMetric metric,
+    double value)
+{
+    return metric switch
+    {
+        InformationMetric.Population or
+        InformationMetric.Gdp or
+        InformationMetric.Treasury or
+        InformationMetric.Debt or
+        InformationMetric.MonthlyTaxRevenue or
+        InformationMetric.MonthlyTradeIncome or
+        InformationMetric.MonthlyExpenses or
+        InformationMetric.ArmySize =>
+            $"{value:N0}",
+
+        InformationMetric.MonthlyBalance =>
+            $"{value:+#,##0;-#,##0;0}",
+
+        InformationMetric.AdministrativeEfficiency or
+        InformationMetric.ArmyReadiness or
+        InformationMetric.WarExhaustion or
+        InformationMetric.PublicUnrest or
+        InformationMetric.GovernmentStability or
+        InformationMetric.PoliticalBacking =>
+            $"{value:F0}/100",
+
+        InformationMetric.DiplomaticRelations or
+        InformationMetric.WarScore =>
+            $"{value:+0;-0;0}",
+
+        InformationMetric.DiplomaticTrust or
+        InformationMetric.DiplomaticTension =>
+            $"{value:F0}/100",
+
+        _ => $"{value:F0}"
+    };
+}
+
+static string FormatKnownMargin(
+    InformationMetric metric,
+    double margin)
+{
+    margin = Math.Abs(margin);
+
+    return metric switch
+    {
+        InformationMetric.Population or
+        InformationMetric.Gdp or
+        InformationMetric.Treasury or
+        InformationMetric.Debt or
+        InformationMetric.MonthlyTaxRevenue or
+        InformationMetric.MonthlyTradeIncome or
+        InformationMetric.MonthlyExpenses or
+        InformationMetric.MonthlyBalance or
+        InformationMetric.ArmySize =>
+            $"{margin:N0}",
+
+        _ => $"{margin:F0}"
+    };
+}
+
+static string FormatMetricName(InformationMetric metric)
+{
+    return metric switch
+    {
+        InformationMetric.Gdp => "GDP",
+        InformationMetric.MonthlyTaxRevenue => "Monthly tax revenue",
+        InformationMetric.MonthlyTradeIncome => "Monthly trade income",
+        InformationMetric.MonthlyExpenses => "Monthly expenses",
+        InformationMetric.MonthlyBalance => "Monthly balance",
+        InformationMetric.AdministrativeEfficiency => "Administrative efficiency",
+        InformationMetric.ArmySize => "Army strength",
+        InformationMetric.ArmyReadiness => "Army readiness",
+        InformationMetric.WarExhaustion => "War exhaustion",
+        InformationMetric.WarScore => "Campaign position",
+        InformationMetric.PublicUnrest => "Public unrest",
+        InformationMetric.GovernmentStability => "Government stability",
+        InformationMetric.PoliticalBacking => "Ruler's political backing",
+        InformationMetric.DiplomaticRelations => "Relations",
+        InformationMetric.DiplomaticTrust => "Diplomatic trust",
+        InformationMetric.DiplomaticTension => "Diplomatic tension",
+        _ => metric.ToString()
+    };
+}
+
+static int MonthsBetween(GameDate earlier, GameDate later)
+{
+    return Math.Max(
+        0,
+        (later.Year - earlier.Year) * 12 +
+        later.Month -
+        earlier.Month);
+}
+
+static string FormatAge(int months)
+{
+    return months switch
+    {
+        <= 0 => "current-ish",
+        1 => "1 month old",
+        _ => $"{months} months old"
+    };
+}
+
+static string DescribeLevel(double value)
+{
+    return value switch
+    {
+        >= 85 => "exceptional",
+        >= 70 => "strong",
+        >= 55 => "solid",
+        >= 40 => "mixed",
+        >= 25 => "weak",
+        _ => "very weak"
+    };
+}
+
+static string DescribeTrust(int trust)
+{
+    return trust switch
+    {
+        >= 80 => "very high",
+        >= 65 => "high",
+        >= 45 => "mixed",
+        >= 25 => "low",
+        _ => "very low"
+    };
+}
+
+static string DescribeWillingness(double willingness)
+{
+    return willingness switch
+    {
+        >= 80 => "very likely",
+        >= 65 => "likely",
+        >= 45 => "uncertain",
+        >= 25 => "reluctant",
+        _ => "hostile"
+    };
+}
+
+static string DescribeThreat(double threat)
+{
+    return threat switch
+    {
+        >= 80 => "severe",
+        >= 60 => "high",
+        >= 40 => "moderate",
+        >= 20 => "some",
+        _ => "low"
+    };
 }
 
 static void Pause(string? message = null)
