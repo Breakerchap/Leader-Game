@@ -1141,6 +1141,22 @@ public sealed class GameSession
                     .Select(powerBase =>
                         $"{FormatPowerBase(powerBase)} ({DescribeBacking(character.GetPowerBaseStanding(powerBase))})");
 
+                var knownPlot = state.Plots
+                    .Where(plot =>
+                        !plot.IsResolved &&
+                        plot.DiscoveryStage > 0 &&
+                        ReferenceEquals(plot.Country, country) &&
+                        ReferenceEquals(plot.Instigator, character))
+                    .OrderByDescending(plot => plot.DiscoveryStage)
+                    .FirstOrDefault();
+
+                var knownEvidence = knownPlot?.DiscoveryStage switch
+                {
+                    >= 2 => "Credible conspiracy evidence",
+                    1 => "Suspicious political activity",
+                    _ => "No known conspiracy evidence"
+                };
+
                 return new CourtFigureView(
                     character.Id,
                     character.FullName,
@@ -1156,6 +1172,8 @@ public sealed class GameSession
                     PlayerInformationFormatter.Willingness(willingness),
                     PlayerInformationFormatter.Threat(threat),
                     string.Join(", ", strongestBases),
+                    knownEvidence,
+                    knownPlot is not null,
                     character.IsPoliticallyActive && !character.Position.HasValue,
                     character.IsPoliticallyActive &&
                         country.GetOfficeHolder(Position.Chancellor) is { } investigationChancellor &&
