@@ -981,17 +981,19 @@ static void ManageMilitary(GameSimulation simulation, Country country)
     Console.WriteLine("Military campaigns");
     Console.WriteLine("==================");
     Console.WriteLine();
+    Console.WriteLine(
+        "Campaign figures are based on Marshal reports and field intelligence. " +
+        "Enemy estimates can be especially wrong or stale.");
+    Console.WriteLine();
 
     for (var i = 0; i < wars.Count; i++)
     {
         var war = wars[i];
         var opponent = war.OpponentOf(country);
-        var score = ReferenceEquals(country, war.Attacker)
-            ? war.WarScore
-            : -war.WarScore;
 
         Console.WriteLine(
-            $"[{i + 1}] {opponent.Name,-12} score {score,6:+0.0;-0.0;0.0}  " +
+            $"[{i + 1}] {opponent.Name,-12} reported position " +
+            $"{FormatKnownShort(simulation.State, InformationMetric.WarScore, country.Id, opponent.Id),-18} " +
             $"month {war.MonthsActive,2}  stance {war.GetStance(country)}");
     }
 
@@ -1015,19 +1017,20 @@ static void ManageMilitary(GameSimulation simulation, Country country)
     Console.WriteLine($"{country.Name} vs {enemy.Name}");
     Console.WriteLine(new string('=', country.Name.Length + enemy.Name.Length + 4));
     Console.WriteLine();
-
-    var scoreFromPlayer = ReferenceEquals(country, selected.Attacker)
-        ? selected.WarScore
-        : -selected.WarScore;
-
-    Console.WriteLine($"War score: {scoreFromPlayer:+0.0;-0.0;0.0}");
+    Console.WriteLine(
+        $"Reported campaign position: {FormatKnown(simulation.State, InformationMetric.WarScore, country.Id, enemy.Id)}");
     Console.WriteLine($"Months active: {selected.MonthsActive}");
     Console.WriteLine(
-        $"Your army: {country.ArmySize:N0}, readiness {country.ArmyReadiness:F0}/100, " +
-        $"exhaustion {country.WarExhaustion:F1}/100");
+        $"Our army: {FormatKnown(simulation.State, InformationMetric.ArmySize, country.Id)}");
     Console.WriteLine(
-        $"Enemy army: {enemy.ArmySize:N0}, readiness {enemy.ArmyReadiness:F0}/100");
-    Console.WriteLine($"Current stance: {selected.GetStance(country)}");
+        $"Our readiness: {FormatKnown(simulation.State, InformationMetric.ArmyReadiness, country.Id)}");
+    Console.WriteLine(
+        $"Our war exhaustion: {FormatKnown(simulation.State, InformationMetric.WarExhaustion, country.Id)}");
+    Console.WriteLine(
+        $"Enemy army: {FormatKnown(simulation.State, InformationMetric.ArmySize, enemy.Id)}");
+    Console.WriteLine(
+        $"Enemy readiness: {FormatKnown(simulation.State, InformationMetric.ArmyReadiness, enemy.Id)}");
+    Console.WriteLine($"Current ordered stance: {selected.GetStance(country)}");
 
     if (marshal is not null)
     {
@@ -1038,8 +1041,8 @@ static void ManageMilitary(GameSimulation simulation, Country country)
             country.Ruler);
 
         Console.WriteLine(
-            $"Marshal: {marshal.FullName} — competence {marshal.Competence}/100, " +
-            $"willingness {willingness:F0}/100");
+            $"Marshal: {marshal.FullName} — ability {DescribeLevel(marshal.Competence)}, " +
+            $"obedience {DescribeWillingness(willingness)}");
     }
     else
     {
@@ -1048,13 +1051,38 @@ static void ManageMilitary(GameSimulation simulation, Country country)
 
     Console.WriteLine();
     if (marshal is not null)
+    {
         Console.WriteLine("[S] Change campaign stance");
+        Console.WriteLine("[I] Request fresh military intelligence on the enemy");
+    }
+
     if (chancellor is not null)
         Console.WriteLine("[P] Propose peace");
+
     Console.WriteLine("[Enter] Cancel");
     Console.Write("Action: ");
 
     var action = Console.ReadLine()?.Trim();
+
+    if (string.Equals(action, "i", StringComparison.OrdinalIgnoreCase) &&
+        marshal is not null)
+    {
+        simulation.SubmitOrder(new RequestReportOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = marshal,
+            IssuedOn = simulation.State.Date,
+            Country = country,
+            Topic = InformationTopic.Military,
+            SubjectCountry = enemy,
+            RelatedCountry = country
+        });
+
+        Pause(
+            $"Military intelligence request on {enemy.Name} sent to {marshal.FullName}. " +
+            "It may take several months, and the result may still be wrong.");
+        return;
+    }
 
     if (string.Equals(action, "p", StringComparison.OrdinalIgnoreCase) &&
         chancellor is not null)
