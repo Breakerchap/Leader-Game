@@ -307,7 +307,7 @@ static void QueueTaxOrder(GameSimulation simulation, Country country)
         simulation.State.Player.CurrentCharacter);
 
     Console.WriteLine(
-        $"{treasurer.FullName}'s current willingness to obey: {willingness:F0}/100.");
+        $"{treasurer.FullName}'s apparent willingness to obey is {DescribeWillingness(willingness)}.");
     Console.Write($"Target tax rate (0-60%, current {country.TaxRate:P1}): ");
 
     var raw = Console.ReadLine();
@@ -352,8 +352,11 @@ static void QueueBudgetOrder(GameSimulation simulation, Country country)
         $"Current: army {country.ArmyFunding:P0}, administration " +
         $"{country.AdministrationFunding:P0}, court {country.CourtFunding:P0}");
     Console.WriteLine(
-        $"Army readiness {country.ArmyReadiness:F0}/100, administrative efficiency " +
-        $"{country.AdministrativeEfficiency:P0}, debt {country.Debt:N0}");
+        $"Reported army readiness: {FormatKnown(simulation.State, InformationMetric.ArmyReadiness, country.Id)}");
+    Console.WriteLine(
+        $"Reported administrative efficiency: {FormatKnown(simulation.State, InformationMetric.AdministrativeEfficiency, country.Id)}");
+    Console.WriteLine(
+        $"Reported debt: {FormatKnown(simulation.State, InformationMetric.Debt, country.Id)}");
     Console.WriteLine();
 
     if (!TryReadFunding("Army funding", country.ArmyFunding, out var army) ||
@@ -429,12 +432,12 @@ static void QueueAppointmentOrder(GameSimulation simulation, Country country)
 
         Console.WriteLine(
             $"[{i + 1}] {candidate.FullName,-20} " +
-            $"Comp {candidate.Competence,3}  " +
-            $"Amb {candidate.Ambition,3}  " +
-            $"Trust {relationship.Trust,3}  " +
-            $"Infl {candidate.Influence,3}  " +
-            $"Base {powerBaseInfluence,5:F0}  " +
-            $"Threat {threat,5:F0}");
+            $"ability {DescribeLevel(candidate.Competence),-10}  " +
+            $"ambition {DescribeAmbition(candidate.Ambition),-10}  " +
+            $"trust {DescribeTrust(relationship.Trust),-10}  " +
+            $"influence {DescribeLevel(candidate.Influence),-10}  " +
+            $"base {DescribeLevel(powerBaseInfluence),-10}  " +
+            $"risk {DescribeThreat(threat)}");
     }
 
     Console.WriteLine();
@@ -514,8 +517,9 @@ static void QueueDismissalOrder(GameSimulation simulation, Country country)
 
         Console.WriteLine(
             $"[{i + 1}] {character.Position,-12} {character.FullName,-20} " +
-            $"Opinion {relationship.Opinion,4}  Trust {relationship.Trust,3}  " +
-            $"Influence {character.Influence,3}");
+            $"{DescribeOpinion(relationship.Opinion),-18}  " +
+            $"trust {DescribeTrust(relationship.Trust),-10}  " +
+            $"influence {DescribeLevel(character.Influence)}");
     }
 
     Console.WriteLine();
@@ -585,7 +589,8 @@ static void QueueInvestigationOrder(GameSimulation simulation, Country country)
         Console.WriteLine(
             $"[{i + 1}] {subject.FullName,-20} " +
             $"Role {(subject.Position?.ToString() ?? "Courtier"),-11} " +
-            $"Influence {subject.Influence,3}  Threat {threat,5:F0}");
+            $"influence {DescribeLevel(subject.Influence),-10}  " +
+            $"risk {DescribeThreat(threat)}");
     }
 
     Console.WriteLine();
@@ -1251,8 +1256,8 @@ static void QueueArrestOrder(GameSimulation simulation, Country country)
     Console.WriteLine(new string('=', 21 + marshal.FullName.Length));
     Console.WriteLine();
     Console.WriteLine(
-        $"Army readiness: {country.ArmyReadiness:F0}/100. A failed arrest can strengthen " +
-        "the target and destabilise the government.");
+        $"Reported army readiness: {FormatKnown(simulation.State, InformationMetric.ArmyReadiness, country.Id)}. " +
+        "A failed arrest can strengthen the target and destabilise the government.");
     Console.WriteLine();
 
     for (var i = 0; i < subjects.Count; i++)
@@ -1277,7 +1282,8 @@ static void QueueArrestOrder(GameSimulation simulation, Country country)
 
         Console.WriteLine(
             $"[{i + 1}] {subject.FullName,-20} " +
-            $"Influence {subject.Influence,3}  Threat {threat,5:F0}  {evidence}");
+            $"influence {DescribeLevel(subject.Influence),-10}  " +
+            $"risk {DescribeThreat(threat),-9}  {evidence}");
     }
 
     Console.WriteLine();
@@ -1331,8 +1337,8 @@ static void QueueReleaseOrder(GameSimulation simulation, Country country)
 
         Console.WriteLine(
             $"[{i + 1}] {prisoner.FullName,-20} " +
-            $"Influence {prisoner.Influence,3}  Opinion {relationship.Opinion,4}  " +
-            $"Fear {relationship.Fear,3}");
+            $"influence {DescribeLevel(prisoner.Influence),-10}  " +
+            $"{DescribeOpinion(relationship.Opinion),-18}  fear {DescribeFear(relationship.Fear)}");
     }
 
     Console.WriteLine();
