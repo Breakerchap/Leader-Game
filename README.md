@@ -30,6 +30,9 @@ Implemented systems include:
 - allegiance to countries and political lineages;
 - explicit political power bases: aristocracy, military, merchants, clergy, bureaucracy, workers, peasantry, regional elites, parties and royal families;
 - country-specific power structures and character standing within those power bases;
+- autonomous domestic demands from dissatisfied power bases;
+- escalating political pressure when important groups are ignored, including rivals gaining support;
+- material conditions such as underfunding, high taxes, unrest and war exhaustion changing political backing over time;
 - calculated willingness to obey orders;
 - advisers and offices including Treasurer, Marshal and Chancellor;
 - appointment and dismissal of advisers;
@@ -143,7 +146,7 @@ Leader-Game/
 - **`Simulation/GameState.cs`** — the central world state.
 - **`Simulation/GameSimulation.cs`** — monthly simulation orchestration and order processing.
 - **`Simulation/Orders/`** — player intentions represented as structured orders.
-- **`Simulation/Systems/`** — economy, politics, life, succession, diplomacy, plots, foreign policy, military AI and war processing.
+- **`Simulation/Systems/`** — economy, politics, domestic power-base pressure, life, succession, diplomacy, plots, foreign policy, military AI and war processing.
 - **`Simulation/Scenarios/DemoScenario.cs`** — the current hand-built prototype world.
 - **`LeaderGame.Tests/`** — xUnit simulation tests.
 - **`docs/FINAL_GOAL.md`** — long-term game design target.
@@ -172,7 +175,7 @@ Characters have relationships with one another, not just with the ruler. Coaliti
 
 ### Power must come from somewhere
 
-A character's influence is not only a consequence of holding office. The simulation tracks support from political power bases such as the army, aristocracy, merchants, bureaucracy, clergy, parties and royal family. Different countries give those bases different structural importance, and policy choices can strengthen or weaken the ruler's backing among them.
+A character's influence is not only a consequence of holding office. The simulation tracks support from political power bases such as the army, aristocracy, merchants, bureaucracy, clergy, parties and royal family. Different countries give those bases different structural importance, and policy choices can strengthen or weaken the ruler's backing among them. Important dissatisfied groups can now form explicit demands; leaving those demands unresolved escalates pressure on the government and can shift support toward political rivals.
 
 ### State capacity costs resources
 
