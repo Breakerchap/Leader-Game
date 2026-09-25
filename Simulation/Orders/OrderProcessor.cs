@@ -20,6 +20,7 @@ internal static class OrderProcessor
         return order switch
         {
             ChangeTaxOrder taxOrder => ProcessChangeTaxOrder(state, taxOrder),
+            SetBudgetOrder budgetOrder => ProcessSetBudgetOrder(state, budgetOrder),
             AppointAdvisorOrder appointmentOrder => ProcessAppointAdvisorOrder(state, appointmentOrder),
             DismissAdvisorOrder dismissalOrder => ProcessDismissAdvisorOrder(state, dismissalOrder),
             InvestigateCharacterOrder investigationOrder => ProcessInvestigationOrder(state, investigationOrder),
@@ -41,10 +42,7 @@ internal static class OrderProcessor
 
         var treasurer = order.Recipient;
 
-        if (treasurer.Position != Position.Treasurer ||
-            !treasurer.IsAlive ||
-            !order.Country.ContainsPoliticalFigure(treasurer) ||
-            ReferenceEquals(treasurer, order.Country.Ruler))
+        if (!IsServingTreasurer(order.Country, treasurer))
         {
             order.Status = OrderStatus.Rejected;
             return new SimulationReport(
@@ -122,6 +120,80 @@ internal static class OrderProcessor
             $"{treasurer.Competence}/100, willingness {willingness:F0}/100. " +
             $"Public unrest is now {order.Country.PublicUnrest:F1} and stability " +
             $"{order.Country.Government.Stability:F1}.");
+    }
+
+    private static SimulationReport ProcessSetBudgetOrder(
+        GameState state,
+        SetBudgetOrder order)
+    {
+        if (!IsFundingTargetValid(order.TargetArmyFunding) ||
+            !IsFundingTargetValid(order.TargetAdministrationFunding) ||
+            !IsFundingTargetValid(order.TargetCourtFunding))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Budget order rejected",
+                "Each funding target must be between 50% and 150% of normal funding.");
+        }
+
+        var treasurer = order.Recipient;
+
+        if (!IsServingTreasurer(order.Country, treasurer))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Budget order rejected",
+                "A living Treasurer serving the target country must receive budget orders.");
+        }
+
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.Country,
+            treasurer,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                $"{treasurer.FullName} refuses the budget order",
+                $"{treasurer.FullName} refuses to reorganise government spending. " +
+                $"Their willingness to obey was {willingness:F0}/100.");
+        }
+
+        var implementationFactor =
+            PoliticalCalculations.GetImplementationFactor(treasurer, willingness);
+
+        order.Country.ArmyFunding = MoveTowardsTarget(
+            order.Country.ArmyFunding,
+            order.TargetArmyFunding,
+            implementationFactor);
+        order.Country.AdministrationFunding = MoveTowardsTarget(
+            order.Country.AdministrationFunding,
+            order.TargetAdministrationFunding,
+            implementationFactor);
+        order.Country.CourtFunding = MoveTowardsTarget(
+            order.Country.CourtFunding,
+            order.TargetCourtFunding,
+            implementationFactor);
+
+        order.Status = OrderStatus.Completed;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Order,
+            $"{treasurer.FullName} implements the budget",
+            $"Requested funding — army {order.TargetArmyFunding:P0}, administration " +
+            $"{order.TargetAdministrationFunding:P0}, court {order.TargetCourtFunding:P0}. " +
+            $"Enacted — army {order.Country.ArmyFunding:P0}, administration " +
+            $"{order.Country.AdministrationFunding:P0}, court {order.Country.CourtFunding:P0}. " +
+            $"Willingness {willingness:F0}/100.");
     }
 
     private static SimulationReport ProcessAppointAdvisorOrder(
@@ -305,7 +377,7 @@ internal static class OrderProcessor
                 ReportCategory.Politics,
                 $"Plot by {subject.FullName} exposed",
                 $"{chancellor.FullName} uncovers credible evidence of a coup plot. " +
-                $"The investigation disrupts its organisation substantially.");
+                "The investigation disrupts its organisation substantially.");
         }
 
         if (effectiveness >= 50)
@@ -327,6 +399,27 @@ internal static class OrderProcessor
             $"Investigation of {subject.FullName} inconclusive",
             $"{chancellor.FullName} fails to establish anything useful. Unknown to the " +
             "government, the investigation still disrupts some political activity.");
+    }
+
+    private static bool IsServingTreasurer(
+        Countries.Country country,
+        Character character)
+    {
+        return character.Position == Position.Treasurer &&
+               character.IsAlive &&
+               country.ContainsPoliticalFigure(character) &&
+               !ReferenceEquals(character, country.Ruler);
+    }
+
+    private static bool IsFundingTargetValid(decimal target) =>
+        target is >= 0.5m and <= 1.5m;
+
+    private static decimal MoveTowardsTarget(
+        decimal current,
+        decimal target,
+        decimal implementationFactor)
+    {
+        return current + (target - current) * implementationFactor;
     }
 
     private static void ApplyDismissalConsequences(

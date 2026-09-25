@@ -6,17 +6,55 @@ namespace LeaderGame.Tests;
 public class EconomyTests
 {
     [Fact]
-    public void AdvanceMonth_CollectsExpectedTaxRevenue()
+    public void AdvanceMonth_CollectsRevenueAndPaysRecurringCosts()
     {
         var state = DemoScenario.Create();
         var simulation = new GameSimulation(state);
         var country = state.Player.Country;
-        var startingTreasury = country.Treasury;
 
         simulation.AdvanceMonth();
 
         Assert.Equal(531_250m, country.LastMonthlyTaxRevenue);
-        Assert.Equal(startingTreasury + 531_250m, country.Treasury);
+        Assert.InRange(country.LastMonthlyExpenses, 338_108m, 338_109m);
+        Assert.InRange(country.LastMonthlyBalance, 193_141m, 193_142m);
+        Assert.InRange(country.Treasury, 513_141m, 513_142m);
+        Assert.Equal(0m, country.Debt);
         Assert.Equal(new GameDate(1450, 2), state.Date);
+    }
+
+    [Fact]
+    public void DeficitWithNoCash_CreatesDebt()
+    {
+        var state = DemoScenario.Create();
+        var simulation = new GameSimulation(state);
+        var country = state.Player.Country;
+
+        country.TaxRate = 0m;
+        country.Treasury = 0m;
+
+        simulation.AdvanceMonth();
+
+        Assert.Equal(0m, country.Treasury);
+        Assert.True(country.Debt > 300_000m);
+        Assert.True(country.LastMonthlyBalance < 0m);
+    }
+
+    [Fact]
+    public void UnderfundingAdministrationAndArmy_DegradesStateCapacity()
+    {
+        var state = DemoScenario.Create();
+        var simulation = new GameSimulation(state);
+        var country = state.Player.Country;
+
+        country.AdministrationFunding = 0.5m;
+        country.ArmyFunding = 0.5m;
+
+        var efficiency = country.AdministrativeEfficiency;
+        var readiness = country.ArmyReadiness;
+
+        simulation.AdvanceMonth();
+
+        Assert.True(country.AdministrativeEfficiency < efficiency);
+        Assert.True(country.ArmyReadiness < readiness);
     }
 }

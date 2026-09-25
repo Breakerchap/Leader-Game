@@ -6,6 +6,11 @@ public class Country
 {
     private decimal _taxRate = 0.10m;
     private decimal _administrativeEfficiency = 0.75m;
+    private decimal _debt;
+    private decimal _armyFunding = 1m;
+    private decimal _administrationFunding = 1m;
+    private decimal _courtFunding = 1m;
+    private double _armyReadiness = 75;
     private double _publicUnrest = 20;
 
     public required string Id { get; init; }
@@ -20,7 +25,19 @@ public class Country
 
     public decimal Treasury { get; set; }
 
+    public decimal Debt
+    {
+        get => _debt;
+        set => _debt = Math.Max(0m, value);
+    }
+
     public int ArmySize { get; set; }
+
+    public double ArmyReadiness
+    {
+        get => _armyReadiness;
+        set => _armyReadiness = Math.Clamp(value, 0, 100);
+    }
 
     public decimal TaxRate
     {
@@ -34,6 +51,28 @@ public class Country
         set => _administrativeEfficiency = Math.Clamp(value, 0.25m, 1m);
     }
 
+    /// <summary>
+    /// Budget multipliers. 1.0 is normal funding; 0.5 is severe austerity;
+    /// 1.5 is heavy overfunding.
+    /// </summary>
+    public decimal ArmyFunding
+    {
+        get => _armyFunding;
+        set => _armyFunding = Math.Clamp(value, 0.5m, 1.5m);
+    }
+
+    public decimal AdministrationFunding
+    {
+        get => _administrationFunding;
+        set => _administrationFunding = Math.Clamp(value, 0.5m, 1.5m);
+    }
+
+    public decimal CourtFunding
+    {
+        get => _courtFunding;
+        set => _courtFunding = Math.Clamp(value, 0.5m, 1.5m);
+    }
+
     public double PublicUnrest
     {
         get => _publicUnrest;
@@ -42,21 +81,18 @@ public class Country
 
     public decimal LastMonthlyTaxRevenue { get; internal set; }
 
+    public decimal LastMonthlyExpenses { get; internal set; }
+
+    public decimal LastMonthlyDebtInterest { get; internal set; }
+
+    public decimal LastMonthlyBalance { get; internal set; }
+
     public required Government Government { get; set; }
 
     public required Character Ruler { get; set; }
 
-    /// <summary>
-    /// Ordered candidates for rulership. The first living candidate becomes ruler
-    /// when the current ruler dies. Government-specific succession rules will
-    /// eventually construct and modify this ordering.
-    /// </summary>
     public List<Character> SuccessionOrder { get; } = [];
 
-    /// <summary>
-    /// Characters currently participating in this country's political world:
-    /// ruler, office-holders and people who could plausibly enter government.
-    /// </summary>
     public List<Character> PoliticalFigures { get; } = [];
 
     public IEnumerable<Character> ActiveAdvisors =>
