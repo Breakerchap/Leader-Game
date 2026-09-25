@@ -8,7 +8,7 @@ namespace LeaderGame.Simulation.Scenarios;
 
 public static class DemoScenario
 {
-    public static GameState Create()
+    public static GameState Create(string scenarioId = ScenarioCatalog.FalkenreichId)
     {
         var king = new Character
         {
@@ -286,19 +286,42 @@ public static class DemoScenario
         nordmark.NeighborIds.UnionWith([falkenreich.Id, valeria.Id]);
         valeria.NeighborIds.UnionWith([falkenreich.Id, nordmark.Id]);
 
-        var lineage = new PoliticalLineage
+        var falkenLineage = new PoliticalLineage
         {
             Id = "house_von_falken",
             Name = "House von Falken",
             Type = PoliticalLineageType.Dynasty
         };
-        lineage.Members.AddRange([king, heir]);
+        falkenLineage.Members.AddRange([king, heir]);
 
-        var player = new PlayerState
+        var valeriaLineage = new PoliticalLineage
         {
-            CurrentCharacter = king,
-            Country = falkenreich,
-            Lineage = lineage
+            Id = "vieri_coalition",
+            Name = "Vieri Coalition",
+            Type = PoliticalLineageType.Party
+        };
+        valeriaLineage.Members.AddRange([valerianDoge, valerianSuccessor]);
+
+        var scenario = ScenarioCatalog.Get(scenarioId);
+
+        var player = scenario.Id switch
+        {
+            ScenarioCatalog.FalkenreichId => new PlayerState
+            {
+                CurrentCharacter = king,
+                Country = falkenreich,
+                Lineage = falkenLineage
+            },
+
+            ScenarioCatalog.ValeriaId => new PlayerState
+            {
+                CurrentCharacter = valerianDoge,
+                Country = valeria,
+                Lineage = valeriaLineage
+            },
+
+            _ => throw new InvalidOperationException(
+                $"Scenario '{scenario.Id}' has no player configuration.")
         };
 
         var state = new GameState
@@ -306,6 +329,10 @@ public static class DemoScenario
             Date = new GameDate(1450, 1),
             Player = player
         };
+
+        state.Campaign = ScenarioCatalog.CreateCampaign(
+            scenario.Id,
+            state.Date);
 
         state.Countries.AddRange([falkenreich, nordmark, valeria]);
 
@@ -413,7 +440,7 @@ public static class DemoScenario
         ConfigureFalkenreichPolitics(
             state,
             falkenreich,
-            lineage,
+            falkenLineage,
             king,
             treasurer,
             marshal,
@@ -443,6 +470,15 @@ public static class DemoScenario
                 (valerianMarshal, 84, 11, 52, 10),
                 (valerianSuccessor, 79, 19, 59, 5)
             ]);
+
+        ConfigureValeriaLineage(
+            valeria,
+            valeriaLineage,
+            valerianDoge,
+            valerianChancellor,
+            valerianTreasurer,
+            valerianMarshal,
+            valerianSuccessor);
 
         // Personal relationships between rulers are distinct from state relations.
         // Succession therefore changes diplomatic chemistry without erasing treaties
@@ -581,6 +617,26 @@ public static class DemoScenario
 
         state.Relationships.Set(marta, chancellor, opinion: 52, trust: 72, fear: 0);
         state.Relationships.Set(chancellor, marta, opinion: 44, trust: 68, fear: 0);
+    }
+
+    private static void ConfigureValeriaLineage(
+        Country country,
+        PoliticalLineage lineage,
+        Character doge,
+        Character chancellor,
+        Character treasurer,
+        Character marshal,
+        Character successor)
+    {
+        var countryKey = PoliticalKeys.Country(country.Id);
+        var lineageKey = PoliticalKeys.Lineage(lineage.Id);
+
+        doge.SetAllegiance(countryKey, 95);
+        doge.SetAllegiance(lineageKey, 100);
+        chancellor.SetAllegiance(lineageKey, 72);
+        treasurer.SetAllegiance(lineageKey, 78);
+        marshal.SetAllegiance(lineageKey, 55);
+        successor.SetAllegiance(lineageKey, 88);
     }
 
     private static void ConfigureForeignCourt(
