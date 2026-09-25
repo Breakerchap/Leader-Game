@@ -74,6 +74,30 @@ public static class DemoScenario
             Position = Position.Chancellor
         });
 
+        // Two deliberately different candidates: one is loyal but ordinary,
+        // the other brilliant but ambitious and personally unreliable.
+        country.Advisors.Add(new Advisor
+        {
+            Id = 5,
+            FirstName = "Marta",
+            LastName = "Vogel",
+            Age = 39,
+            Competence = 69,
+            Ambition = 35,
+            Loyalty = 91
+        });
+
+        country.Advisors.Add(new Advisor
+        {
+            Id = 6,
+            FirstName = "Lukas",
+            LastName = "Hartmann",
+            Age = 45,
+            Competence = 94,
+            Ambition = 87,
+            Loyalty = 33
+        });
+
         var player = new PlayerState
         {
             CurrentCharacter = king,

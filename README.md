@@ -18,12 +18,13 @@ The player should not be able to directly set the world state just because they 
 
 The console prototype currently models:
 
-- a ruler and three advisers;
+- a ruler, office-holders and potential advisers;
 - a country, government, treasury, GDP, tax rate, stability and unrest;
 - monthly simulation ticks;
 - queued player orders;
 - adviser-mediated tax changes;
 - competence and loyalty affecting how faithfully a tax order is implemented;
+- appointing and replacing advisers, including loyalty consequences for dismissed officials;
 - monthly tax revenue;
 - reports explaining what happened.
 
@@ -31,6 +32,12 @@ Run it with:
 
 ```bash
 dotnet run
+```
+
+Run the tests with:
+
+```bash
+dotnet test LeaderGame.Tests/LeaderGame.Tests.csproj
 ```
 
 ## Project structure
@@ -50,11 +57,10 @@ Simulation/
 
 The next useful systems are deliberately small:
 
-1. adviser appointment and dismissal;
-2. richer character relationships and loyalties;
-3. government expenditure and recurring costs;
-4. diplomatic relations and a first diplomatic order;
-5. ruler death and succession;
-6. only then, a first minimal war system.
+1. richer character relationships and loyalties;
+2. government expenditure and recurring costs;
+3. diplomatic relations and a first diplomatic order;
+4. ruler death and succession;
+5. only then, a first minimal war system.
 
 The prototype should prove that decisions mediated through unreliable people are interesting before a map or large historical database is built.

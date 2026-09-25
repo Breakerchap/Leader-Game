@@ -1,5 +1,6 @@
 using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Scenarios;
 
@@ -16,6 +17,7 @@ while (true)
     Console.WriteLine();
     Console.WriteLine("[Enter] Advance month");
     Console.WriteLine("[T] Order a tax-rate change");
+    Console.WriteLine("[A] Appoint or replace an adviser");
     Console.WriteLine("[R] Read recent reports");
     Console.WriteLine("[Q] Quit");
 
@@ -27,6 +29,12 @@ while (true)
     if (string.Equals(input, "t", StringComparison.OrdinalIgnoreCase))
     {
         QueueTaxOrder(simulation, country);
+        continue;
+    }
+
+    if (string.Equals(input, "a", StringComparison.OrdinalIgnoreCase))
+    {
+        QueueAppointmentOrder(simulation, country);
         continue;
     }
 
@@ -57,20 +65,28 @@ static void PrintDashboard(GameState state)
     Console.WriteLine($"Pending orders: {state.PendingOrders.Count}");
     Console.WriteLine();
 
-    Console.WriteLine("Advisors:");
+    Console.WriteLine("Office-holders:");
 
-    foreach (var advisor in country.Advisors)
+    foreach (var advisor in country.ActiveAdvisors)
     {
         Console.WriteLine(
-            $"{advisor.Position,-12} " +
+            $"{advisor.Position!.Value,-12} " +
             $"{advisor.FullName,-20} " +
             $"Competence {advisor.Competence,3}  " +
             $"Loyalty {advisor.Loyalty,3}  " +
             $"Ambition {advisor.Ambition,3}");
     }
+
+    var candidates = country.AvailableAdvisors.ToList();
+
+    if (candidates.Count > 0)
+    {
+        Console.WriteLine();
+        Console.WriteLine($"Available political figures: {candidates.Count}");
+    }
 }
 
-static void QueueTaxOrder(GameSimulation simulation, LeaderGame.Simulation.Countries.Country country)
+static void QueueTaxOrder(GameSimulation simulation, Country country)
 {
     var treasurer = country.GetAdvisor(Position.Treasurer);
 
@@ -99,6 +115,84 @@ static void QueueTaxOrder(GameSimulation simulation, LeaderGame.Simulation.Count
     });
 
     Pause($"Order sent to {treasurer.FullName}. It will be processed when the month advances.");
+}
+
+static void QueueAppointmentOrder(GameSimulation simulation, Country country)
+{
+    var candidates = country.AvailableAdvisors.ToList();
+
+    if (candidates.Count == 0)
+    {
+        Pause("There are no available political figures to appoint.");
+        return;
+    }
+
+    Console.Clear();
+    Console.WriteLine("Available political figures");
+    Console.WriteLine("===========================");
+    Console.WriteLine();
+
+    for (var i = 0; i < candidates.Count; i++)
+    {
+        var candidate = candidates[i];
+        Console.WriteLine(
+            $"[{i + 1}] {candidate.FullName,-20} " +
+            $"Competence {candidate.Competence,3}  " +
+            $"Loyalty {candidate.Loyalty,3}  " +
+            $"Ambition {candidate.Ambition,3}");
+    }
+
+    Console.WriteLine();
+    Console.Write("Choose candidate: ");
+
+    if (!int.TryParse(Console.ReadLine(), out var candidateNumber) ||
+        candidateNumber < 1 ||
+        candidateNumber > candidates.Count)
+    {
+        Pause("Invalid candidate.");
+        return;
+    }
+
+    Console.WriteLine();
+    Console.WriteLine("[1] Chancellor");
+    Console.WriteLine("[2] Treasurer");
+    Console.WriteLine("[3] Marshal");
+    Console.Write("Choose office: ");
+
+    if (!int.TryParse(Console.ReadLine(), out var positionNumber) ||
+        positionNumber is < 1 or > 3)
+    {
+        Pause("Invalid office.");
+        return;
+    }
+
+    var position = positionNumber switch
+    {
+        1 => Position.Chancellor,
+        2 => Position.Treasurer,
+        3 => Position.Marshal,
+        _ => throw new InvalidOperationException()
+    };
+
+    var candidate = candidates[candidateNumber - 1];
+
+    simulation.SubmitOrder(new AppointAdvisorOrder
+    {
+        Issuer = simulation.State.Player.CurrentCharacter,
+        Recipient = candidate,
+        IssuedOn = simulation.State.Date,
+        Country = country,
+        Position = position
+    });
+
+    var currentHolder = country.GetAdvisor(position);
+    var replacement = currentHolder is null
+        ? "The office is currently vacant."
+        : $"This will replace {currentHolder.FullName}.";
+
+    Pause(
+        $"Appointment of {candidate.FullName} as {position} queued. " +
+        $"{replacement} It will be processed when the month advances.");
 }
 
 static void PrintReports(GameState state)

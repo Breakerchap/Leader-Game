@@ -46,10 +46,20 @@ public class Country
 
     public required Ruler Ruler { get; set; }
 
+    /// <summary>
+    /// Political figures who currently hold, or are eligible to hold, an advisory office.
+    /// </summary>
     public List<Advisor> Advisors { get; } = [];
+
+    public IEnumerable<Advisor> ActiveAdvisors =>
+        Advisors.Where(advisor => advisor.IsAlive && advisor.Position.HasValue);
+
+    public IEnumerable<Advisor> AvailableAdvisors =>
+        Advisors.Where(advisor => advisor.IsAlive && !advisor.Position.HasValue);
 
     public Advisor? GetAdvisor(Position position)
     {
-        return Advisors.FirstOrDefault(advisor => advisor.Position == position && advisor.IsAlive);
+        return Advisors.FirstOrDefault(
+            advisor => advisor.IsAlive && advisor.Position == position);
     }
 }

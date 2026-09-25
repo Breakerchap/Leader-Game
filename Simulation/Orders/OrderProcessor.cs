@@ -19,6 +19,7 @@ internal static class OrderProcessor
         return order switch
         {
             ChangeTaxOrder taxOrder => ProcessChangeTaxOrder(state, taxOrder),
+            AppointAdvisorOrder appointmentOrder => ProcessAppointAdvisorOrder(state, appointmentOrder),
             _ => RejectUnknownOrder(state, order)
         };
     }
@@ -91,6 +92,57 @@ internal static class OrderProcessor
             $"Competence {treasurer.Competence}, loyalty {treasurer.Loyalty}. " +
             $"Public unrest is now {order.Country.PublicUnrest:F1} and stability " +
             $"{order.Country.Government.Stability:F1}.");
+    }
+
+    private static SimulationReport ProcessAppointAdvisorOrder(
+        GameState state,
+        AppointAdvisorOrder order)
+    {
+        if (order.Recipient is not Advisor candidate ||
+            !candidate.IsAlive ||
+            !order.Country.Advisors.Contains(candidate))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Appointment rejected",
+                "The proposed adviser must be a living political figure in the target country.");
+        }
+
+        if (candidate.Position.HasValue)
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Appointment rejected",
+                $"{candidate.FullName} already holds the office of {candidate.Position.Value}.");
+        }
+
+        var previousHolder = order.Country.GetAdvisor(order.Position);
+
+        if (previousHolder is not null)
+        {
+            previousHolder.Position = null;
+            previousHolder.Loyalty = Math.Clamp(previousHolder.Loyalty - 15, 0, 100);
+        }
+
+        candidate.Position = order.Position;
+        candidate.Loyalty = Math.Clamp(candidate.Loyalty + 5, 0, 100);
+        order.Status = OrderStatus.Completed;
+
+        var replacementText = previousHolder is null
+            ? $"The office was vacant."
+            : $"{previousHolder.FullName} was dismissed and their loyalty fell to " +
+              $"{previousHolder.Loyalty}.";
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Order,
+            $"{candidate.FullName} appointed {order.Position}",
+            $"{candidate.FullName} now serves as {order.Position}. {replacementText} " +
+            $"The new office-holder's loyalty is {candidate.Loyalty}.");
     }
 
     private static SimulationReport RejectUnknownOrder(GameState state, Order order)
