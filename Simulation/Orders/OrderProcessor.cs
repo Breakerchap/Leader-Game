@@ -332,14 +332,15 @@ internal static class OrderProcessor
 
         if (!subject.IsPoliticallyActive ||
             !order.Country.ContainsPoliticalFigure(subject) ||
-            ReferenceEquals(subject, order.Country.Ruler))
+            ReferenceEquals(subject, order.Country.Ruler) ||
+            ReferenceEquals(subject, chancellor))
         {
             order.Status = OrderStatus.Rejected;
             return new SimulationReport(
                 state.Date,
                 ReportCategory.Order,
                 "Investigation rejected",
-                "The subject must be an active political figure other than the ruler.");
+                "The subject must be another active political figure in the country.");
         }
 
         var willingness = PoliticalCalculations.GetOrderWillingness(
