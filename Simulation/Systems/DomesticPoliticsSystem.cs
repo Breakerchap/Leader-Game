@@ -8,6 +8,7 @@ namespace LeaderGame.Simulation.Systems;
 internal static class DomesticPoliticsSystem
 {
     private const int DemandStandingThreshold = 40;
+    private const int BlocStandingThreshold = 35;
     private const int MinimumStructuralStrength = 40;
 
     public static IEnumerable<SimulationReport> ProcessMonth(GameState state)
@@ -16,50 +17,65 @@ internal static class DomesticPoliticsSystem
 
         foreach (var country in state.Countries)
         {
-            var activeDemand = state.PowerBaseDemands.FirstOrDefault(demand =>
-                !demand.IsResolved &&
-                ReferenceEquals(demand.Country, country));
+            var activeDemands = state.PowerBaseDemands
+                .Where(demand =>
+                    !demand.IsResolved &&
+                    ReferenceEquals(demand.Country, country))
+                .ToList();
 
-            if (activeDemand is not null)
-            {
-                ProcessDemand(state, activeDemand, reports);
-                continue;
-            }
+            foreach (var demand in activeDemands)
+                ProcessDemand(state, demand, reports);
 
-            if (state.Date.Month % 3 != 0 || !country.Ruler.IsAlive)
-                continue;
+            if (state.Date.Month % 3 == 0 && country.Ruler.IsAlive)
+                CreateNextDemandIfNeeded(state, country, reports);
 
-            var candidate = Enum.GetValues<PowerBaseType>()
-                .Select(powerBase => new
-                {
-                    PowerBase = powerBase,
-                    Strength = country.GetPowerBaseStrength(powerBase),
-                    Standing = country.Ruler.GetPowerBaseStanding(powerBase)
-                })
-                .Where(entry =>
-                    entry.Strength >= MinimumStructuralStrength &&
-                    entry.Standing < DemandStandingThreshold)
-                .OrderBy(entry => entry.Standing)
-                .ThenByDescending(entry => entry.Strength)
-                .FirstOrDefault();
-
-            if (candidate is null)
-                continue;
-
-            var demand = CreateDemand(state, country, candidate.PowerBase);
-            state.PowerBaseDemands.Add(demand);
-
-            if (ReferenceEquals(country, state.Player.Country))
-            {
-                reports.Add(new SimulationReport(
-                    state.Date,
-                    ReportCategory.Politics,
-                    $"{FormatPowerBase(candidate.PowerBase)} demands action",
-                    DescribeDemand(demand, initial: true)));
-            }
+            UpdatePoliticalBloc(state, country, reports);
         }
 
         return reports;
+    }
+
+    private static void CreateNextDemandIfNeeded(
+        GameState state,
+        Countries.Country country,
+        List<SimulationReport> reports)
+    {
+        var activeDemandBases = state.PowerBaseDemands
+            .Where(demand =>
+                !demand.IsResolved &&
+                ReferenceEquals(demand.Country, country))
+            .Select(demand => demand.PowerBase)
+            .ToHashSet();
+
+        var candidate = Enum.GetValues<PowerBaseType>()
+            .Select(powerBase => new
+            {
+                PowerBase = powerBase,
+                Strength = country.GetPowerBaseStrength(powerBase),
+                Standing = country.Ruler.GetPowerBaseStanding(powerBase)
+            })
+            .Where(entry =>
+                entry.Strength >= MinimumStructuralStrength &&
+                entry.Standing < DemandStandingThreshold &&
+                !activeDemandBases.Contains(entry.PowerBase))
+            .OrderBy(entry => entry.Standing)
+            .ThenByDescending(entry => entry.Strength)
+            .FirstOrDefault();
+
+        if (candidate is null)
+            return;
+
+        var demand = CreateDemand(state, country, candidate.PowerBase);
+        state.PowerBaseDemands.Add(demand);
+
+        if (!ReferenceEquals(country, state.Player.Country))
+            return;
+
+        reports.Add(new SimulationReport(
+            state.Date,
+            ReportCategory.Politics,
+            $"{FormatPowerBase(candidate.PowerBase)} demands action",
+            DescribeDemand(demand, initial: true)));
     }
 
     private static void ProcessDemand(
@@ -103,7 +119,7 @@ internal static class DomesticPoliticsSystem
         demand.Country.PublicUnrest += strength / 40.0 * severity;
         demand.Country.Government.Stability -= strength / 50.0 * severity;
 
-        var rival = FindBestRival(demand.Country, demand.PowerBase);
+        var rival = FindBestRival(state, demand.Country, demand.PowerBase);
         if (rival is not null)
         {
             rival.ChangePowerBaseStanding(
@@ -124,6 +140,221 @@ internal static class DomesticPoliticsSystem
             $"{FormatPowerBase(demand.PowerBase)} pressure escalates",
             $"{DescribeDemand(demand, initial: false)} It has now gone unanswered for " +
             $"{demand.MonthsOpen} months. Political stability is deteriorating.{rivalText}"));
+    }
+
+    private static void UpdatePoliticalBloc(
+        GameState state,
+        Countries.Country country,
+        List<SimulationReport> reports)
+    {
+        var bloc = state.PoliticalBlocs.FirstOrDefault(candidate =>
+            candidate.IsActive &&
+            ReferenceEquals(candidate.Country, country));
+
+        if (bloc is not null &&
+            (!bloc.Leader.IsPoliticallyActive ||
+             ReferenceEquals(bloc.Leader, country.Ruler)))
+        {
+            DissolveBloc(state, bloc, reports, "its leader can no longer organise opposition");
+            bloc = null;
+        }
+
+        var disaffectedBases = GetDisaffectedPowerBases(state, country);
+
+        if (bloc is null)
+        {
+            if (disaffectedBases.Count < 2)
+                return;
+
+            var leader = FindBlocLeader(state, country, disaffectedBases);
+            if (leader is null)
+                return;
+
+            var supportiveBases = disaffectedBases
+                .Where(powerBase =>
+                    leader.GetPowerBaseStanding(powerBase) >=
+                    country.Ruler.GetPowerBaseStanding(powerBase) + 10)
+                .ToList();
+
+            if (supportiveBases.Count < 2)
+                return;
+
+            bloc = new PoliticalBloc
+            {
+                Country = country,
+                Leader = leader
+            };
+
+            bloc.PowerBases.UnionWith(supportiveBases);
+            UpdateBlocMembership(state, bloc);
+            bloc.Cohesion = CalculateBlocCohesion(bloc);
+            state.PoliticalBlocs.Add(bloc);
+
+            if (ReferenceEquals(country, state.Player.Country))
+            {
+                reports.Add(new SimulationReport(
+                    state.Date,
+                    ReportCategory.Politics,
+                    $"Opposition coalesces around {leader.FullName}",
+                    $"{leader.FullName} is now coordinating an organised opposition bloc " +
+                    $"supported by {FormatPowerBaseList(bloc.PowerBases)}. This is not " +
+                    "yet a coup, but coordinated opposition makes the government more vulnerable."));
+            }
+
+            return;
+        }
+
+        bloc.MonthsActive++;
+
+        var qualifyingBases = disaffectedBases
+            .Where(powerBase =>
+                bloc.Leader.GetPowerBaseStanding(powerBase) >=
+                country.Ruler.GetPowerBaseStanding(powerBase) + 5)
+            .ToList();
+
+        if (qualifyingBases.Count < 2)
+        {
+            DissolveBloc(state, bloc, reports, "too few important groups remain committed to it");
+            return;
+        }
+
+        bloc.PowerBases.Clear();
+        bloc.PowerBases.UnionWith(qualifyingBases);
+        UpdateBlocMembership(state, bloc);
+        bloc.Cohesion = CalculateBlocCohesion(bloc);
+    }
+
+    private static List<PowerBaseType> GetDisaffectedPowerBases(
+        GameState state,
+        Countries.Country country)
+    {
+        return Enum.GetValues<PowerBaseType>()
+            .Where(powerBase =>
+                country.GetPowerBaseStrength(powerBase) >= MinimumStructuralStrength &&
+                IsPowerBaseDisaffected(state, country, powerBase))
+            .ToList();
+    }
+
+    private static bool IsPowerBaseDisaffected(
+        GameState state,
+        Countries.Country country,
+        PowerBaseType powerBase)
+    {
+        if (country.Ruler.GetPowerBaseStanding(powerBase) < BlocStandingThreshold)
+            return true;
+
+        return state.PowerBaseDemands.Any(demand =>
+            !demand.IsResolved &&
+            demand.EscalationLevel > 0 &&
+            ReferenceEquals(demand.Country, country) &&
+            demand.PowerBase == powerBase);
+    }
+
+    private static Character? FindBlocLeader(
+        GameState state,
+        Countries.Country country,
+        IReadOnlyCollection<PowerBaseType> disaffectedBases)
+    {
+        var rulerAverage = disaffectedBases.Average(powerBase =>
+            country.Ruler.GetPowerBaseStanding(powerBase));
+
+        return country.PoliticalFigures
+            .Where(character =>
+                character.IsPoliticallyActive &&
+                !ReferenceEquals(character, country.Ruler) &&
+                character.Ambition >= 40)
+            .Select(character => new
+            {
+                Character = character,
+                AverageBacking = disaffectedBases.Average(powerBase =>
+                    character.GetPowerBaseStanding(powerBase)),
+                Willingness = PoliticalCalculations.GetOrderWillingness(
+                    state,
+                    country,
+                    character,
+                    country.Ruler)
+            })
+            .Where(entry =>
+                entry.AverageBacking >= rulerAverage + 10)
+            .OrderByDescending(entry =>
+                entry.AverageBacking * 0.45 +
+                entry.Character.Ambition * 0.20 +
+                entry.Character.Influence * 0.20 +
+                (100 - entry.Willingness) * 0.15)
+            .Select(entry => entry.Character)
+            .FirstOrDefault();
+    }
+
+    private static void UpdateBlocMembership(
+        GameState state,
+        PoliticalBloc bloc)
+    {
+        bloc.MemberIds.Clear();
+
+        foreach (var character in bloc.Country.PoliticalFigures)
+        {
+            if (!character.IsPoliticallyActive ||
+                ReferenceEquals(character, bloc.Country.Ruler) ||
+                ReferenceEquals(character, bloc.Leader))
+            {
+                continue;
+            }
+
+            var towardLeader = state.Relationships.GetOrCreate(
+                character,
+                bloc.Leader);
+            var towardRuler = state.Relationships.GetOrCreate(
+                character,
+                bloc.Country.Ruler);
+
+            var normalisedLeaderOpinion = (towardLeader.Opinion + 100) / 2.0;
+            var backing = bloc.PowerBases.Average(powerBase =>
+                character.GetPowerBaseStanding(powerBase));
+
+            var membershipScore =
+                towardLeader.Trust * 0.25 +
+                normalisedLeaderOpinion * 0.20 +
+                (100 - towardRuler.Trust) * 0.15 +
+                backing * 0.25 +
+                character.Ambition * 0.15;
+
+            if (membershipScore >= 60)
+                bloc.MemberIds.Add(character.Id);
+        }
+    }
+
+    private static double CalculateBlocCohesion(PoliticalBloc bloc)
+    {
+        var ruler = bloc.Country.Ruler;
+
+        var grievance = bloc.PowerBases.Average(powerBase =>
+            100 - ruler.GetPowerBaseStanding(powerBase));
+        var leaderBacking = bloc.PowerBases.Average(powerBase =>
+            bloc.Leader.GetPowerBaseStanding(powerBase));
+
+        return Math.Clamp(
+            grievance * 0.55 +
+            leaderBacking * 0.45,
+            0,
+            100);
+    }
+
+    private static void DissolveBloc(
+        GameState state,
+        PoliticalBloc bloc,
+        List<SimulationReport> reports,
+        string reason)
+    {
+        bloc.IsActive = false;
+
+        if (!ReferenceEquals(bloc.Country, state.Player.Country))
+            return;
+
+        reports.Add(new SimulationReport(
+            state.Date,
+            ReportCategory.Politics,
+            $"{bloc.Leader.FullName}'s opposition bloc fractures",
+            $"The organised opposition around {bloc.Leader.FullName} has broken apart because {reason}."));
     }
 
     private static PowerBaseDemand CreateDemand(
@@ -220,9 +451,23 @@ internal static class DomesticPoliticsSystem
     }
 
     private static Character? FindBestRival(
+        GameState state,
         Countries.Country country,
         PowerBaseType powerBase)
     {
+        var blocLeader = state.PoliticalBlocs
+            .Where(bloc =>
+                bloc.IsActive &&
+                ReferenceEquals(bloc.Country, country) &&
+                bloc.PowerBases.Contains(powerBase) &&
+                bloc.Leader.IsPoliticallyActive)
+            .OrderByDescending(bloc => bloc.Cohesion)
+            .Select(bloc => bloc.Leader)
+            .FirstOrDefault();
+
+        if (blocLeader is not null)
+            return blocLeader;
+
         return country.PoliticalFigures
             .Where(character =>
                 character.IsPoliticallyActive &&
@@ -272,5 +517,22 @@ internal static class DomesticPoliticsSystem
             PowerBaseType.RoyalFamily => "Royal family",
             _ => powerBase.ToString()
         };
+    }
+
+    private static string FormatPowerBaseList(IEnumerable<PowerBaseType> powerBases)
+    {
+        var names = powerBases
+            .Select(FormatPowerBase)
+            .OrderBy(name => name)
+            .ToList();
+
+        if (names.Count == 0)
+            return "no major groups";
+
+        if (names.Count == 1)
+            return names[0];
+
+        return string.Join(", ", names.Take(names.Count - 1)) +
+               " and " + names[^1];
     }
 }
