@@ -291,6 +291,8 @@ public sealed class PowerBaseDemandSnapshot
 
     public PowerBaseDemandType Type { get; init; }
 
+    public int? SpokespersonId { get; init; }
+
     public decimal TargetValue { get; init; }
 
     public int MonthsOpen { get; init; }
