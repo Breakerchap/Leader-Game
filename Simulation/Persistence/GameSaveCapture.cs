@@ -139,6 +139,7 @@ public static partial class GameSaveService
                     TargetCountryId = proposal.TargetCountry?.Id,
                     WarId = proposal.War?.Id,
                     TargetValue = proposal.TargetValue,
+                    Rationale = proposal.Rationale,
                     CreatedOn = Date(proposal.CreatedOn),
                     MonthsOpen = proposal.MonthsOpen,
                     Status = proposal.Status
