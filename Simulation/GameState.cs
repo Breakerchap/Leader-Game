@@ -31,6 +31,8 @@ public class GameState
 
     public List<InformationRequest> InformationRequests { get; } = [];
 
+    public List<InformationTruthSnapshot> InformationHistory { get; } = [];
+
     public List<DiplomaticProposal> DiplomaticProposals { get; } = [];
 
     public List<War> Wars { get; } = [];
