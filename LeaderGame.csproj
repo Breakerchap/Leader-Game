@@ -8,7 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Simulation/**/*.cs" />
+    <Compile Remove="LeaderGame.Core/**/*.cs" />
+    <Compile Remove="LeaderGame.Desktop/**/*.cs" />
     <Compile Remove="LeaderGame.Tests/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="LeaderGame.Core/LeaderGame.Core.csproj" />
   </ItemGroup>
 
 </Project>
