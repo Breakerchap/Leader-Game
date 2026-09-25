@@ -129,17 +129,25 @@ The Court surface includes:
 - Chancellor, Treasurer and Marshal office cards;
 - qualitative ability, trust, obedience and political risk;
 - known organised opposition;
-- known political demands;
+- active political-demand cards with named spokespeople, age and escalation;
+- **Concede** and **Reject** responses to political demands;
 - the wider set of political figures;
 - qualitative ambition, influence, trust and constituencies;
+- known conspiracy evidence only where investigations have actually uncovered it;
 - appointment candidate selection;
 - office selection;
-- appointment orders;
-- dismissal orders.
+- appointment and dismissal orders;
+- investigation orders through the Chancellor;
+- arrest orders through the Marshal;
+- direct prisoner-release orders by the ruler.
 
 The desktop filters appointment candidates according to the simulation's actual eligibility rules.
 
 Appointments and dismissals still enter the real order system and retain their political consequences.
+
+Conceding a political demand does not directly edit policy. It queues the appropriate tax, budget or peace order and the demand remains active until the government actually delivers. Rejecting a demand is a direct political act and creates immediate backlash.
+
+Arrests deliberately remain risky. Court cards expose discovered evidence, not the hidden existence or strength of undiscovered plots. Failed arrests and investigation outcomes are reported qualitatively rather than revealing internal simulation scores.
 
 ### Foreign Affairs
 
