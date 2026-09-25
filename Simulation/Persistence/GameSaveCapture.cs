@@ -1,7 +1,10 @@
 using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Diplomacy;
 using LeaderGame.Simulation.Information;
+using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
+using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Randomness;
 
 namespace LeaderGame.Simulation.Persistence;
@@ -163,7 +166,7 @@ public static partial class GameSaveService
         };
     }
 
-    private static CountrySnapshot CaptureCountry(Countries.Country country)
+    private static CountrySnapshot CaptureCountry(Country country)
     {
         return new CountrySnapshot
         {
@@ -222,7 +225,7 @@ public static partial class GameSaveService
         };
     }
 
-    private static WarSnapshot CaptureWar(Military.War war)
+    private static WarSnapshot CaptureWar(War war)
     {
         return new WarSnapshot
         {
@@ -239,7 +242,7 @@ public static partial class GameSaveService
     }
 
     private static PoliticalPlotSnapshot CapturePlot(
-        Politics.PoliticalPlot plot)
+        PoliticalPlot plot)
     {
         return new PoliticalPlotSnapshot
         {
