@@ -212,6 +212,8 @@ public sealed record CourtFigureView(
     string Obedience,
     string Risk,
     string Constituencies,
+    string KnownEvidence,
+    bool HasKnownEvidence,
     bool IsAvailableForOffice,
     bool CanInvestigate,
     bool CanArrest,
