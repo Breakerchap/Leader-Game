@@ -185,4 +185,107 @@ public class PoliticalBlocTests
         Assert.Contains(active, demand => demand.PowerBase == PowerBaseType.Military);
         Assert.Contains(active, demand => demand.PowerBase == PowerBaseType.Bureaucracy);
     }
+
+    [Fact]
+    public void CohesiveOpposition_TakesPeriodicPublicAction()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var ruler = country.Ruler;
+        var lukas = country.PoliticalFigures.Single(character =>
+            character.FullName == "Lukas Hartmann");
+
+        foreach (var powerBase in Enum.GetValues<PowerBaseType>())
+            country.SetPowerBaseStrength(powerBase, 0);
+
+        country.SetPowerBaseStrength(PowerBaseType.Military, 100);
+        country.SetPowerBaseStrength(PowerBaseType.Aristocracy, 100);
+
+        ruler.SetPowerBaseStanding(PowerBaseType.Military, 10);
+        ruler.SetPowerBaseStanding(PowerBaseType.Aristocracy, 10);
+        lukas.SetPowerBaseStanding(PowerBaseType.Military, 95);
+        lukas.SetPowerBaseStanding(PowerBaseType.Aristocracy, 95);
+
+        foreach (var character in country.PoliticalFigures.Where(character =>
+                     !ReferenceEquals(character, ruler) &&
+                     !ReferenceEquals(character, lukas)))
+        {
+            character.SetPowerBaseStanding(PowerBaseType.Military, 10);
+            character.SetPowerBaseStanding(PowerBaseType.Aristocracy, 10);
+            state.Relationships.Set(
+                character,
+                lukas,
+                opinion: -40,
+                trust: 15,
+                fear: 0);
+        }
+
+        var bloc = new PoliticalBloc
+        {
+            Country = country,
+            Leader = lukas,
+            Cohesion = 80,
+            MonthsActive = 2
+        };
+        bloc.PowerBases.UnionWith(
+            [PowerBaseType.Military, PowerBaseType.Aristocracy]);
+        state.PoliticalBlocs.Add(bloc);
+
+        var oldInfluence = lukas.Influence;
+        var oldUnrest = country.PublicUnrest;
+
+        new GameSimulation(state).AdvanceMonth();
+
+        Assert.Contains(
+            state.Reports,
+            report => report.Title.Contains(
+                "coordinates opposition pressure",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.True(lukas.Influence > oldInfluence);
+        Assert.True(country.PublicUnrest > oldUnrest);
+    }
+
+    [Fact]
+    public void OppositionWithCabinetInsider_ObstructsStateCapacity()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var ruler = country.Ruler;
+        var chancellor = country.GetOfficeHolder(
+            Characters.Position.Chancellor)!;
+
+        foreach (var powerBase in Enum.GetValues<PowerBaseType>())
+            country.SetPowerBaseStrength(powerBase, 0);
+
+        country.SetPowerBaseStrength(PowerBaseType.Bureaucracy, 100);
+        country.SetPowerBaseStrength(PowerBaseType.Aristocracy, 100);
+
+        ruler.SetPowerBaseStanding(PowerBaseType.Bureaucracy, 10);
+        ruler.SetPowerBaseStanding(PowerBaseType.Aristocracy, 10);
+        chancellor.SetPowerBaseStanding(PowerBaseType.Bureaucracy, 95);
+        chancellor.SetPowerBaseStanding(PowerBaseType.Aristocracy, 95);
+
+        var bloc = new PoliticalBloc
+        {
+            Country = country,
+            Leader = chancellor,
+            Cohesion = 80,
+            MonthsActive = 2
+        };
+        bloc.PowerBases.UnionWith(
+            [PowerBaseType.Bureaucracy, PowerBaseType.Aristocracy]);
+        state.PoliticalBlocs.Add(bloc);
+
+        var oldEfficiency = country.AdministrativeEfficiency;
+
+        new GameSimulation(state).AdvanceMonth();
+
+        Assert.True(country.AdministrativeEfficiency < oldEfficiency);
+        Assert.Contains(
+            state.Reports,
+            report => report.Title.Contains(
+                "obstructs",
+                StringComparison.OrdinalIgnoreCase));
+    }
+
 }
