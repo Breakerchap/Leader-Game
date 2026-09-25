@@ -725,21 +725,21 @@
 
             <Border Classes="card" Padding="0">
               <Grid RowDefinitions="Auto,*">
-                <Grid
-                    Background="#0D141C"
-                    ColumnDefinitions="100,105,150,95,110,110,110,110,*"
-                    ColumnSpacing="8"
-                    Padding="12,9">
-                  <TextBlock Text="Delivered" Classes="eyebrow" />
-                  <TextBlock Grid.Column="1" Text="Data age" Classes="eyebrow" />
-                  <TextBlock Grid.Column="2" Text="Source" Classes="eyebrow" />
-                  <TextBlock Grid.Column="3" Text="Treasury" Classes="eyebrow" />
-                  <TextBlock Grid.Column="4" Text="Debt" Classes="eyebrow" />
-                  <TextBlock Grid.Column="5" Text="Revenue" Classes="eyebrow" />
-                  <TextBlock Grid.Column="6" Text="Expenses" Classes="eyebrow" />
-                  <TextBlock Grid.Column="7" Text="Balance" Classes="eyebrow" />
-                  <TextBlock Grid.Column="8" Text="Origin" Classes="eyebrow" />
-                </Grid>
+                <Border Background="#0D141C" Padding="12,9">
+                  <Grid
+                      ColumnDefinitions="100,105,150,95,110,110,110,110,*"
+                      ColumnSpacing="8">
+                    <TextBlock Text="Delivered" Classes="eyebrow" />
+                    <TextBlock Grid.Column="1" Text="Data age" Classes="eyebrow" />
+                    <TextBlock Grid.Column="2" Text="Source" Classes="eyebrow" />
+                    <TextBlock Grid.Column="3" Text="Treasury" Classes="eyebrow" />
+                    <TextBlock Grid.Column="4" Text="Debt" Classes="eyebrow" />
+                    <TextBlock Grid.Column="5" Text="Revenue" Classes="eyebrow" />
+                    <TextBlock Grid.Column="6" Text="Expenses" Classes="eyebrow" />
+                    <TextBlock Grid.Column="7" Text="Balance" Classes="eyebrow" />
+                    <TextBlock Grid.Column="8" Text="Origin" Classes="eyebrow" />
+                  </Grid>
+                </Border>
 
                 <ItemsControl Grid.Row="1" ItemsSource="{Binding View.Economy.History}">
                   <ItemsControl.ItemTemplate>
