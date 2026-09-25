@@ -36,7 +36,7 @@ A save currently stores:
 - diplomatic relations and trade agreements;
 - wars, IDs, status, stances and war score;
 - political plots and discovery state;
-- power-base demands and their current named spokespeople;
+- power-base demands, stable IDs, named spokespeople, ruler acknowledgement/rejection state and resolution dates;
 - organised opposition blocs;
 - diplomatic proposals;
 - pending player orders;
