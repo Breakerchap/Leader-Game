@@ -13,7 +13,7 @@ public enum OrderStatus
 
 public abstract class Order
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public required Character Issuer { get; init; }
 
