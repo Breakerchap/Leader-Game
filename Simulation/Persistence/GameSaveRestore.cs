@@ -189,6 +189,9 @@ public static partial class GameSaveService
                 Country = RequireCountry(countries, saved.CountryId),
                 PowerBase = saved.PowerBase,
                 Type = saved.Type,
+                Spokesperson = saved.SpokespersonId is { } spokespersonId
+                    ? RequireCharacter(characters, spokespersonId)
+                    : null,
                 TargetValue = saved.TargetValue,
                 MonthsOpen = saved.MonthsOpen,
                 EscalationLevel = saved.EscalationLevel,
