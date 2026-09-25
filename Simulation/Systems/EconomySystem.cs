@@ -11,15 +11,18 @@ internal static class EconomySystem
     {
         foreach (var country in state.Countries)
         {
-            var revenue = CalculateMonthlyTaxRevenue(country);
+            var taxRevenue = CalculateMonthlyTaxRevenue(country);
+            var tradeIncome = CalculateMonthlyTradeIncome(state, country);
             var administrationCost = CalculateAdministrationCost(country);
             var armyCost = CalculateArmyCost(country);
             var courtCost = CalculateCourtCost(country);
             var interest = country.Debt * MonthlyDebtInterestRate;
             var expenses = administrationCost + armyCost + courtCost + interest;
-            var balance = revenue - expenses;
+            var totalIncome = taxRevenue + tradeIncome;
+            var balance = totalIncome - expenses;
 
-            country.LastMonthlyTaxRevenue = revenue;
+            country.LastMonthlyTaxRevenue = taxRevenue;
+            country.LastMonthlyTradeIncome = tradeIncome;
             country.LastMonthlyExpenses = expenses;
             country.LastMonthlyDebtInterest = interest;
             country.LastMonthlyBalance = balance;
@@ -34,14 +37,18 @@ internal static class EconomySystem
                     ? $" Debt now stands at {country.Debt:N0}."
                     : string.Empty;
 
+                var tradeText = tradeIncome > 0
+                    ? $" Trade agreements contributed {tradeIncome:N0}."
+                    : string.Empty;
+
                 yield return new SimulationReport(
                     state.Date,
                     ReportCategory.Economy,
                     balance >= 0 ? "Monthly budget surplus" : "Monthly budget deficit",
-                    $"{country.Name} collected {revenue:N0} in tax revenue and spent " +
+                    $"{country.Name} collected {taxRevenue:N0} in tax revenue and spent " +
                     $"{expenses:N0}: administration {administrationCost:N0}, army " +
                     $"{armyCost:N0}, court and patronage {courtCost:N0}, debt interest " +
-                    $"{interest:N0}. Monthly balance: {balance:N0}.{debtText}");
+                    $"{interest:N0}. Monthly balance: {balance:N0}.{tradeText}{debtText}");
             }
         }
     }
@@ -52,6 +59,34 @@ internal static class EconomySystem
                country.TaxRate *
                country.AdministrativeEfficiency /
                12m;
+    }
+
+    public static decimal CalculateMonthlyTradeIncome(
+        GameState state,
+        Country country)
+    {
+        decimal income = 0m;
+
+        foreach (var relation in state.Diplomacy.ForCountry(country)
+                     .Where(relation => relation.HasTradeAgreement))
+        {
+            var partner = state.FindCountry(relation.OtherCountryId(country));
+
+            if (partner is null)
+                continue;
+
+            var tradeBase =
+                Math.Min(country.Gdp, partner.Gdp) *
+                0.004m /
+                12m;
+
+            var trustMultiplier =
+                0.60m + relation.Trust / 250m;
+
+            income += tradeBase * trustMultiplier;
+        }
+
+        return income;
     }
 
     private static decimal CalculateAdministrationCost(Country country)

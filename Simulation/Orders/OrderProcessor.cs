@@ -21,6 +21,9 @@ internal static class OrderProcessor
         {
             ChangeTaxOrder taxOrder => ProcessChangeTaxOrder(state, taxOrder),
             SetBudgetOrder budgetOrder => ProcessSetBudgetOrder(state, budgetOrder),
+            ImproveRelationsOrder diplomacyOrder => ProcessImproveRelationsOrder(state, diplomacyOrder),
+            NegotiateTradeAgreementOrder tradeOrder => ProcessTradeAgreementOrder(state, tradeOrder),
+            EndTradeAgreementOrder endTradeOrder => ProcessEndTradeAgreementOrder(state, endTradeOrder),
             AppointAdvisorOrder appointmentOrder => ProcessAppointAdvisorOrder(state, appointmentOrder),
             DismissAdvisorOrder dismissalOrder => ProcessDismissAdvisorOrder(state, dismissalOrder),
             InvestigateCharacterOrder investigationOrder => ProcessInvestigationOrder(state, investigationOrder),
@@ -602,6 +605,223 @@ internal static class OrderProcessor
             $"{prisoner.FullName} is released from imprisonment and may again participate " +
             "in political life. The gesture improves the relationship somewhat, but does " +
             "not erase the original grievance.");
+    }
+
+    private static SimulationReport ProcessImproveRelationsOrder(
+        GameState state,
+        ImproveRelationsOrder order)
+    {
+        var chancellor = order.Recipient;
+
+        if (!IsServingChancellor(order.SourceCountry, chancellor) ||
+            ReferenceEquals(order.SourceCountry, order.TargetCountry) ||
+            !state.Countries.Contains(order.TargetCountry))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Diplomatic mission rejected",
+                "An active Chancellor must conduct diplomacy with another simulated country.");
+        }
+
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.SourceCountry,
+            chancellor,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"{chancellor.FullName} refuses the diplomatic mission",
+                $"{chancellor.FullName} refuses to lead outreach to {order.TargetCountry.Name}. " +
+                $"Their willingness to obey is only {willingness:F0}/100.");
+        }
+
+        var relation = state.Diplomacy.GetOrCreate(
+            order.SourceCountry,
+            order.TargetCountry);
+
+        var effectiveness = Diplomacy.DiplomaticCalculations.GetMissionEffectiveness(
+            state,
+            order.SourceCountry,
+            chancellor);
+
+        var improvement = Math.Clamp(
+            (int)Math.Round(2 + effectiveness / 18.0 - relation.Tension / 45.0),
+            1,
+            8);
+
+        relation.ChangeRelations(improvement);
+        relation.ChangeTrust(Math.Max(1, improvement / 3));
+        relation.ChangeTension(-Math.Max(1, improvement / 2));
+
+        order.Status = OrderStatus.Completed;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Diplomacy,
+            $"Relations improve with {order.TargetCountry.Name}",
+            $"{chancellor.FullName}'s mission improves relations by {improvement} points. " +
+            $"Relations are now {relation.Relations}, trust {relation.Trust}, " +
+            $"tension {relation.Tension}.");
+    }
+
+    private static SimulationReport ProcessTradeAgreementOrder(
+        GameState state,
+        NegotiateTradeAgreementOrder order)
+    {
+        var chancellor = order.Recipient;
+
+        if (!IsServingChancellor(order.SourceCountry, chancellor) ||
+            ReferenceEquals(order.SourceCountry, order.TargetCountry) ||
+            !state.Countries.Contains(order.TargetCountry))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Trade negotiation rejected",
+                "An active Chancellor must negotiate with another simulated country.");
+        }
+
+        if (!order.SourceCountry.IsNeighbor(order.TargetCountry))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                "Trade negotiation rejected",
+                $"{order.TargetCountry.Name} is not an immediate neighbour. Long-distance " +
+                "trade infrastructure is not modelled yet.");
+        }
+
+        var relation = state.Diplomacy.GetOrCreate(
+            order.SourceCountry,
+            order.TargetCountry);
+
+        if (relation.HasTradeAgreement)
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                "Trade negotiation rejected",
+                $"{order.SourceCountry.Name} and {order.TargetCountry.Name} already have a trade agreement.");
+        }
+
+        var willingness = PoliticalCalculations.GetOrderWillingness(
+            state,
+            order.SourceCountry,
+            chancellor,
+            order.Issuer);
+
+        if (willingness < 20)
+        {
+            order.Status = OrderStatus.Refused;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"{chancellor.FullName} refuses trade negotiations",
+                $"{chancellor.FullName} refuses to negotiate with {order.TargetCountry.Name}. " +
+                $"Their willingness to obey is only {willingness:F0}/100.");
+        }
+
+        var acceptance = Diplomacy.DiplomaticCalculations.GetTradeAcceptanceScore(
+            state,
+            order.SourceCountry,
+            order.TargetCountry,
+            chancellor);
+
+        if (acceptance < 55)
+        {
+            order.Status = OrderStatus.Failed;
+            relation.ChangeRelations(-1);
+            relation.ChangeTension(2);
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                $"{order.TargetCountry.Name} rejects the trade agreement",
+                $"{chancellor.FullName} completes the negotiation, but the foreign government " +
+                "declines the proposal. Relations cool slightly and tension increases.");
+        }
+
+        relation.HasTradeAgreement = true;
+        relation.TradeAgreementStartedOn = state.Date;
+        relation.ChangeRelations(3);
+        relation.ChangeTrust(5);
+        relation.ChangeTension(-3);
+
+        order.Status = OrderStatus.Completed;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Diplomacy,
+            $"Trade agreement with {order.TargetCountry.Name}",
+            $"{order.SourceCountry.Name} and {order.TargetCountry.Name} conclude a trade agreement. " +
+            "Both economies will begin receiving trade income this month.");
+    }
+
+    private static SimulationReport ProcessEndTradeAgreementOrder(
+        GameState state,
+        EndTradeAgreementOrder order)
+    {
+        var chancellor = order.Recipient;
+
+        if (!IsServingChancellor(order.SourceCountry, chancellor) ||
+            ReferenceEquals(order.SourceCountry, order.TargetCountry))
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Trade termination rejected",
+                "An active Chancellor must formally end a trade agreement.");
+        }
+
+        var relation = state.Diplomacy.GetOrCreate(
+            order.SourceCountry,
+            order.TargetCountry);
+
+        if (!relation.HasTradeAgreement)
+        {
+            order.Status = OrderStatus.Rejected;
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Diplomacy,
+                "No trade agreement to end",
+                $"{order.SourceCountry.Name} has no trade agreement with {order.TargetCountry.Name}.");
+        }
+
+        relation.HasTradeAgreement = false;
+        relation.TradeAgreementStartedOn = null;
+        relation.ChangeRelations(-3);
+        relation.ChangeTrust(-5);
+        relation.ChangeTension(4);
+
+        order.Status = OrderStatus.Completed;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Diplomacy,
+            $"Trade agreement with {order.TargetCountry.Name} ended",
+            $"{order.SourceCountry.Name} terminates its trade agreement with " +
+            $"{order.TargetCountry.Name}. The decision damages trust and raises tension.");
+    }
+
+    private static bool IsServingChancellor(
+        Countries.Country country,
+        Character character)
+    {
+        return character.Position == Position.Chancellor &&
+               character.IsPoliticallyActive &&
+               country.ContainsPoliticalFigure(character) &&
+               !ReferenceEquals(character, country.Ruler);
     }
 
     private static bool IsServingTreasurer(
