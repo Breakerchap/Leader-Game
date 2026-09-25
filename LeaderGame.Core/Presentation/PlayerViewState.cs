@@ -101,6 +101,17 @@ public sealed record ForeignAffairsView(
     IReadOnlyList<ForeignStateView> Countries,
     IReadOnlyList<DiplomaticProposalView> IncomingProposals);
 
+public sealed record ArchiveEntryView(
+    string Date,
+    string Category,
+    string Title,
+    string Details,
+    string Source,
+    bool NeedsAttention);
+
+public sealed record ArchiveView(
+    IReadOnlyList<ArchiveEntryView> Entries);
+
 public sealed record EconomyReportSnapshotView(
     string Delivered,
     string DataAge,
@@ -176,4 +187,5 @@ public sealed record PlayerViewState(
     ForeignAffairsView ForeignAffairs,
     MilitaryView Military,
     EconomyView Economy,
+    ArchiveView Archive,
     string StatusMessage);
