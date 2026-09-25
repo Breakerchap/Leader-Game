@@ -112,6 +112,8 @@ internal static class OrderProcessor
             order.Country.Government.Stability += socialPressure * 0.3;
         }
 
+        ApplyTaxPowerBaseReaction(order.Country, enactedChange);
+
         order.Status = OrderStatus.Completed;
 
         var implementationDescription = willingness < 45
@@ -179,6 +181,10 @@ internal static class OrderProcessor
         var implementationFactor =
             PoliticalCalculations.GetImplementationFactor(treasurer, willingness);
 
+        var oldArmyFunding = order.Country.ArmyFunding;
+        var oldAdministrationFunding = order.Country.AdministrationFunding;
+        var oldCourtFunding = order.Country.CourtFunding;
+
         order.Country.ArmyFunding = MoveTowardsTarget(
             order.Country.ArmyFunding,
             order.TargetArmyFunding,
@@ -191,6 +197,12 @@ internal static class OrderProcessor
             order.Country.CourtFunding,
             order.TargetCourtFunding,
             implementationFactor);
+
+        ApplyBudgetPowerBaseReaction(
+            order.Country,
+            oldArmyFunding,
+            oldAdministrationFunding,
+            oldCourtFunding);
 
         order.Status = OrderStatus.Completed;
 
@@ -1291,6 +1303,53 @@ internal static class OrderProcessor
 
     private static bool IsFundingTargetValid(decimal target) =>
         target is >= 0.5m and <= 1.5m;
+
+    private static void ApplyTaxPowerBaseReaction(
+        Countries.Country country,
+        decimal enactedChange)
+    {
+        if (enactedChange == 0)
+            return;
+
+        var percentagePoints = (double)(enactedChange * 100m);
+        var ruler = country.Ruler;
+
+        ruler.ChangePowerBaseStanding(
+            PowerBaseType.Merchants,
+            (int)Math.Round(-percentagePoints * 1.2, MidpointRounding.AwayFromZero));
+        ruler.ChangePowerBaseStanding(
+            PowerBaseType.Workers,
+            (int)Math.Round(-percentagePoints * 0.9, MidpointRounding.AwayFromZero));
+        ruler.ChangePowerBaseStanding(
+            PowerBaseType.Peasantry,
+            (int)Math.Round(-percentagePoints, MidpointRounding.AwayFromZero));
+    }
+
+    private static void ApplyBudgetPowerBaseReaction(
+        Countries.Country country,
+        decimal oldArmyFunding,
+        decimal oldAdministrationFunding,
+        decimal oldCourtFunding)
+    {
+        var ruler = country.Ruler;
+
+        var militaryDelta = (int)Math.Round(
+            (double)(country.ArmyFunding - oldArmyFunding) * 20,
+            MidpointRounding.AwayFromZero);
+        var bureaucracyDelta = (int)Math.Round(
+            (double)(country.AdministrationFunding - oldAdministrationFunding) * 20,
+            MidpointRounding.AwayFromZero);
+        var courtDelta = (int)Math.Round(
+            (double)(country.CourtFunding - oldCourtFunding) * 20,
+            MidpointRounding.AwayFromZero);
+
+        ruler.ChangePowerBaseStanding(PowerBaseType.Military, militaryDelta);
+        ruler.ChangePowerBaseStanding(PowerBaseType.Bureaucracy, bureaucracyDelta);
+        ruler.ChangePowerBaseStanding(PowerBaseType.Aristocracy, courtDelta);
+        ruler.ChangePowerBaseStanding(
+            PowerBaseType.RoyalFamily,
+            (int)Math.Round(courtDelta * 0.5, MidpointRounding.AwayFromZero));
+    }
 
     private static decimal MoveTowardsTarget(
         decimal current,
