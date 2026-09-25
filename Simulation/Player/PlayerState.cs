@@ -14,4 +14,8 @@ public class PlayerState
     public bool HasLost { get; set; }
 
     public string? LossReason { get; set; }
+
+    public bool HasWon { get; set; }
+
+    public string? WinReason { get; set; }
 }
