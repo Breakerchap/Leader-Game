@@ -14,6 +14,8 @@ public enum PowerBaseDemandType
 
 public sealed class PowerBaseDemand
 {
+    public Guid Id { get; init; } = Guid.NewGuid();
+
     public required Country Country { get; init; }
 
     public required PowerBaseType PowerBase { get; init; }
@@ -34,6 +36,19 @@ public sealed class PowerBaseDemand
     public int MonthsOpen { get; set; }
 
     public int EscalationLevel { get; set; }
+
+    /// <summary>
+    /// True once the ruler has publicly agreed to pursue the requested policy.
+    /// The demand remains active until the underlying condition is actually met.
+    /// </summary>
+    public bool AcknowledgedByRuler { get; set; }
+
+    /// <summary>
+    /// True when the ruler has explicitly refused the demand rather than satisfying it.
+    /// </summary>
+    public bool IsRejected { get; set; }
+
+    public GameDate? ResolvedOn { get; set; }
 
     public bool IsResolved { get; set; }
 }
