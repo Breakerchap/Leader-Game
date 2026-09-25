@@ -131,11 +131,16 @@ internal static class PlotSystem
         var coalitionMultiplier =
             1 + Math.Min(0.60, supporterInfluence / 200.0);
 
+        var powerBaseInfluence =
+            PoliticalCalculations.GetPowerBaseInfluence(country, instigator);
+        var powerBaseMultiplier = 0.75 + powerBaseInfluence / 200.0;
+
         var progress =
             ((threat - PlotGrowthThreat) / 5.0) *
             (0.80 + instability) *
             accessMultiplier *
-            coalitionMultiplier;
+            coalitionMultiplier *
+            powerBaseMultiplier;
 
         plot.Progress += Math.Clamp(progress, 0.25, 12);
     }
