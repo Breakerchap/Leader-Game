@@ -192,6 +192,15 @@ public sealed record OfficeView(
     string Obedience,
     string Risk);
 
+public sealed record PoliticalDemandView(
+    Guid Id,
+    string Group,
+    string Request,
+    string Spokesperson,
+    string Age,
+    string Escalation,
+    string ResponseStatus);
+
 public sealed record CourtFigureView(
     int Id,
     string Name,
@@ -203,11 +212,15 @@ public sealed record CourtFigureView(
     string Obedience,
     string Risk,
     string Constituencies,
-    bool IsAvailableForOffice);
+    bool IsAvailableForOffice,
+    bool CanInvestigate,
+    bool CanArrest,
+    bool CanRelease);
 
 public sealed record CourtPoliticsView(
     IReadOnlyList<OfficeView> Offices,
     IReadOnlyList<CourtFigureView> Figures,
+    IReadOnlyList<PoliticalDemandView> Demands,
     string KnownOpposition,
     string KnownPressure);
 
