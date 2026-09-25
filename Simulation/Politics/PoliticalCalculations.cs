@@ -47,6 +47,30 @@ public static class PoliticalCalculations
             1m);
     }
 
+    public static double GetPowerBaseInfluence(
+        Country country,
+        Character character)
+    {
+        double weightedStanding = 0;
+        double totalStrength = 0;
+
+        foreach (var powerBase in Enum.GetValues<PowerBaseType>())
+        {
+            var strength = country.GetPowerBaseStrength(powerBase);
+
+            if (strength <= 0)
+                continue;
+
+            weightedStanding +=
+                strength * character.GetPowerBaseStanding(powerBase);
+            totalStrength += strength;
+        }
+
+        return totalStrength <= 0
+            ? 50
+            : Math.Clamp(weightedStanding / totalStrength, 0, 100);
+    }
+
     public static double GetThreatScore(
         GameState state,
         Country country,
@@ -67,11 +91,14 @@ public static class PoliticalCalculations
         var countryAllegiance =
             character.GetAllegiance(PoliticalKeys.Country(country.Id));
 
+        var powerBaseInfluence = GetPowerBaseInfluence(country, character);
+
         var threat =
             character.Influence * 0.45 +
             character.Ambition * 0.35 +
             (100 - willingness) * 0.35 -
-            countryAllegiance * 0.15;
+            countryAllegiance * 0.15 +
+            (powerBaseInfluence - 50) * 0.20;
 
         return Math.Clamp(threat, 0, 100);
     }
@@ -120,12 +147,18 @@ public static class PoliticalCalculations
         if (ReferenceEquals(character, country.Ruler))
             return 100;
 
-        return character.Position switch
+        var officeTarget = character.Position switch
         {
             Position.Marshal => 80,
             Position.Chancellor => 75,
             Position.Treasurer => 65,
             _ => 20 + character.Ambition / 5
         };
+
+        var powerBaseInfluence = GetPowerBaseInfluence(country, character);
+        var powerBaseModifier =
+            (int)Math.Round((powerBaseInfluence - 50) * 0.40);
+
+        return Math.Clamp(officeTarget + powerBaseModifier, 5, 95);
     }
 }
