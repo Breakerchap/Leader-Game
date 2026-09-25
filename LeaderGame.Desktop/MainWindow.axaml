@@ -59,6 +59,11 @@
               Command="{Binding LoadCommand}"
               Content="↺  Load"
               ToolTip.Tip="{Binding SaveLocation}" />
+          <Button
+              Classes="action"
+              Command="{Binding RecoverAutosaveCommand}"
+              Content="⟲  Auto"
+              ToolTip.Tip="{Binding AutosaveLocation}" />
 
           <Border
               Width="1"
