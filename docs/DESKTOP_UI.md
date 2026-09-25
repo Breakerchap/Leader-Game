@@ -68,8 +68,10 @@ The home screen includes:
 - semantic category colours;
 - recent adviser reports and simulation events;
 - queued-order and pending-inquiry counts;
+- a dedicated orders desk showing queued instructions and recent resolutions;
+- cabinet recommendations that can be accepted or rejected;
 - live adviser cards showing qualitative ability, trust, obedience and political risk;
-- advancing the simulation by one month.
+- advancing the simulation by one month and returning directly to the new briefing.
 
 The intention is that advancing time normally returns the player to a government briefing rather than to a map.
 
@@ -230,9 +232,9 @@ The interface should remain readable and game-like rather than becoming a litera
 
 With the primary screens now covered, the next priorities are:
 
-1. **Save/load and campaign persistence** so the desktop can support real multi-session play.
-2. **Richer order workflows** with confirmation, context, likely political consequences and clearer pending-order inspection.
-3. **Deeper court interaction** such as investigations, arrests, prisoners and direct political responses.
+1. **Multiple named save slots** and campaign selection; manual save/load and turn autosave already work.
+2. **Deeper court interaction** such as investigations, arrests, prisoners and direct political responses.
+3. **Richer autonomous agendas** so advisers, factions and foreign governments create more decision pressure.
 4. **Economy visualisation** using reported historical series rather than hidden data.
 5. **Military depth** around commanders, fronts, logistics and uncertain territorial control.
 6. **Keyboard/accessibility polish**, tooltips, empty states and better narrow-window behaviour.
