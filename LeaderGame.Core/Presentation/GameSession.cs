@@ -643,6 +643,28 @@ public sealed class GameSession
                 request.RequestedOn.ToString()))
             .ToList();
 
+        var pendingOrderDetails = state.PendingOrders
+            .OrderBy(order => order.IssuedOn.Year)
+            .ThenBy(order => order.IssuedOn.Month)
+            .Select(order => new PendingOrderView(
+                order.Id,
+                DescribeOrderType(order),
+                DescribePendingOrder(order),
+                order.Recipient.FullName,
+                order.IssuedOn.ToString()))
+            .ToList();
+
+        var recentOrderOutcomes = state.Reports
+            .Where(report => report.Category == ReportCategory.Order)
+            .TakeLast(8)
+            .Reverse()
+            .Select(report => new OrderOutcomeView(
+                report.Date.ToString(),
+                report.Title,
+                report.Details,
+                IsAttentionOrderOutcome(report)))
+            .ToList();
+
         var intelligenceReports = state.AdvisorReports
             .TakeLast(30)
             .Reverse()
@@ -1159,6 +1181,8 @@ public sealed class GameSession
             state.Player.LossReason,
             state.PendingOrders.Count,
             pending.Count,
+            pendingOrderDetails,
+            recentOrderOutcomes,
             metrics,
             advisors,
             briefings,
@@ -1172,6 +1196,110 @@ public sealed class GameSession
             economy,
             archive,
             _statusMessage);
+    }
+
+    private static string DescribeOrderType(Order order)
+    {
+        return order switch
+        {
+            ChangeTaxOrder => "Tax",
+            SetBudgetOrder => "Budget",
+            AppointAdvisorOrder => "Appointment",
+            DismissAdvisorOrder => "Dismissal",
+            InvestigateCharacterOrder => "Investigation",
+            ArrestCharacterOrder => "Arrest",
+            ReleasePrisonerOrder => "Release",
+            ImproveRelationsOrder => "Diplomacy",
+            NegotiateTradeAgreementOrder => "Trade",
+            EndTradeAgreementOrder => "Trade",
+            DeclareWarOrder => "War",
+            SetWarStanceOrder => "Military",
+            OfferPeaceOrder => "Peace",
+            RespondToDiplomaticProposalOrder => "Diplomacy",
+            RequestReportOrder => "Report",
+            _ => "Order"
+        };
+    }
+
+    private static string DescribePendingOrder(Order order)
+    {
+        return order switch
+        {
+            ChangeTaxOrder typed =>
+                $"Set official tax rate toward {typed.TargetTaxRate:P0}.",
+
+            SetBudgetOrder typed =>
+                $"Set funding targets: army {typed.TargetArmyFunding:P0}, " +
+                $"administration {typed.TargetAdministrationFunding:P0}, " +
+                $"court {typed.TargetCourtFunding:P0}.",
+
+            AppointAdvisorOrder typed =>
+                $"Appoint {typed.Recipient.FullName} as {typed.Position}.",
+
+            DismissAdvisorOrder typed =>
+                $"Dismiss {typed.Recipient.FullName} from office.",
+
+            InvestigateCharacterOrder typed =>
+                $"Investigate {typed.Subject.FullName}.",
+
+            ArrestCharacterOrder typed =>
+                $"Arrest {typed.Subject.FullName}.",
+
+            ReleasePrisonerOrder typed =>
+                $"Release {typed.Recipient.FullName} from political imprisonment.",
+
+            ImproveRelationsOrder typed =>
+                $"Send diplomatic outreach to {typed.TargetCountry.Name}.",
+
+            NegotiateTradeAgreementOrder typed =>
+                $"Seek a trade agreement with {typed.TargetCountry.Name}.",
+
+            EndTradeAgreementOrder typed =>
+                $"End the trade agreement with {typed.TargetCountry.Name}.",
+
+            DeclareWarOrder typed =>
+                $"Deliver a declaration of war to {typed.TargetCountry.Name}.",
+
+            SetWarStanceOrder typed =>
+                $"Adopt a {typed.RequestedStance} stance against " +
+                $"{typed.War.OpponentOf(typed.Country).Name}.",
+
+            OfferPeaceOrder typed =>
+                $"Offer {FormatPeaceTerms(typed.Terms)} to " +
+                $"{typed.War.OpponentOf(typed.Country).Name}.",
+
+            RespondToDiplomaticProposalOrder typed =>
+                $"{(typed.Accept ? "Accept" : "Reject")} " +
+                $"{typed.Proposal.SourceCountry.Name}'s " +
+                $"{typed.Proposal.Type} proposal.",
+
+            RequestReportOrder typed =>
+                $"Request {InformationSystem.FormatTopic(typed.Topic).ToLowerInvariant()} " +
+                $"report on {typed.SubjectCountry.Name}.",
+
+            _ => order.GetType().Name
+        };
+    }
+
+    private static string FormatPeaceTerms(PeaceOfferTerms terms)
+    {
+        return terms switch
+        {
+            PeaceOfferTerms.WhitePeace => "white peace",
+            PeaceOfferTerms.DemandReparations => "peace with reparations demanded",
+            PeaceOfferTerms.OfferReparations => "peace with reparations offered",
+            _ => terms.ToString()
+        };
+    }
+
+    private static bool IsAttentionOrderOutcome(SimulationReport report)
+    {
+        return report.Title.Contains("refus", StringComparison.OrdinalIgnoreCase) ||
+               report.Title.Contains("reject", StringComparison.OrdinalIgnoreCase) ||
+               report.Title.Contains("fail", StringComparison.OrdinalIgnoreCase) ||
+               report.Details.Contains("refus", StringComparison.OrdinalIgnoreCase) ||
+               report.Details.Contains("reject", StringComparison.OrdinalIgnoreCase) ||
+               report.Details.Contains("failed", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string ReportFactValue(
