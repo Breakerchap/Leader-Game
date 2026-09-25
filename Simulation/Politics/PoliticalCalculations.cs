@@ -22,14 +22,45 @@ public static class PoliticalCalculations
         var countryAllegiance =
             actor.GetAllegiance(PoliticalKeys.Country(country.Id));
 
+        var oppositionPenalty = GetOppositionOrderPenalty(
+            state,
+            country,
+            actor,
+            issuer);
+
         var willingness =
             relationship.Trust * 0.30 +
             normalisedOpinion * 0.25 +
             relationship.Fear * 0.10 +
             countryAllegiance * 0.25 +
-            (100 - actor.Ambition) * 0.10;
+            (100 - actor.Ambition) * 0.10 -
+            oppositionPenalty;
 
         return Math.Clamp(willingness, 0, 100);
+    }
+
+    private static double GetOppositionOrderPenalty(
+        GameState state,
+        Country country,
+        Character actor,
+        Character issuer)
+    {
+        if (!ReferenceEquals(issuer, country.Ruler))
+            return 0;
+
+        var bloc = state.PoliticalBlocs.FirstOrDefault(candidate =>
+            candidate.IsActive &&
+            ReferenceEquals(candidate.Country, country) &&
+            (ReferenceEquals(candidate.Leader, actor) ||
+             candidate.MemberIds.Contains(actor.Id)));
+
+        if (bloc is null)
+            return 0;
+
+        if (ReferenceEquals(bloc.Leader, actor))
+            return Math.Min(20, 10 + bloc.Cohesion / 10.0);
+
+        return Math.Min(12, 5 + bloc.Cohesion / 20.0);
     }
 
     public static decimal GetImplementationFactor(
