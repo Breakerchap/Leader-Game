@@ -39,6 +39,7 @@ while (true)
     Console.WriteLine("[F] Foreign affairs");
     Console.WriteLine("[M] Military");
     Console.WriteLine("[P] Prison and arrests");
+    Console.WriteLine("[G] Political groups");
     Console.WriteLine("[C] Inspect the court");
     Console.WriteLine("[R] Read recent reports");
     Console.WriteLine("[Q] Quit");
@@ -96,6 +97,12 @@ while (true)
         continue;
     }
 
+    if (string.Equals(input, "g", StringComparison.OrdinalIgnoreCase))
+    {
+        PrintPoliticalGroups(state);
+        continue;
+    }
+
     if (string.Equals(input, "c", StringComparison.OrdinalIgnoreCase))
     {
         PrintCourt(state);
@@ -143,7 +150,21 @@ static void PrintDashboard(GameState state)
         $"{country.AdministrationFunding:P0}, court {country.CourtFunding:P0}");
     Console.WriteLine($"Public unrest: {country.PublicUnrest:F1}");
     Console.WriteLine($"Stability: {country.Government.Stability:F1}");
+    Console.WriteLine(
+        $"Political backing: {PoliticalCalculations.GetPowerBaseInfluence(country, country.Ruler):F0}/100");
     Console.WriteLine($"Pending orders: {state.PendingOrders.Count}");
+
+    var activeDomesticDemand = state.PowerBaseDemands.FirstOrDefault(demand =>
+        !demand.IsResolved &&
+        ReferenceEquals(demand.Country, country));
+
+    if (activeDomesticDemand is not null)
+    {
+        Console.WriteLine(
+            $"Domestic pressure: {FormatPowerBase(activeDomesticDemand.PowerBase)} — " +
+            $"{DescribeDemandBrief(activeDomesticDemand)} " +
+            $"({activeDomesticDemand.MonthsOpen} month(s) open)");
+    }
 
     var activeWars = state.Wars
         .Where(war =>
@@ -1243,6 +1264,93 @@ static void QueueReleaseOrder(GameSimulation simulation, Country country)
     });
 
     Pause($"Release of {prisonerToRelease.FullName} queued.");
+}
+
+static void PrintPoliticalGroups(GameState state)
+{
+    Console.Clear();
+
+    var country = state.Player.Country;
+    var ruler = country.Ruler;
+
+    Console.WriteLine($"Political groups of {country.Name}");
+    Console.WriteLine(new string('=', 20 + country.Name.Length));
+    Console.WriteLine();
+    Console.WriteLine(
+        "Strength is how structurally important a group is. Backing is its current " +
+        "support for the ruler. A powerful hostile group can destabilise the regime " +
+        "or strengthen a rival.");
+    Console.WriteLine();
+
+    foreach (var powerBase in Enum.GetValues<PowerBaseType>()
+                 .Where(powerBase => country.GetPowerBaseStrength(powerBase) > 0)
+                 .OrderByDescending(powerBase => country.GetPowerBaseStrength(powerBase)))
+    {
+        var strength = country.GetPowerBaseStrength(powerBase);
+        var backing = ruler.GetPowerBaseStanding(powerBase);
+
+        var rival = country.PoliticalFigures
+            .Where(character =>
+                character.IsPoliticallyActive &&
+                !ReferenceEquals(character, ruler))
+            .OrderByDescending(character => character.GetPowerBaseStanding(powerBase))
+            .ThenByDescending(character => character.Influence)
+            .FirstOrDefault();
+
+        var rivalText = rival is null
+            ? "none"
+            : $"{rival.FullName} ({rival.GetPowerBaseStanding(powerBase)})";
+
+        Console.WriteLine(
+            $"{FormatPowerBase(powerBase),-18} " +
+            $"Strength {strength,3}  Backing {backing,3}  Best rival: {rivalText}");
+    }
+
+    var demand = state.PowerBaseDemands.FirstOrDefault(candidate =>
+        !candidate.IsResolved &&
+        ReferenceEquals(candidate.Country, country));
+
+    if (demand is not null)
+    {
+        Console.WriteLine();
+        Console.WriteLine("Active demand:");
+        Console.WriteLine(
+            $"  {FormatPowerBase(demand.PowerBase)}: {DescribeDemandBrief(demand)}");
+        Console.WriteLine(
+            $"  Open {demand.MonthsOpen} month(s); escalation level {demand.EscalationLevel}.");
+        Console.WriteLine(
+            "  Meet the demand through the normal tax, budget, diplomacy or war controls.");
+    }
+
+    Pause();
+}
+
+static string FormatPowerBase(PowerBaseType powerBase)
+{
+    return powerBase switch
+    {
+        PowerBaseType.RegionalElites => "Regional elites",
+        PowerBaseType.RoyalFamily => "Royal family",
+        _ => powerBase.ToString()
+    };
+}
+
+static string DescribeDemandBrief(PowerBaseDemand demand)
+{
+    return demand.Type switch
+    {
+        PowerBaseDemandType.LowerTaxes =>
+            $"reduce taxes to {demand.TargetValue:P0} or lower",
+        PowerBaseDemandType.RaiseArmyFunding =>
+            $"raise army funding to at least {demand.TargetValue:P0}",
+        PowerBaseDemandType.RaiseAdministrationFunding =>
+            $"raise administration funding to at least {demand.TargetValue:P0}",
+        PowerBaseDemandType.RaiseCourtFunding =>
+            $"raise court funding to at least {demand.TargetValue:P0}",
+        PowerBaseDemandType.EndWar =>
+            "end the current war",
+        _ => "make a political concession"
+    };
 }
 
 static void PrintCourt(GameState state)
