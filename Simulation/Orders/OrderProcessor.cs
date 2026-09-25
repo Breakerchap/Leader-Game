@@ -1,4 +1,5 @@
 using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Reports;
 
@@ -33,6 +34,7 @@ internal static class OrderProcessor
             InvestigateCharacterOrder investigationOrder => ProcessInvestigationOrder(state, investigationOrder),
             ArrestCharacterOrder arrestOrder => ProcessArrestOrder(state, arrestOrder),
             ReleasePrisonerOrder releaseOrder => ProcessReleasePrisonerOrder(state, releaseOrder),
+            RequestReportOrder reportOrder => ProcessRequestReportOrder(state, reportOrder),
             _ => RejectUnknownOrder(state, order)
         };
     }
@@ -1448,6 +1450,42 @@ internal static class OrderProcessor
         dismissed.ChangeAllegiance(
             PoliticalKeys.Lineage(state.Player.Lineage.Id),
             -5);
+    }
+
+    private static SimulationReport ProcessRequestReportOrder(
+        GameState state,
+        RequestReportOrder order)
+    {
+        if (!ReferenceEquals(order.Issuer, order.Country.Ruler))
+        {
+            order.Status = OrderStatus.Rejected;
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Order,
+                "Report request rejected",
+                "Only the ruler may formally task an adviser with a report.");
+        }
+
+        var result = InformationSystem.QueueRequestedReport(
+            state,
+            order.Country,
+            order.Recipient,
+            order.Topic,
+            order.SubjectCountry,
+            order.RelatedCountry);
+
+        order.Status = result.Accepted
+            ? OrderStatus.Completed
+            : result.Refused
+                ? OrderStatus.Refused
+                : OrderStatus.Rejected;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Personal,
+            result.Title,
+            result.Details);
     }
 
     private static SimulationReport RejectUnknownOrder(GameState state, Order order)
