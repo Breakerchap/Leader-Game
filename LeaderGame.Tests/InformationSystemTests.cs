@@ -230,7 +230,7 @@ public class InformationSystemTests
 
         // Per fact: do not omit, zero ordinary noise, then force deliberate
         // distortion. Opposition alignment supplies the direction.
-        state.InformationRandom = new PatternRandom(1.0, 0.5, 0.5, 0.0);
+        state.InformationRandom = new PatternRandom(1.0, 0.5, 0.5, 0.0, 0.5);
 
         simulation.AdvanceMonth();
 
