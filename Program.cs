@@ -31,6 +31,8 @@ while (true)
     Console.WriteLine("[Enter] Advance month");
     Console.WriteLine("[T] Order a tax-rate change");
     Console.WriteLine("[A] Appoint or replace an adviser");
+    Console.WriteLine("[D] Dismiss an office-holder");
+    Console.WriteLine("[I] Investigate a political figure");
     Console.WriteLine("[C] Inspect the court");
     Console.WriteLine("[R] Read recent reports");
     Console.WriteLine("[Q] Quit");
@@ -49,6 +51,18 @@ while (true)
     if (string.Equals(input, "a", StringComparison.OrdinalIgnoreCase))
     {
         QueueAppointmentOrder(simulation, country);
+        continue;
+    }
+
+    if (string.Equals(input, "d", StringComparison.OrdinalIgnoreCase))
+    {
+        QueueDismissalOrder(simulation, country);
+        continue;
+    }
+
+    if (string.Equals(input, "i", StringComparison.OrdinalIgnoreCase))
+    {
+        QueueInvestigationOrder(simulation, country);
         continue;
     }
 
@@ -84,8 +98,16 @@ static void PrintDashboard(GameState state)
     Console.WriteLine($"Public unrest: {country.PublicUnrest:F1}");
     Console.WriteLine($"Stability: {country.Government.Stability:F1}");
     Console.WriteLine($"Pending orders: {state.PendingOrders.Count}");
-    Console.WriteLine();
 
+    var knownPlots = state.Plots.Count(plot =>
+        !plot.IsResolved &&
+        plot.DiscoveryStage > 0 &&
+        ReferenceEquals(plot.Country, country));
+
+    if (knownPlots > 0)
+        Console.WriteLine($"Known political threats: {knownPlots}");
+
+    Console.WriteLine();
     Console.WriteLine("Office-holders:");
 
     foreach (var advisor in country.ActiveAdvisors)
@@ -244,6 +266,134 @@ static void QueueAppointmentOrder(GameSimulation simulation, Country country)
         $"{replacement} It will be processed when the month advances.");
 }
 
+static void QueueDismissalOrder(GameSimulation simulation, Country country)
+{
+    var officeHolders = country.ActiveAdvisors.ToList();
+
+    if (officeHolders.Count == 0)
+    {
+        Pause("There are no office-holders to dismiss.");
+        return;
+    }
+
+    Console.Clear();
+    Console.WriteLine("Dismiss an office-holder");
+    Console.WriteLine("========================");
+    Console.WriteLine();
+
+    for (var i = 0; i < officeHolders.Count; i++)
+    {
+        var character = officeHolders[i];
+        var relationship = simulation.State.Relationships.GetOrCreate(
+            character,
+            country.Ruler);
+
+        Console.WriteLine(
+            $"[{i + 1}] {character.Position,-12} {character.FullName,-20} " +
+            $"Opinion {relationship.Opinion,4}  Trust {relationship.Trust,3}  " +
+            $"Influence {character.Influence,3}");
+    }
+
+    Console.WriteLine();
+    Console.Write("Choose office-holder: ");
+
+    if (!int.TryParse(Console.ReadLine(), out var number) ||
+        number < 1 ||
+        number > officeHolders.Count)
+    {
+        Pause("Invalid choice.");
+        return;
+    }
+
+    var target = officeHolders[number - 1];
+
+    simulation.SubmitOrder(new DismissAdvisorOrder
+    {
+        Issuer = country.Ruler,
+        Recipient = target,
+        IssuedOn = simulation.State.Date,
+        Country = country
+    });
+
+    Pause(
+        $"Dismissal of {target.FullName} queued. Removing them from office will " +
+        "reduce their immediate access to power, but create a personal grievance.");
+}
+
+static void QueueInvestigationOrder(GameSimulation simulation, Country country)
+{
+    var chancellor = country.GetOfficeHolder(Position.Chancellor);
+
+    if (chancellor is null)
+    {
+        Pause("There is no living Chancellor to conduct an investigation.");
+        return;
+    }
+
+    var subjects = country.PoliticalFigures
+        .Where(character =>
+            character.IsAlive &&
+            !ReferenceEquals(character, country.Ruler) &&
+            !ReferenceEquals(character, chancellor))
+        .OrderByDescending(character =>
+            PoliticalCalculations.GetThreatScore(simulation.State, country, character))
+        .ToList();
+
+    if (subjects.Count == 0)
+    {
+        Pause("There is nobody available to investigate.");
+        return;
+    }
+
+    Console.Clear();
+    Console.WriteLine($"Investigation by {chancellor.FullName}");
+    Console.WriteLine(new string('=', 17 + chancellor.FullName.Length));
+    Console.WriteLine();
+
+    for (var i = 0; i < subjects.Count; i++)
+    {
+        var subject = subjects[i];
+        var threat = PoliticalCalculations.GetThreatScore(
+            simulation.State,
+            country,
+            subject);
+
+        Console.WriteLine(
+            $"[{i + 1}] {subject.FullName,-20} " +
+            $"Role {(subject.Position?.ToString() ?? "Courtier"),-11} " +
+            $"Influence {subject.Influence,3}  Threat {threat,5:F0}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine(
+        "Investigating somebody may expose or disrupt a plot, but scrutiny itself " +
+        "damages their relationship with the ruler.");
+    Console.Write("Choose subject: ");
+
+    if (!int.TryParse(Console.ReadLine(), out var number) ||
+        number < 1 ||
+        number > subjects.Count)
+    {
+        Pause("Invalid choice.");
+        return;
+    }
+
+    var subjectToInvestigate = subjects[number - 1];
+
+    simulation.SubmitOrder(new InvestigateCharacterOrder
+    {
+        Issuer = country.Ruler,
+        Recipient = chancellor,
+        Subject = subjectToInvestigate,
+        IssuedOn = simulation.State.Date,
+        Country = country
+    });
+
+    Pause(
+        $"Investigation of {subjectToInvestigate.FullName} queued through " +
+        $"{chancellor.FullName}.");
+}
+
 static void PrintCourt(GameState state)
 {
     Console.Clear();
@@ -259,6 +409,38 @@ static void PrintCourt(GameState state)
         "Opinion is personal feeling; trust is reliability; fear can force obedience. " +
         "Threat is political danger, not a coup probability.");
     Console.WriteLine();
+
+    var knownPlots = state.Plots
+        .Where(plot =>
+            !plot.IsResolved &&
+            plot.DiscoveryStage > 0 &&
+            ReferenceEquals(plot.Country, country))
+        .ToList();
+
+    if (knownPlots.Count > 0)
+    {
+        Console.WriteLine("Known political threats:");
+
+        foreach (var plot in knownPlots)
+        {
+            var certainty = plot.DiscoveryStage >= 2
+                ? "credible evidence"
+                : "rumours";
+
+            Console.WriteLine($"  {plot.Instigator.FullName}: {certainty}");
+
+            if (plot.DiscoveryStage >= 2 && plot.SupporterIds.Count > 0)
+            {
+                var supporters = country.PoliticalFigures
+                    .Where(character => plot.SupporterIds.Contains(character.Id))
+                    .Select(character => character.FullName);
+
+                Console.WriteLine($"    Suspected supporters: {string.Join(", ", supporters)}");
+            }
+        }
+
+        Console.WriteLine();
+    }
 
     var figures = country.PoliticalFigures
         .Where(character => character.IsAlive)
@@ -311,7 +493,7 @@ static void PrintReports(GameState state)
     Console.WriteLine("==============");
     Console.WriteLine();
 
-    var reports = state.Reports.TakeLast(16).ToList();
+    var reports = state.Reports.TakeLast(20).ToList();
 
     if (reports.Count == 0)
     {

@@ -5,10 +5,6 @@ namespace LeaderGame.Simulation.Politics;
 
 public static class PoliticalCalculations
 {
-    /// <summary>
-    /// How willing a character is to carry out this issuer's orders, from 0 to 100.
-    /// This intentionally separates affection, trust, fear, patriotism and ambition.
-    /// </summary>
     public static double GetOrderWillingness(
         GameState state,
         Country country,
@@ -48,10 +44,6 @@ public static class PoliticalCalculations
             1m);
     }
 
-    /// <summary>
-    /// Rough measure of how dangerous this person is to the current ruler.
-    /// It is not a coup probability: it is a pressure score used by political systems.
-    /// </summary>
     public static double GetThreatScore(
         GameState state,
         Country country,
@@ -76,6 +68,41 @@ public static class PoliticalCalculations
             countryAllegiance * 0.15;
 
         return Math.Clamp(threat, 0, 100);
+    }
+
+    /// <summary>
+    /// How inclined one courtier is to join another character's conspiracy.
+    /// Friendship with the instigator matters, but alienation from the ruler matters too.
+    /// </summary>
+    public static double GetConspiracyAffinity(
+        GameState state,
+        Country country,
+        Character supporter,
+        Character instigator)
+    {
+        if (!supporter.IsAlive ||
+            ReferenceEquals(supporter, country.Ruler) ||
+            ReferenceEquals(supporter, instigator))
+        {
+            return 0;
+        }
+
+        var towardInstigator = state.Relationships.GetOrCreate(
+            supporter,
+            instigator);
+        var normalisedOpinion = (towardInstigator.Opinion + 100) / 2.0;
+        var rulerWillingness = GetOrderWillingness(
+            state,
+            country,
+            supporter,
+            country.Ruler);
+
+        return Math.Clamp(
+            towardInstigator.Trust * 0.40 +
+            normalisedOpinion * 0.30 +
+            (100 - rulerWillingness) * 0.30,
+            0,
+            100);
     }
 
     public static int GetInfluenceTarget(Country country, Character character)

@@ -144,22 +144,16 @@ public static class DemoScenario
 
         king.SetAllegiance(countryKey, 90);
         king.SetAllegiance(lineageKey, 100);
-
         treasurer.SetAllegiance(countryKey, 78);
         treasurer.SetAllegiance(lineageKey, 62);
-
         marshal.SetAllegiance(countryKey, 82);
         marshal.SetAllegiance(lineageKey, 47);
-
         chancellor.SetAllegiance(countryKey, 86);
         chancellor.SetAllegiance(lineageKey, 79);
-
         marta.SetAllegiance(countryKey, 76);
         marta.SetAllegiance(lineageKey, 88);
-
         lukas.SetAllegiance(countryKey, 70);
         lukas.SetAllegiance(lineageKey, 28);
-
         heir.SetAllegiance(countryKey, 85);
         heir.SetAllegiance(lineageKey, 100);
 
@@ -170,13 +164,25 @@ public static class DemoScenario
         state.Relationships.Set(lukas, king, opinion: -22, trust: 29, fear: 11);
         state.Relationships.Set(heir, king, opinion: 74, trust: 84, fear: 8);
 
-        // The reverse direction matters too; relationships are deliberately asymmetric.
         state.Relationships.Set(king, treasurer, opinion: 38, trust: 67, fear: 0);
         state.Relationships.Set(king, marshal, opinion: 18, trust: 48, fear: 4);
         state.Relationships.Set(king, chancellor, opinion: 57, trust: 78, fear: 0);
         state.Relationships.Set(king, marta, opinion: 41, trust: 58, fear: 0);
         state.Relationships.Set(king, lukas, opinion: -8, trust: 31, fear: 8);
         state.Relationships.Set(king, heir, opinion: 79, trust: 86, fear: 0);
+
+        // Court relationships create potential alliances and rival blocs.
+        // Otto is not initially committed to Lukas, but a grievance against the ruler
+        // can push him over the threshold into Lukas's camp.
+        state.Relationships.Set(marshal, lukas, opinion: 45, trust: 70, fear: 0);
+        state.Relationships.Set(lukas, marshal, opinion: 35, trust: 64, fear: 0);
+        state.Relationships.Set(chancellor, lukas, opinion: -20, trust: 30, fear: 0);
+        state.Relationships.Set(treasurer, lukas, opinion: -5, trust: 38, fear: 0);
+        state.Relationships.Set(marta, lukas, opinion: 5, trust: 45, fear: 0);
+        state.Relationships.Set(heir, lukas, opinion: -15, trust: 35, fear: 0);
+
+        state.Relationships.Set(marta, chancellor, opinion: 52, trust: 72, fear: 0);
+        state.Relationships.Set(chancellor, marta, opinion: 44, trust: 68, fear: 0);
 
         return state;
     }

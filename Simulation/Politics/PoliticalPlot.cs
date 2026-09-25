@@ -27,6 +27,12 @@ public sealed class PoliticalPlot
     }
 
     /// <summary>
+    /// Character IDs currently committed to supporting this plot.
+    /// Membership is recalculated as relationships and loyalties change.
+    /// </summary>
+    public HashSet<int> SupporterIds { get; } = [];
+
+    /// <summary>
     /// 0 = hidden, 1 = rumours, 2 = credible evidence.
     /// </summary>
     public int DiscoveryStage { get; internal set; }

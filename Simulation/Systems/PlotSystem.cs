@@ -9,6 +9,8 @@ internal static class PlotSystem
 {
     private const double PlotStartThreat = 70;
     private const double PlotGrowthThreat = 55;
+    private const double JoinAffinity = 65;
+    private const double LeaveAffinity = 55;
 
     public static IEnumerable<SimulationReport> ProcessMonth(GameState state)
     {
@@ -52,6 +54,7 @@ internal static class PlotSystem
                 if (plot is null)
                     continue;
 
+                UpdateSupporters(state, plot);
                 UpdatePlotProgress(country, character, plot, threat);
                 ReportDiscovery(state, plot, reports);
 
@@ -61,6 +64,31 @@ internal static class PlotSystem
         }
 
         return reports;
+    }
+
+    private static void UpdateSupporters(GameState state, PoliticalPlot plot)
+    {
+        foreach (var character in plot.Country.PoliticalFigures)
+        {
+            if (!character.IsAlive ||
+                ReferenceEquals(character, plot.Country.Ruler) ||
+                ReferenceEquals(character, plot.Instigator))
+            {
+                plot.SupporterIds.Remove(character.Id);
+                continue;
+            }
+
+            var affinity = PoliticalCalculations.GetConspiracyAffinity(
+                state,
+                plot.Country,
+                character,
+                plot.Instigator);
+
+            if (affinity >= JoinAffinity)
+                plot.SupporterIds.Add(character.Id);
+            else if (affinity < LeaveAffinity)
+                plot.SupporterIds.Remove(character.Id);
+        }
     }
 
     private static void UpdatePlotProgress(
@@ -90,10 +118,15 @@ internal static class PlotSystem
             _ => 0.85
         };
 
+        var supporterInfluence = GetSupporterInfluence(country, plot);
+        var coalitionMultiplier =
+            1 + Math.Min(0.60, supporterInfluence / 200.0);
+
         var progress =
             ((threat - PlotGrowthThreat) / 5.0) *
             (0.80 + instability) *
-            accessMultiplier;
+            accessMultiplier *
+            coalitionMultiplier;
 
         plot.Progress += Math.Clamp(progress, 0.25, 12);
     }
@@ -109,12 +142,19 @@ internal static class PlotSystem
         if (plot.Progress >= 70 && plot.DiscoveryStage < 2)
         {
             plot.DiscoveryStage = 2;
+
+            var knownSupporters = GetSupporterNames(plot);
+            var supportText = knownSupporters.Count == 0
+                ? "No reliable evidence identifies other conspirators."
+                : $"Evidence also implicates {string.Join(", ", knownSupporters)}.";
+
             reports.Add(new SimulationReport(
                 state.Date,
                 ReportCategory.Politics,
                 $"Evidence of a plot led by {plot.Instigator.FullName}",
                 $"Your agents now have credible evidence that {plot.Instigator.FullName} " +
-                $"is organising against the rule of {plot.Country.Ruler.FullName}."));
+                $"is organising against the rule of {plot.Country.Ruler.FullName}. " +
+                supportText));
         }
         else if (plot.Progress >= 35 && plot.DiscoveryStage < 1)
         {
@@ -134,7 +174,7 @@ internal static class PlotSystem
         var instigator = plot.Instigator;
         var oldRuler = country.Ruler;
 
-        var attack = CalculateCoupStrength(state, country, instigator);
+        var attack = CalculateCoupStrength(state, country, plot);
         var defence = CalculateRegimeStrength(state, country);
 
         plot.IsResolved = true;
@@ -154,13 +194,18 @@ internal static class PlotSystem
                     "new ruler belongs to the same dynasty, party or faction.";
             }
 
+            var supporters = GetSupporterNames(plot);
+            var coalitionText = supporters.Count == 0
+                ? string.Empty
+                : $" The coup was backed by {string.Join(", ", supporters)}.";
+
             return new SimulationReport(
                 state.Date,
                 ReportCategory.Politics,
                 $"{instigator.FullName} seizes power",
                 $"A coup against {oldRuler.FullName} succeeds. Political strength " +
                 $"{attack:F0} overcame regime strength {defence:F0}. " +
-                $"{instigator.FullName} now rules {country.Name}.");
+                $"{instigator.FullName} now rules {country.Name}.{coalitionText}");
         }
 
         plot.Succeeded = false;
@@ -178,6 +223,17 @@ internal static class PlotSystem
         rulerToInstigator.Opinion = Math.Max(-100, rulerToInstigator.Opinion - 60);
         rulerToInstigator.Trust = 0;
 
+        foreach (var supporter in GetSupporters(country, plot))
+        {
+            supporter.Influence = Math.Max(0, supporter.Influence - 10);
+
+            var supporterToRuler =
+                state.Relationships.GetOrCreate(supporter, oldRuler);
+            supporterToRuler.ChangeOpinion(-15);
+            supporterToRuler.Trust = 0;
+            supporterToRuler.ChangeFear(15);
+        }
+
         return new SimulationReport(
             state.Date,
             ReportCategory.Politics,
@@ -191,8 +247,9 @@ internal static class PlotSystem
     private static double CalculateCoupStrength(
         GameState state,
         Country country,
-        Character instigator)
+        PoliticalPlot plot)
     {
+        var instigator = plot.Instigator;
         var willingness = PoliticalCalculations.GetOrderWillingness(
             state,
             country,
@@ -207,13 +264,17 @@ internal static class PlotSystem
             _ => 0
         };
 
+        var supporterBonus =
+            Math.Min(25, GetSupporterInfluence(country, plot) * 0.20);
+
         return
             instigator.Influence * 0.35 +
             instigator.Ambition * 0.25 +
             (100 - willingness) * 0.20 +
             country.PublicUnrest * 0.10 +
             (100 - country.Government.Stability) * 0.10 +
-            officeBonus;
+            officeBonus +
+            supporterBonus;
     }
 
     private static double CalculateRegimeStrength(
@@ -236,5 +297,30 @@ internal static class PlotSystem
             country.Ruler.Legitimacy * 0.25 +
             country.Government.Stability * 0.35 +
             averageWillingness * 0.15;
+    }
+
+    private static double GetSupporterInfluence(
+        Country country,
+        PoliticalPlot plot)
+    {
+        return GetSupporters(country, plot).Sum(character => character.Influence);
+    }
+
+    private static List<Character> GetSupporters(
+        Country country,
+        PoliticalPlot plot)
+    {
+        return country.PoliticalFigures
+            .Where(character =>
+                character.IsAlive &&
+                plot.SupporterIds.Contains(character.Id))
+            .ToList();
+    }
+
+    private static List<string> GetSupporterNames(PoliticalPlot plot)
+    {
+        return GetSupporters(plot.Country, plot)
+            .Select(character => character.FullName)
+            .ToList();
     }
 }
