@@ -6,6 +6,12 @@ public sealed class RelationshipGraph
 
     public IEnumerable<Relationship> All => _relationships.Values;
 
+    public IEnumerable<(int FromId, int ToId, Relationship Relationship)> Entries =>
+        _relationships.Select(entry => (
+            entry.Key.FromId,
+            entry.Key.ToId,
+            entry.Value));
+
     public Relationship GetOrCreate(Character from, Character to)
     {
         ArgumentNullException.ThrowIfNull(from);
