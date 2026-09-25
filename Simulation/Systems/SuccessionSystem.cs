@@ -38,6 +38,18 @@ internal static class SuccessionSystem
             successor.Position = null;
             country.Ruler = successor;
 
+            var isRepublicanInterim =
+                country.Government.HoldsScheduledElections;
+
+            if (isRepublicanInterim)
+            {
+                country.Government.MonthsUntilElection = Math.Min(
+                    country.Government.MonthsUntilElection > 0
+                        ? country.Government.MonthsUntilElection
+                        : 2,
+                    2);
+            }
+
             var isPlayerCountry = ReferenceEquals(country, state.Player.Country);
             var successorContinuesPlayerLineage =
                 isPlayerCountry && state.Player.Lineage.Contains(successor);
@@ -49,10 +61,16 @@ internal static class SuccessionSystem
                 yield return new SimulationReport(
                     state.Date,
                     ReportCategory.Politics,
-                    $"{successor.FullName} succeeds {deadRuler.FullName}",
-                    $"{successor.FullName} becomes ruler of {country.Name}. " +
-                    $"The {state.Player.Lineage.Name} remains in power, so play continues " +
-                    $"as {successor.FullName}.");
+                    isRepublicanInterim
+                        ? $"{successor.FullName} becomes interim ruler of {country.Name}"
+                        : $"{successor.FullName} succeeds {deadRuler.FullName}",
+                    isRepublicanInterim
+                        ? $"{successor.FullName} assumes office after {deadRuler.FullName}'s death. " +
+                          $"The {state.Player.Lineage.Name} remains in control for now, but a " +
+                          "constitutional election will be held within two months."
+                        : $"{successor.FullName} becomes ruler of {country.Name}. " +
+                          $"The {state.Player.Lineage.Name} remains in power, so play continues " +
+                          $"as {successor.FullName}.");
             }
             else
             {
@@ -67,11 +85,16 @@ internal static class SuccessionSystem
                 yield return new SimulationReport(
                     state.Date,
                     ReportCategory.Politics,
-                    $"{successor.FullName} succeeds {deadRuler.FullName}",
+                    isRepublicanInterim
+                        ? $"{successor.FullName} becomes interim ruler of {country.Name}"
+                        : $"{successor.FullName} succeeds {deadRuler.FullName}",
                     isPlayerCountry
                         ? $"{successor.FullName} becomes ruler of {country.Name}. " +
                           $"{state.Player.Lineage.Name} has lost power."
-                        : $"{successor.FullName} becomes ruler of {country.Name}.");
+                        : isRepublicanInterim
+                            ? $"{successor.FullName} assumes interim office after {deadRuler.FullName}'s death. " +
+                              "A constitutional election will follow shortly."
+                            : $"{successor.FullName} becomes ruler of {country.Name}.");
             }
         }
     }
