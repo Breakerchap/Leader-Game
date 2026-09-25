@@ -2,6 +2,7 @@ using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Diplomacy;
+using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Politics;
@@ -41,7 +42,8 @@ while (true)
     Console.WriteLine("[P] Prison and arrests");
     Console.WriteLine("[G] Political groups");
     Console.WriteLine("[C] Inspect the court");
-    Console.WriteLine("[R] Read recent reports");
+    Console.WriteLine("[K] Intelligence and adviser reports");
+    Console.WriteLine("[R] Read recent events");
     Console.WriteLine("[Q] Quit");
 
     var input = Console.ReadLine()?.Trim();
@@ -106,6 +108,12 @@ while (true)
     if (string.Equals(input, "c", StringComparison.OrdinalIgnoreCase))
     {
         PrintCourt(state);
+        continue;
+    }
+
+    if (string.Equals(input, "k", StringComparison.OrdinalIgnoreCase))
+    {
+        ManageInformation(simulation, country);
         continue;
     }
 
@@ -1522,6 +1530,217 @@ static void PrintCourt(GameState state)
         Console.WriteLine();
     }
 
+    Pause();
+}
+
+static void ManageInformation(GameSimulation simulation, Country country)
+{
+    Console.Clear();
+    Console.WriteLine("Intelligence and adviser reports");
+    Console.WriteLine("===============================");
+    Console.WriteLine();
+    Console.WriteLine(
+        "These are the ruler's working estimates, not the simulation's true values. " +
+        "Advisers can be mistaken, delayed, overconfident or deliberately misleading.");
+    Console.WriteLine();
+
+    var pending = simulation.State.InformationRequests
+        .Where(request => request.Status == InformationRequestStatus.Pending)
+        .OrderBy(request => request.RequestedOn.Year)
+        .ThenBy(request => request.RequestedOn.Month)
+        .ToList();
+
+    if (pending.Count > 0)
+    {
+        Console.WriteLine("Pending inquiries:");
+
+        foreach (var request in pending)
+        {
+            var targetText = ReferenceEquals(request.SubjectCountry, country)
+                ? country.Name
+                : request.SubjectCountry.Name;
+
+            Console.WriteLine(
+                $"  {request.Advisor.FullName}: {InformationSystem.FormatTopic(request.Topic)} " +
+                $"— {targetText}; underway since {request.RequestedOn}");
+        }
+
+        Console.WriteLine();
+    }
+
+    var recent = simulation.State.AdvisorReports
+        .TakeLast(6)
+        .Reverse()
+        .ToList();
+
+    if (recent.Count > 0)
+    {
+        Console.WriteLine("Recent adviser reports:");
+
+        for (var i = 0; i < recent.Count; i++)
+        {
+            var report = recent[i];
+            var age = MonthsBetween(report.DataAsOf, simulation.State.Date);
+
+            Console.WriteLine(
+                $"  [{i + 1}] {report.Title} — data {FormatAge(age)}");
+        }
+
+        Console.WriteLine();
+    }
+
+    Console.WriteLine("[1] Request economic report from Treasurer");
+    Console.WriteLine("[2] Request report on our military from Marshal");
+    Console.WriteLine("[3] Request military intelligence on another country");
+    Console.WriteLine("[4] Request foreign-affairs assessment from Chancellor");
+    Console.WriteLine("[5] Request domestic-political assessment from Chancellor");
+    if (recent.Count > 0)
+        Console.WriteLine("[V] View a recent adviser report");
+    Console.WriteLine("[Enter] Return");
+    Console.Write("Action: ");
+
+    var input = Console.ReadLine()?.Trim();
+
+    if (string.Equals(input, "v", StringComparison.OrdinalIgnoreCase) &&
+        recent.Count > 0)
+    {
+        Console.Write("Report number: ");
+
+        if (int.TryParse(Console.ReadLine(), out var reportNumber) &&
+            reportNumber >= 1 &&
+            reportNumber <= recent.Count)
+        {
+            PrintAdvisorReport(simulation.State, recent[reportNumber - 1]);
+        }
+
+        return;
+    }
+
+    if (input is not ("1" or "2" or "3" or "4" or "5"))
+        return;
+
+    Character? advisor;
+    InformationTopic topic;
+    Country subject = country;
+    Country? related = null;
+
+    switch (input)
+    {
+        case "1":
+            advisor = country.GetOfficeHolder(Position.Treasurer);
+            topic = InformationTopic.Economy;
+            break;
+
+        case "2":
+            advisor = country.GetOfficeHolder(Position.Marshal);
+            topic = InformationTopic.Military;
+            break;
+
+        case "3":
+            advisor = country.GetOfficeHolder(Position.Marshal);
+            topic = InformationTopic.Military;
+            subject = ChooseForeignCountry(simulation.State, country) ?? country;
+
+            if (ReferenceEquals(subject, country))
+                return;
+
+            related = country;
+            break;
+
+        case "4":
+            advisor = country.GetOfficeHolder(Position.Chancellor);
+            topic = InformationTopic.ForeignAffairs;
+            subject = ChooseForeignCountry(simulation.State, country) ?? country;
+
+            if (ReferenceEquals(subject, country))
+                return;
+
+            related = country;
+            break;
+
+        default:
+            advisor = country.GetOfficeHolder(Position.Chancellor);
+            topic = InformationTopic.DomesticPolitics;
+            break;
+    }
+
+    if (advisor is null)
+    {
+        Pause("The responsible office is vacant, so there is nobody to task with that report.");
+        return;
+    }
+
+    simulation.SubmitOrder(new RequestReportOrder
+    {
+        Issuer = country.Ruler,
+        Recipient = advisor,
+        IssuedOn = simulation.State.Date,
+        Country = country,
+        Topic = topic,
+        SubjectCountry = subject,
+        RelatedCountry = related
+    });
+
+    Pause(
+        $"Request sent to {advisor.FullName}. They may refuse, delay the work, or " +
+        "return information that is incomplete or wrong.");
+}
+
+static Country? ChooseForeignCountry(GameState state, Country country)
+{
+    var foreign = state.Countries
+        .Where(candidate => !ReferenceEquals(candidate, country))
+        .OrderBy(candidate => candidate.Name)
+        .ToList();
+
+    Console.WriteLine();
+
+    for (var i = 0; i < foreign.Count; i++)
+        Console.WriteLine($"[{i + 1}] {foreign[i].Name}");
+
+    Console.Write("Country: ");
+
+    if (!int.TryParse(Console.ReadLine(), out var number) ||
+        number < 1 ||
+        number > foreign.Count)
+    {
+        return null;
+    }
+
+    return foreign[number - 1];
+}
+
+static void PrintAdvisorReport(
+    GameState state,
+    AdvisorIntelligenceReport report)
+{
+    Console.Clear();
+    Console.WriteLine(report.Title);
+    Console.WriteLine(new string('=', report.Title.Length));
+    Console.WriteLine();
+    Console.WriteLine(
+        $"From: {report.Advisor.FullName} ({report.Advisor.Position})");
+    Console.WriteLine(
+        $"Delivered: {report.ProducedOn}   Information describes: {report.DataAsOf} " +
+        $"({FormatAge(MonthsBetween(report.DataAsOf, state.Date))})");
+    Console.WriteLine(
+        $"Origin: {(report.WasRequested ? "requested inquiry" : "adviser-initiated report")}");
+    Console.WriteLine();
+    Console.WriteLine(report.Summary);
+    Console.WriteLine();
+
+    foreach (var fact in report.Facts)
+    {
+        Console.WriteLine(
+            $"{FormatMetricName(fact.Key.Metric),-28} " +
+            $"{FormatKnownValue(fact.Key.Metric, fact.Estimate),16}  " +
+            $"± {FormatKnownValue(fact.Key.Metric, fact.Margin),-12} " +
+            $"confidence {fact.ReportedConfidence,2}%");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine(
+        "Confidence is the adviser's apparent confidence, not a guarantee that the estimate is honest or correct.");
     Pause();
 }
 
