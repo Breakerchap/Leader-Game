@@ -1,4 +1,5 @@
 using LeaderGame.Simulation;
+using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Persistence;
@@ -15,7 +16,7 @@ public class SaveGameTests
         var simulation = new GameSimulation(state);
         var country = state.Player.Country;
         var treasurer = country.ActiveAdvisors.Single(advisor =>
-            advisor.Position == Characters.Position.Treasurer);
+            advisor.Position == Position.Treasurer);
 
         simulation.SubmitOrder(new ChangeTaxOrder
         {
@@ -82,7 +83,7 @@ public class SaveGameTests
         var state = DemoScenario.Create();
         var country = state.Player.Country;
         var treasurer = country.ActiveAdvisors.Single(advisor =>
-            advisor.Position == Characters.Position.Treasurer);
+            advisor.Position == Position.Treasurer);
 
         state.PendingOrders.Add(new SetBudgetOrder
         {
