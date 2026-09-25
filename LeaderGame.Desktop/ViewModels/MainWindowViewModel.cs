@@ -243,6 +243,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsBriefingVisible));
             OnPropertyChanged(nameof(IsGovernmentVisible));
             OnPropertyChanged(nameof(IsCourtVisible));
+            OnPropertyChanged(nameof(IsEconomyVisible));
             OnPropertyChanged(nameof(IsForeignAffairsVisible));
             OnPropertyChanged(nameof(IsMilitaryVisible));
             OnPropertyChanged(nameof(IsIntelligenceVisible));
@@ -266,6 +267,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public bool IsCourtVisible => CurrentSection == "Court";
 
+    public bool IsEconomyVisible => CurrentSection == "Economy";
+
     public bool IsForeignAffairsVisible => CurrentSection == "Foreign Affairs";
 
     public bool IsMilitaryVisible => CurrentSection == "Military";
@@ -276,6 +279,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         !IsBriefingVisible &&
         !IsGovernmentVisible &&
         !IsCourtVisible &&
+        !IsEconomyVisible &&
         !IsForeignAffairsVisible &&
         !IsMilitaryVisible &&
         !IsIntelligenceVisible;
