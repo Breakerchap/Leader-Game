@@ -32,6 +32,8 @@ internal static class EconomySystem
             ApplyDebtPressure(country);
 
         }
+
+        return [];
     }
 
     public static decimal CalculateMonthlyTaxRevenue(Country country)
