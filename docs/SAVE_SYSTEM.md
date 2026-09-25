@@ -25,6 +25,7 @@ A save currently stores:
 - simulation date;
 - both deterministic RNG states;
 - player country, current character and political lineage;
+- republican term length, election countdown, campaign window and player-lineage election victories;
 - selected scenario, campaign objective definitions, progress and completion dates;
 - campaign victory state and reason;
 - every character and their mutable attributes;
@@ -45,7 +46,7 @@ A save currently stores:
 - adviser report history and caveats;
 - pending information requests;
 - hidden historical information snapshots;
-- pending, accepted, rejected and expired cabinet recommendations.
+- pending, accepted, rejected and expired cabinet recommendations, including the adviser's stated rationale.
 
 Object relationships are persisted through stable IDs and rebuilt during loading. The loader rejects broken references rather than attempting to continue with a partially corrupted state.
 
