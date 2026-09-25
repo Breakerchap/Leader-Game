@@ -273,7 +273,10 @@ public static class DemoScenario
             Government = new Government
             {
                 Type = GovernmentType.Republic,
-                Stability = 59
+                Stability = 59,
+                ElectionIntervalMonths = 48,
+                MonthsUntilElection = 12,
+                ElectionCampaignMonths = 6
             },
             Ruler = valerianDoge
         };
