@@ -2,6 +2,7 @@ using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Diplomacy;
+using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
@@ -36,6 +37,7 @@ while (true)
     Console.WriteLine("[D] Dismiss an office-holder");
     Console.WriteLine("[I] Investigate a political figure");
     Console.WriteLine("[F] Foreign affairs");
+    Console.WriteLine("[M] Military");
     Console.WriteLine("[P] Prison and arrests");
     Console.WriteLine("[C] Inspect the court");
     Console.WriteLine("[R] Read recent reports");
@@ -79,6 +81,12 @@ while (true)
     if (string.Equals(input, "f", StringComparison.OrdinalIgnoreCase))
     {
         ManageForeignAffairs(simulation, country);
+        continue;
+    }
+
+    if (string.Equals(input, "m", StringComparison.OrdinalIgnoreCase))
+    {
+        ManageMilitary(simulation, country);
         continue;
     }
 
@@ -136,6 +144,29 @@ static void PrintDashboard(GameState state)
     Console.WriteLine($"Public unrest: {country.PublicUnrest:F1}");
     Console.WriteLine($"Stability: {country.Government.Stability:F1}");
     Console.WriteLine($"Pending orders: {state.PendingOrders.Count}");
+
+    var activeWars = state.Wars
+        .Where(war =>
+            war.Status == WarStatus.Active &&
+            war.IsParticipant(country))
+        .ToList();
+
+    if (activeWars.Count > 0)
+    {
+        Console.WriteLine($"War exhaustion: {country.WarExhaustion:F1}/100");
+
+        foreach (var war in activeWars)
+        {
+            var opponent = war.OpponentOf(country);
+            var score = ReferenceEquals(country, war.Attacker)
+                ? war.WarScore
+                : -war.WarScore;
+
+            Console.WriteLine(
+                $"At war with {opponent.Name}: score {score:+0.0;-0.0;0.0}, " +
+                $"month {war.MonthsActive}, stance {war.GetStance(country)}");
+        }
+    }
 
     var knownPlots = state.Plots.Count(plot =>
         !plot.IsResolved &&
@@ -584,6 +615,19 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
     var targetRelation = simulation.State.Diplomacy.GetOrCreate(country, target);
     ShowForeignCountry(simulation.State, country, target, chancellor, targetRelation);
 
+    var activeWar = simulation.State.Wars.FirstOrDefault(war =>
+        war.Status == WarStatus.Active &&
+        war.IsParticipant(country) &&
+        war.IsParticipant(target));
+
+    if (activeWar is not null)
+    {
+        Pause(
+            $"{country.Name} is already at war with {target.Name}. " +
+            "Use the Military screen to direct the campaign.");
+        return;
+    }
+
     Console.WriteLine();
     Console.WriteLine("[1] Send a mission to improve relations");
 
@@ -591,6 +635,9 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
         Console.WriteLine("[2] End the trade agreement");
     else
         Console.WriteLine("[2] Propose a trade agreement");
+
+    if (country.IsNeighbor(target))
+        Console.WriteLine("[3] Declare war");
 
     Console.WriteLine("[Enter] Cancel");
     Console.Write("Choose action: ");
@@ -610,6 +657,36 @@ static void ManageForeignAffairs(GameSimulation simulation, Country country)
 
         Pause(
             $"Diplomatic mission to {target.Name} queued through {chancellor.FullName}.");
+        return;
+    }
+
+    if (action == "3" && country.IsNeighbor(target))
+    {
+        Console.WriteLine();
+        Console.WriteLine(
+            $"Declaring war will destroy trade, drive tension to its maximum, " +
+            "and may carry a serious domestic political cost.");
+        Console.Write("Type DECLARE to confirm: ");
+
+        if (!string.Equals(
+                Console.ReadLine()?.Trim(),
+                "DECLARE",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        simulation.SubmitOrder(new DeclareWarOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = chancellor,
+            IssuedOn = simulation.State.Date,
+            SourceCountry = country,
+            TargetCountry = target
+        });
+
+        Pause(
+            $"Declaration of war on {target.Name} queued through {chancellor.FullName}.");
         return;
     }
 
@@ -772,6 +849,123 @@ static void ShowForeignCountry(
         Console.WriteLine(
             $"Chancellor's assessment of a trade proposal: {assessment}.");
     }
+}
+
+static void ManageMilitary(GameSimulation simulation, Country country)
+{
+    var wars = simulation.State.Wars
+        .Where(war =>
+            war.Status == WarStatus.Active &&
+            war.IsParticipant(country))
+        .ToList();
+
+    if (wars.Count == 0)
+    {
+        Pause("The country is not currently at war.");
+        return;
+    }
+
+    Console.Clear();
+    Console.WriteLine("Military campaigns");
+    Console.WriteLine("==================");
+    Console.WriteLine();
+
+    for (var i = 0; i < wars.Count; i++)
+    {
+        var war = wars[i];
+        var opponent = war.OpponentOf(country);
+        var score = ReferenceEquals(country, war.Attacker)
+            ? war.WarScore
+            : -war.WarScore;
+
+        Console.WriteLine(
+            $"[{i + 1}] {opponent.Name,-12} score {score,+6:0.0;-0.0;0.0}  " +
+            $"month {war.MonthsActive,2}  stance {war.GetStance(country)}");
+    }
+
+    Console.WriteLine();
+    Console.Write("Choose campaign: ");
+
+    if (!int.TryParse(Console.ReadLine(), out var number) ||
+        number < 1 ||
+        number > wars.Count)
+    {
+        Pause("Invalid campaign.");
+        return;
+    }
+
+    var selected = wars[number - 1];
+    var enemy = selected.OpponentOf(country);
+    var marshal = country.GetOfficeHolder(Position.Marshal);
+
+    Console.Clear();
+    Console.WriteLine($"{country.Name} vs {enemy.Name}");
+    Console.WriteLine(new string('=', country.Name.Length + enemy.Name.Length + 4));
+    Console.WriteLine();
+
+    var scoreFromPlayer = ReferenceEquals(country, selected.Attacker)
+        ? selected.WarScore
+        : -selected.WarScore;
+
+    Console.WriteLine($"War score: {scoreFromPlayer:+0.0;-0.0;0.0}");
+    Console.WriteLine($"Months active: {selected.MonthsActive}");
+    Console.WriteLine(
+        $"Your army: {country.ArmySize:N0}, readiness {country.ArmyReadiness:F0}/100, " +
+        $"exhaustion {country.WarExhaustion:F1}/100");
+    Console.WriteLine(
+        $"Enemy army: {enemy.ArmySize:N0}, readiness {enemy.ArmyReadiness:F0}/100");
+    Console.WriteLine($"Current stance: {selected.GetStance(country)}");
+
+    if (marshal is null)
+    {
+        Pause(
+            "There is no active Marshal. The ruler is acting as commander and no " +
+            "formal campaign-stance order can be issued.");
+        return;
+    }
+
+    var willingness = PoliticalCalculations.GetOrderWillingness(
+        simulation.State,
+        country,
+        marshal,
+        country.Ruler);
+
+    Console.WriteLine(
+        $"Marshal: {marshal.FullName} — competence {marshal.Competence}/100, " +
+        $"willingness {willingness:F0}/100");
+    Console.WriteLine();
+    Console.WriteLine("[1] Defensive — lower losses, weaker pressure");
+    Console.WriteLine("[2] Balanced");
+    Console.WriteLine("[3] Aggressive — stronger pressure, higher losses/cost");
+    Console.WriteLine("[Enter] Cancel");
+    Console.Write("Order stance: ");
+
+    var input = Console.ReadLine()?.Trim();
+
+    var stance = input switch
+    {
+        "1" => WarStance.Defensive,
+        "2" => WarStance.Balanced,
+        "3" => WarStance.Aggressive,
+        _ => (WarStance?)null
+    };
+
+    if (!stance.HasValue)
+        return;
+
+    simulation.SubmitOrder(new SetWarStanceOrder
+    {
+        Issuer = country.Ruler,
+        Recipient = marshal,
+        IssuedOn = simulation.State.Date,
+        Country = country,
+        War = selected,
+        RequestedStance = stance.Value
+    });
+
+    Pause(
+        $"{stance.Value} campaign directive queued through {marshal.FullName}. " +
+        "A sufficiently unwilling Marshal may refuse or moderate the instruction.");
 }
 
 static void ManagePrison(GameSimulation simulation, Country country)
