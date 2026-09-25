@@ -1,3 +1,4 @@
+using LeaderGame.Simulation.Campaign;
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Diplomacy;
@@ -49,8 +50,37 @@ public static partial class GameSaveService
                     .Select(character => character.Id)
                     .ToList(),
                 HasLost = state.Player.HasLost,
-                LossReason = state.Player.LossReason
+                LossReason = state.Player.LossReason,
+                HasWon = state.Player.HasWon,
+                WinReason = state.Player.WinReason
             },
+            Campaign = state.Campaign is null
+                ? null
+                : new CampaignSnapshot
+                {
+                    ScenarioId = state.Campaign.ScenarioId,
+                    Title = state.Campaign.Title,
+                    Summary = state.Campaign.Summary,
+                    StartedOn = Date(state.Campaign.StartedOn),
+                    Objectives = state.Campaign.Objectives
+                        .Select(objective => new CampaignObjectiveSnapshot
+                        {
+                            Id = objective.Id,
+                            Title = objective.Title,
+                            Description = objective.Description,
+                            Type = objective.Type,
+                            TargetValue = objective.TargetValue,
+                            SecondaryTargetValue = objective.SecondaryTargetValue,
+                            RelatedCountryId = objective.RelatedCountryId,
+                            RequiredMonths = objective.RequiredMonths,
+                            ProgressMonths = objective.ProgressMonths,
+                            IsCompleted = objective.IsCompleted,
+                            CompletedOn = objective.CompletedOn is { } completed
+                                ? Date(completed)
+                                : null
+                        })
+                        .ToList()
+                },
             Characters = characters.Select(CaptureCharacter).ToList(),
             Countries = state.Countries.Select(CaptureCountry).ToList(),
             Relationships = state.Relationships.Entries
