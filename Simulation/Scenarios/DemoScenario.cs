@@ -1,5 +1,6 @@
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
+using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Player;
 using LeaderGame.Simulation.Politics;
 
@@ -505,6 +506,8 @@ public static class DemoScenario
             relations: -12,
             trust: 42,
             tension: 34);
+
+        InformationSystem.SeedInitialBriefings(state);
 
         return state;
     }
