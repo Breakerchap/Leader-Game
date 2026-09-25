@@ -529,8 +529,8 @@ internal static class OrderProcessor
                 state.Date,
                 ReportCategory.Politics,
                 $"Attempt to arrest {subject.FullName} fails",
-                $"{marshal.FullName} cannot secure {subject.FullName}. Enforcement strength " +
-                $"{enforcement:F0} was insufficient against resistance {resistance:F0}. " +
+                $"{marshal.FullName} cannot secure {subject.FullName}. The target's political " +
+                "support and capacity to resist prove stronger than the government expected. " +
                 "The failed arrest damages government authority and hardens opposition.");
         }
 
