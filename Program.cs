@@ -30,6 +30,7 @@ while (true)
     Console.WriteLine();
     Console.WriteLine("[Enter] Advance month");
     Console.WriteLine("[T] Order a tax-rate change");
+    Console.WriteLine("[B] Order a new budget");
     Console.WriteLine("[A] Appoint or replace an adviser");
     Console.WriteLine("[D] Dismiss an office-holder");
     Console.WriteLine("[I] Investigate a political figure");
@@ -45,6 +46,12 @@ while (true)
     if (string.Equals(input, "t", StringComparison.OrdinalIgnoreCase))
     {
         QueueTaxOrder(simulation, country);
+        continue;
+    }
+
+    if (string.Equals(input, "b", StringComparison.OrdinalIgnoreCase))
+    {
+        QueueBudgetOrder(simulation, country);
         continue;
     }
 
@@ -92,9 +99,22 @@ static void PrintDashboard(GameState state)
     Console.WriteLine($"Population: {country.Population:N0}");
     Console.WriteLine($"GDP: {country.Gdp:N0}");
     Console.WriteLine($"Treasury: {country.Treasury:N0}");
-    Console.WriteLine($"Army: {country.ArmySize:N0}");
+    Console.WriteLine($"Debt: {country.Debt:N0}");
+
+    if (country.LastMonthlyTaxRevenue != 0m || country.LastMonthlyExpenses != 0m)
+    {
+        Console.WriteLine(
+            $"Last budget: revenue {country.LastMonthlyTaxRevenue:N0}, " +
+            $"expenses {country.LastMonthlyExpenses:N0}, " +
+            $"balance {country.LastMonthlyBalance:N0}");
+    }
+
+    Console.WriteLine($"Army: {country.ArmySize:N0} — readiness {country.ArmyReadiness:F0}/100");
     Console.WriteLine($"Tax rate: {country.TaxRate:P1}");
     Console.WriteLine($"Administrative efficiency: {country.AdministrativeEfficiency:P0}");
+    Console.WriteLine(
+        $"Funding: army {country.ArmyFunding:P0}, administration " +
+        $"{country.AdministrationFunding:P0}, court {country.CourtFunding:P0}");
     Console.WriteLine($"Public unrest: {country.PublicUnrest:F1}");
     Console.WriteLine($"Stability: {country.Government.Stability:F1}");
     Console.WriteLine($"Pending orders: {state.PendingOrders.Count}");
@@ -176,6 +196,75 @@ static void QueueTaxOrder(GameSimulation simulation, Country country)
     });
 
     Pause($"Order sent to {treasurer.FullName}. It will be processed when the month advances.");
+}
+
+static void QueueBudgetOrder(GameSimulation simulation, Country country)
+{
+    var treasurer = country.GetOfficeHolder(Position.Treasurer);
+
+    if (treasurer is null)
+    {
+        Pause("There is no living Treasurer to receive the budget order.");
+        return;
+    }
+
+    Console.Clear();
+    Console.WriteLine("Government budget");
+    Console.WriteLine("=================");
+    Console.WriteLine();
+    Console.WriteLine(
+        "Funding is relative to the normal level. 50% is severe austerity; " +
+        "150% is heavy overfunding.");
+    Console.WriteLine();
+    Console.WriteLine(
+        $"Current: army {country.ArmyFunding:P0}, administration " +
+        $"{country.AdministrationFunding:P0}, court {country.CourtFunding:P0}");
+    Console.WriteLine(
+        $"Army readiness {country.ArmyReadiness:F0}/100, administrative efficiency " +
+        $"{country.AdministrativeEfficiency:P0}, debt {country.Debt:N0}");
+    Console.WriteLine();
+
+    if (!TryReadFunding("Army funding", country.ArmyFunding, out var army) ||
+        !TryReadFunding("Administration funding", country.AdministrationFunding, out var administration) ||
+        !TryReadFunding("Court and patronage funding", country.CourtFunding, out var court))
+    {
+        Pause("Each funding level must be a percentage from 50 to 150.");
+        return;
+    }
+
+    simulation.SubmitOrder(new SetBudgetOrder
+    {
+        Issuer = country.Ruler,
+        Recipient = treasurer,
+        IssuedOn = simulation.State.Date,
+        Country = country,
+        TargetArmyFunding = army,
+        TargetAdministrationFunding = administration,
+        TargetCourtFunding = court
+    });
+
+    Pause(
+        $"Budget order sent to {treasurer.FullName}. The enacted figures may differ " +
+        "from your targets depending on their competence and willingness.");
+}
+
+static bool TryReadFunding(
+    string label,
+    decimal current,
+    out decimal funding)
+{
+    Console.Write($"{label} (50-150%, current {current:P0}): ");
+    var raw = Console.ReadLine();
+
+    if (decimal.TryParse(raw, out var percentage) &&
+        percentage is >= 50m and <= 150m)
+    {
+        funding = percentage / 100m;
+        return true;
+    }
+
+    funding = current;
+    return false;
 }
 
 static void QueueAppointmentOrder(GameSimulation simulation, Country country)
