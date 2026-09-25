@@ -29,6 +29,19 @@ public sealed class GameSession
     {
     }
 
+    public static IReadOnlyList<ScenarioOptionView> AvailableScenarios { get; } =
+        ScenarioCatalog.All
+            .Select(scenario => new ScenarioOptionView(
+                scenario.Id,
+                scenario.Name,
+                scenario.CountryName,
+                scenario.LeaderName,
+                scenario.LineageName,
+                scenario.LineageType.ToString(),
+                scenario.Summary,
+                scenario.StrategicProblem))
+            .ToList();
+
     internal GameSession(GameSimulation simulation)
     {
         _simulation = simulation;
@@ -36,6 +49,18 @@ public sealed class GameSession
     }
 
     public PlayerViewState View { get; private set; }
+
+    public void StartNewCampaign(string scenarioId)
+    {
+        var scenario = ScenarioCatalog.Get(scenarioId);
+
+        _simulation = new GameSimulation(
+            DemoScenario.Create(scenario.Id));
+
+        _statusMessage =
+            $"{scenario.Name} begins. Your advisers await instructions.";
+        View = BuildView();
+    }
 
     private static string SaveDirectory
     {
@@ -128,8 +153,11 @@ public sealed class GameSession
 
     public void AdvanceMonth()
     {
-        if (_simulation.State.Player.HasLost)
+        if (_simulation.State.Player.HasLost ||
+            _simulation.State.Player.HasWon)
+        {
             return;
+        }
 
         _simulation.AdvanceMonth();
 
@@ -645,6 +673,33 @@ public sealed class GameSession
         var state = _simulation.State;
         var country = state.Player.Country;
         var ruler = country.Ruler;
+
+        var campaignState = state.Campaign ??
+            ScenarioCatalog.CreateCampaign(
+                country.Id == ScenarioCatalog.ValeriaId
+                    ? ScenarioCatalog.ValeriaId
+                    : ScenarioCatalog.FalkenreichId,
+                state.Date);
+
+        var campaignObjectives = campaignState.Objectives
+            .Select(objective => new CampaignObjectiveView(
+                objective.Id,
+                objective.Title,
+                objective.Description,
+                objective.IsCompleted
+                    ? $"Completed {objective.CompletedOn}"
+                    : objective.RequiredMonths <= 1
+                        ? "In progress"
+                        : $"{objective.ProgressMonths}/{objective.RequiredMonths} qualifying months",
+                objective.IsCompleted))
+            .ToList();
+
+        var campaign = new CampaignView(
+            campaignState.Title,
+            campaignState.Summary,
+            campaignObjectives.Count(objective => objective.IsCompleted),
+            campaignObjectives.Count,
+            campaignObjectives);
 
         var metrics = new List<MetricCardView>
         {
@@ -1271,6 +1326,9 @@ public sealed class GameSession
             $"Age {ruler.Age} · health {PlayerInformationFormatter.Health(ruler.Health)}",
             state.Player.HasLost,
             state.Player.LossReason,
+            state.Player.HasWon,
+            state.Player.WinReason,
+            campaign,
             state.PendingOrders.Count,
             pending.Count,
             pendingOrderDetails,
