@@ -1,4 +1,5 @@
 using LeaderGame.Simulation;
+using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
 
@@ -252,7 +253,7 @@ public class PoliticalBlocTests
         var country = state.Player.Country;
         var ruler = country.Ruler;
         var chancellor = country.GetOfficeHolder(
-            Characters.Position.Chancellor)!;
+            Position.Chancellor)!;
 
         foreach (var powerBase in Enum.GetValues<PowerBaseType>())
             country.SetPowerBaseStrength(powerBase, 0);
