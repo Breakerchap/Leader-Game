@@ -312,6 +312,136 @@ public sealed class GameSession
         Refresh($"Dismissal of {holder.FullName} from {position} queued.");
     }
 
+    public void InvestigateCharacter(int characterId)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var chancellor = country.GetOfficeHolder(Position.Chancellor);
+        var subject = country.PoliticalFigures.FirstOrDefault(character =>
+            character.Id == characterId &&
+            character.IsPoliticallyActive &&
+            !ReferenceEquals(character, country.Ruler));
+
+        if (subject is null)
+        {
+            Refresh("That political figure is not available for investigation.");
+            return;
+        }
+
+        if (chancellor is null)
+        {
+            Refresh("The Chancellery is vacant. There is nobody to conduct the investigation.");
+            return;
+        }
+
+        if (ReferenceEquals(subject, chancellor))
+        {
+            Refresh("The Chancellor cannot credibly be ordered to investigate themselves.");
+            return;
+        }
+
+        if (state.PendingOrders.OfType<InvestigateCharacterOrder>().Any(order =>
+                ReferenceEquals(order.Country, country) &&
+                ReferenceEquals(order.Subject, subject)))
+        {
+            Refresh($"{subject.FullName} is already under a queued investigation.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new InvestigateCharacterOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = chancellor,
+            IssuedOn = state.Date,
+            Country = country,
+            Subject = subject
+        });
+
+        Refresh($"Investigation of {subject.FullName} queued through {chancellor.FullName}.");
+    }
+
+    public void ArrestCharacter(int characterId)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var marshal = country.GetOfficeHolder(Position.Marshal);
+        var subject = country.PoliticalFigures.FirstOrDefault(character =>
+            character.Id == characterId &&
+            character.IsPoliticallyActive &&
+            !ReferenceEquals(character, country.Ruler));
+
+        if (subject is null)
+        {
+            Refresh("That political figure is not available for arrest.");
+            return;
+        }
+
+        if (marshal is null)
+        {
+            Refresh("The Marshal's office is vacant. There is nobody to carry out the arrest.");
+            return;
+        }
+
+        if (ReferenceEquals(subject, marshal))
+        {
+            Refresh("The Marshal cannot be ordered to arrest themselves.");
+            return;
+        }
+
+        if (state.PendingOrders.OfType<ArrestCharacterOrder>().Any(order =>
+                ReferenceEquals(order.Country, country) &&
+                ReferenceEquals(order.Subject, subject)))
+        {
+            Refresh($"An arrest of {subject.FullName} is already queued.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new ArrestCharacterOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = marshal,
+            IssuedOn = state.Date,
+            Country = country,
+            Subject = subject
+        });
+
+        Refresh(
+            $"Arrest of {subject.FullName} queued through {marshal.FullName}. " +
+            "An unsupported arrest can seriously damage legitimacy.");
+    }
+
+    public void ReleasePrisoner(int characterId)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+        var prisoner = country.Prisoners.FirstOrDefault(character =>
+            character.Id == characterId);
+
+        if (prisoner is null)
+        {
+            Refresh("That person is not currently held as a political prisoner.");
+            return;
+        }
+
+        if (state.PendingOrders.OfType<ReleasePrisonerOrder>().Any(order =>
+                ReferenceEquals(order.Country, country) &&
+                ReferenceEquals(order.Recipient, prisoner)))
+        {
+            Refresh($"Release of {prisoner.FullName} is already queued.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new ReleasePrisonerOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = prisoner,
+            IssuedOn = state.Date,
+            Country = country
+        });
+
+        Refresh($"Release of {prisoner.FullName} queued.");
+    }
+
     public void ImproveRelations(string countryId)
     {
         var state = _simulation.State;
@@ -553,6 +683,22 @@ public sealed class GameSession
         });
 
         Refresh($"{terms} peace proposal queued through {chancellor.FullName}.");
+    }
+
+    public void RespondToPowerBaseDemand(Guid demandId, bool concede)
+    {
+        var response = DomesticPoliticsSystem.RespondToDemand(
+            _simulation.State,
+            demandId,
+            concede);
+
+        if (response.Order is not null)
+            _simulation.SubmitOrder(response.Order);
+
+        _simulation.State.Reports.Add(response.Report);
+
+        _statusMessage = response.Report.Title;
+        Refresh();
     }
 
     public void RespondToCabinetProposal(Guid proposalId, bool accept)
@@ -1010,7 +1156,14 @@ public sealed class GameSession
                     PlayerInformationFormatter.Willingness(willingness),
                     PlayerInformationFormatter.Threat(threat),
                     string.Join(", ", strongestBases),
-                    character.IsPoliticallyActive && !character.Position.HasValue);
+                    character.IsPoliticallyActive && !character.Position.HasValue,
+                    character.IsPoliticallyActive &&
+                        country.GetOfficeHolder(Position.Chancellor) is { } investigationChancellor &&
+                        !ReferenceEquals(character, investigationChancellor),
+                    character.IsPoliticallyActive &&
+                        country.GetOfficeHolder(Position.Marshal) is { } arrestMarshal &&
+                        !ReferenceEquals(character, arrestMarshal),
+                    character.Status == PoliticalStatus.Imprisoned);
             })
             .ToList();
 
@@ -1039,9 +1192,35 @@ public sealed class GameSession
                     : $" via {demand.Spokesperson.FullName}") +
                 $": {DescribeDemand(demand)}"));
 
+        var demandViews = activeDemands
+            .Select(demand => new PoliticalDemandView(
+                demand.Id,
+                FormatPowerBase(demand.PowerBase),
+                DomesticPoliticsSystem.DescribeDemandRequest(demand),
+                demand.Spokesperson?.FullName ?? "No clear spokesperson",
+                demand.MonthsOpen switch
+                {
+                    <= 0 => "New",
+                    1 => "1 month open",
+                    _ => $"{demand.MonthsOpen} months open"
+                },
+                demand.EscalationLevel switch
+                {
+                    <= 0 => "Initial",
+                    1 => "Growing",
+                    2 => "Serious",
+                    3 => "Severe",
+                    _ => "Critical"
+                },
+                demand.AcknowledgedByRuler
+                    ? "Concession promised"
+                    : "Awaiting response"))
+            .ToList();
+
         var court = new CourtPoliticsView(
             offices,
             figures,
+            demandViews,
             opposition,
             pressure);
 
