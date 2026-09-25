@@ -1,4 +1,5 @@
 using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Politics;
 
 namespace LeaderGame.Simulation.Countries;
 
@@ -13,6 +14,7 @@ public class Country
     private double _armyReadiness = 75;
     private double _warExhaustion;
     private double _publicUnrest = 20;
+    private readonly Dictionary<PowerBaseType, int> _powerBaseStrengths = new();
 
     public required string Id { get; init; }
     public required string Name { get; set; }
@@ -90,6 +92,24 @@ public class Country
     public decimal LastMonthlyBalance { get; internal set; }
 
     public required Government Government { get; set; }
+
+    /// <summary>
+    /// Structural importance of each organised political constituency or institution.
+    /// Missing values default to 50 rather than zero.
+    /// </summary>
+    public IReadOnlyDictionary<PowerBaseType, int> PowerBaseStrengths => _powerBaseStrengths;
+
+    public int GetPowerBaseStrength(PowerBaseType powerBase, int defaultValue = 50)
+    {
+        return _powerBaseStrengths.TryGetValue(powerBase, out var value)
+            ? value
+            : Math.Clamp(defaultValue, 0, 100);
+    }
+
+    public void SetPowerBaseStrength(PowerBaseType powerBase, int value)
+    {
+        _powerBaseStrengths[powerBase] = Math.Clamp(value, 0, 100);
+    }
 
     public required Character Ruler { get; set; }
 
