@@ -407,7 +407,7 @@ public enum SaveOrderKind
     RequestReport
 }
 
-public sealed class OrderSnapshot
+public sealed record OrderSnapshot
 {
     public Guid Id { get; init; }
 
