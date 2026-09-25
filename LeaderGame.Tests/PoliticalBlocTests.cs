@@ -232,7 +232,8 @@ public class PoliticalBlocTests
             [PowerBaseType.Military, PowerBaseType.Aristocracy]);
         state.PoliticalBlocs.Add(bloc);
 
-        var oldInfluence = lukas.Influence;
+        var oldBacking =
+            lukas.GetPowerBaseStanding(PowerBaseType.Military);
         var oldUnrest = country.PublicUnrest;
 
         new GameSimulation(state).AdvanceMonth();
@@ -242,7 +243,9 @@ public class PoliticalBlocTests
             report => report.Title.Contains(
                 "coordinates opposition pressure",
                 StringComparison.OrdinalIgnoreCase));
-        Assert.True(lukas.Influence > oldInfluence);
+        Assert.True(
+            lukas.GetPowerBaseStanding(PowerBaseType.Military) >
+            oldBacking);
         Assert.True(country.PublicUnrest > oldUnrest);
     }
 
