@@ -36,10 +36,12 @@ internal static class OrderProcessor
                 "The requested tax rate must be between 0% and 60%.");
         }
 
-        if (order.Recipient is not Advisor treasurer ||
-            treasurer.Position != Position.Treasurer ||
+        var treasurer = order.Recipient;
+
+        if (treasurer.Position != Position.Treasurer ||
             !treasurer.IsAlive ||
-            !order.Country.Advisors.Contains(treasurer))
+            !order.Country.ContainsPoliticalFigure(treasurer) ||
+            ReferenceEquals(treasurer, order.Country.Ruler))
         {
             order.Status = OrderStatus.Rejected;
             return new SimulationReport(
@@ -98,9 +100,11 @@ internal static class OrderProcessor
         GameState state,
         AppointAdvisorOrder order)
     {
-        if (order.Recipient is not Advisor candidate ||
-            !candidate.IsAlive ||
-            !order.Country.Advisors.Contains(candidate))
+        var candidate = order.Recipient;
+
+        if (!candidate.IsAlive ||
+            !order.Country.ContainsPoliticalFigure(candidate) ||
+            ReferenceEquals(candidate, order.Country.Ruler))
         {
             order.Status = OrderStatus.Rejected;
             return new SimulationReport(
@@ -120,7 +124,7 @@ internal static class OrderProcessor
                 $"{candidate.FullName} already holds the office of {candidate.Position.Value}.");
         }
 
-        var previousHolder = order.Country.GetAdvisor(order.Position);
+        var previousHolder = order.Country.GetOfficeHolder(order.Position);
 
         if (previousHolder is not null)
         {
@@ -133,7 +137,7 @@ internal static class OrderProcessor
         order.Status = OrderStatus.Completed;
 
         var replacementText = previousHolder is null
-            ? $"The office was vacant."
+            ? "The office was vacant."
             : $"{previousHolder.FullName} was dismissed and their loyalty fell to " +
               $"{previousHolder.Loyalty}.";
 

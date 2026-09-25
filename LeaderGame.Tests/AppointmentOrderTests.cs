@@ -13,7 +13,7 @@ public class AppointmentOrderTests
         var state = DemoScenario.Create();
         var simulation = new GameSimulation(state);
         var country = state.Player.Country;
-        var oldTreasurer = country.GetAdvisor(Position.Treasurer)!;
+        var oldTreasurer = country.GetOfficeHolder(Position.Treasurer)!;
         var candidate = country.AvailableAdvisors.First();
         var oldLoyalty = oldTreasurer.Loyalty;
         var candidateLoyalty = candidate.Loyalty;
@@ -31,7 +31,7 @@ public class AppointmentOrderTests
         simulation.AdvanceMonth();
 
         Assert.Equal(OrderStatus.Completed, order.Status);
-        Assert.Same(candidate, country.GetAdvisor(Position.Treasurer));
+        Assert.Same(candidate, country.GetOfficeHolder(Position.Treasurer));
         Assert.Null(oldTreasurer.Position);
         Assert.Equal(oldLoyalty - 15, oldTreasurer.Loyalty);
         Assert.Equal(candidateLoyalty + 5, candidate.Loyalty);
@@ -44,7 +44,7 @@ public class AppointmentOrderTests
         var simulation = new GameSimulation(state);
         var country = state.Player.Country;
 
-        var outsider = new Advisor
+        var outsider = new Character
         {
             Id = 99,
             FirstName = "Foreign",
@@ -68,16 +68,16 @@ public class AppointmentOrderTests
         simulation.AdvanceMonth();
 
         Assert.Equal(OrderStatus.Rejected, order.Status);
-        Assert.NotSame(outsider, country.GetAdvisor(Position.Chancellor));
+        Assert.NotSame(outsider, country.GetOfficeHolder(Position.Chancellor));
     }
 
     [Fact]
-    public void Appointment_RejectsAdvisorWhoAlreadyHoldsOffice()
+    public void Appointment_RejectsCharacterWhoAlreadyHoldsOffice()
     {
         var state = DemoScenario.Create();
         var simulation = new GameSimulation(state);
         var country = state.Player.Country;
-        var marshal = country.GetAdvisor(Position.Marshal)!;
+        var marshal = country.GetOfficeHolder(Position.Marshal)!;
 
         var order = new AppointAdvisorOrder
         {
@@ -92,6 +92,6 @@ public class AppointmentOrderTests
         simulation.AdvanceMonth();
 
         Assert.Equal(OrderStatus.Rejected, order.Status);
-        Assert.Same(marshal, country.GetAdvisor(Position.Marshal));
+        Assert.Same(marshal, country.GetOfficeHolder(Position.Marshal));
     }
 }

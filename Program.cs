@@ -88,7 +88,7 @@ static void PrintDashboard(GameState state)
 
 static void QueueTaxOrder(GameSimulation simulation, Country country)
 {
-    var treasurer = country.GetAdvisor(Position.Treasurer);
+    var treasurer = country.GetOfficeHolder(Position.Treasurer);
 
     if (treasurer is null)
     {
@@ -185,7 +185,7 @@ static void QueueAppointmentOrder(GameSimulation simulation, Country country)
         Position = position
     });
 
-    var currentHolder = country.GetAdvisor(position);
+    var currentHolder = country.GetOfficeHolder(position);
     var replacement = currentHolder is null
         ? "The office is currently vacant."
         : $"This will replace {currentHolder.FullName}.";

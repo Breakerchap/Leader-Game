@@ -14,7 +14,7 @@ public class TaxOrderTests
         var state = DemoScenario.Create();
         var simulation = new GameSimulation(state);
         var country = state.Player.Country;
-        var treasurer = country.GetAdvisor(Position.Treasurer)!;
+        var treasurer = country.GetOfficeHolder(Position.Treasurer)!;
 
         var order = new ChangeTaxOrder
         {
@@ -45,7 +45,7 @@ public class TaxOrderTests
         var state = DemoScenario.Create();
         var simulation = new GameSimulation(state);
         var country = state.Player.Country;
-        var treasurer = country.GetAdvisor(Position.Treasurer)!;
+        var treasurer = country.GetOfficeHolder(Position.Treasurer)!;
 
         var order = new ChangeTaxOrder
         {
@@ -69,7 +69,7 @@ public class TaxOrderTests
         var state = DemoScenario.Create();
         var simulation = new GameSimulation(state);
         var country = state.Player.Country;
-        var marshal = country.GetAdvisor(Position.Marshal)!;
+        var marshal = country.GetOfficeHolder(Position.Marshal)!;
 
         var order = new ChangeTaxOrder
         {

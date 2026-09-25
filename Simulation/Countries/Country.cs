@@ -44,22 +44,34 @@ public class Country
 
     public required Government Government { get; set; }
 
-    public required Ruler Ruler { get; set; }
+    public required Character Ruler { get; set; }
 
     /// <summary>
-    /// Political figures who currently hold, or are eligible to hold, an advisory office.
+    /// Characters currently participating in this country's political world:
+    /// ruler, office-holders and people who could plausibly enter government.
     /// </summary>
-    public List<Advisor> Advisors { get; } = [];
+    public List<Character> PoliticalFigures { get; } = [];
 
-    public IEnumerable<Advisor> ActiveAdvisors =>
-        Advisors.Where(advisor => advisor.IsAlive && advisor.Position.HasValue);
+    public IEnumerable<Character> ActiveAdvisors =>
+        PoliticalFigures.Where(character =>
+            character.IsAlive &&
+            !ReferenceEquals(character, Ruler) &&
+            character.Position.HasValue);
 
-    public IEnumerable<Advisor> AvailableAdvisors =>
-        Advisors.Where(advisor => advisor.IsAlive && !advisor.Position.HasValue);
+    public IEnumerable<Character> AvailableAdvisors =>
+        PoliticalFigures.Where(character =>
+            character.IsAlive &&
+            !ReferenceEquals(character, Ruler) &&
+            !character.Position.HasValue);
 
-    public Advisor? GetAdvisor(Position position)
+    public Character? GetOfficeHolder(Position position)
     {
-        return Advisors.FirstOrDefault(
-            advisor => advisor.IsAlive && advisor.Position == position);
+        return PoliticalFigures.FirstOrDefault(character =>
+            character.IsAlive &&
+            !ReferenceEquals(character, Ruler) &&
+            character.Position == position);
     }
+
+    public bool ContainsPoliticalFigure(Character character) =>
+        PoliticalFigures.Contains(character);
 }
