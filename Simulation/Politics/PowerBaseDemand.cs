@@ -1,3 +1,4 @@
+using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 
 namespace LeaderGame.Simulation.Politics;
@@ -18,6 +19,12 @@ public sealed class PowerBaseDemand
     public required PowerBaseType PowerBase { get; init; }
 
     public required PowerBaseDemandType Type { get; init; }
+
+    /// <summary>
+    /// Political figure currently carrying the group's demand into court.
+    /// The spokesperson may change if they die, are imprisoned or lose relevance.
+    /// </summary>
+    public Character? Spokesperson { get; set; }
 
     /// <summary>
     /// Numeric target used by funding and tax demands. EndWar ignores this value.
