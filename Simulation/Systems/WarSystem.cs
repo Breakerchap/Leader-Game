@@ -92,26 +92,6 @@ internal static class WarSystem
         ApplyOperationalCost(war.Attacker, war.AttackerStance);
         ApplyOperationalCost(war.Defender, war.DefenderStance);
 
-        var playerCountry = state.Player.Country;
-
-        if (war.IsParticipant(playerCountry))
-        {
-            var opponent = war.OpponentOf(playerCountry);
-            var playerIsAttacker = ReferenceEquals(playerCountry, war.Attacker);
-            var ownLosses = playerIsAttacker ? attackerLosses : defenderLosses;
-            var enemyLosses = playerIsAttacker ? defenderLosses : attackerLosses;
-            var playerScore = playerIsAttacker ? war.WarScore : -war.WarScore;
-
-            yield return new SimulationReport(
-                state.Date,
-                ReportCategory.Military,
-                $"Campaign against {opponent.Name}",
-                $"War month {war.MonthsActive}: your forces lose {ownLosses:N0}; " +
-                $"{opponent.Name} loses {enemyLosses:N0}. War score from your perspective: " +
-                $"{playerScore:+0.0;-0.0;0.0}. War exhaustion is " +
-                $"{playerCountry.WarExhaustion:F1}/100.");
-        }
-
         var resolution = ResolveIfDecisive(state, war);
 
         if (resolution is not null)
