@@ -18,4 +18,6 @@ public class PlayerState
     public bool HasWon { get; set; }
 
     public string? WinReason { get; set; }
+
+    public int ElectionsWon { get; set; }
 }
