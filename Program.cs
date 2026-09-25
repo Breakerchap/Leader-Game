@@ -102,7 +102,9 @@ static void PrintDashboard(GameState state)
     Console.WriteLine($"{country.Name} — {state.Date}");
     Console.WriteLine($"Lineage: {state.Player.Lineage.Name}");
     Console.WriteLine();
-    Console.WriteLine($"Ruler: {country.Ruler.FullName}");
+    Console.WriteLine(
+        $"Ruler: {country.Ruler.FullName} — age {country.Ruler.Age}, " +
+        $"health {country.Ruler.Health}/100");
     Console.WriteLine($"Population: {country.Population:N0}");
     Console.WriteLine($"GDP: {country.Gdp:N0}");
     Console.WriteLine($"Treasury: {country.Treasury:N0}");
@@ -720,8 +722,11 @@ static void PrintCourt(GameState state)
 
         Console.WriteLine($"{character.FullName} — {role}");
         Console.WriteLine(
-            $"  Competence {character.Competence,3}   Ambition {character.Ambition,3}   " +
-            $"Influence {character.Influence,3}   Legitimacy {character.Legitimacy,3}");
+            $"  Age {character.Age,3}   Health {character.Health,3}   " +
+            $"Competence {character.Competence,3}   Ambition {character.Ambition,3}");
+        Console.WriteLine(
+            $"  Influence {character.Influence,3}   Legitimacy {character.Legitimacy,3}   " +
+            $"Status {character.Status}");
 
         if (!ReferenceEquals(character, country.Ruler))
         {
