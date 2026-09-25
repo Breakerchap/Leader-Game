@@ -15,10 +15,111 @@ public sealed record InformationRequestResult(
 
 internal static class InformationSystem
 {
+    public static void CaptureTruthSnapshot(
+        GameState state,
+        GameDate? date = null)
+    {
+        var snapshotDate = date ?? state.Date;
+
+        state.InformationHistory.RemoveAll(existing =>
+            existing.Date == snapshotDate);
+
+        var snapshot = new InformationTruthSnapshot
+        {
+            Date = snapshotDate
+        };
+
+        foreach (var country in state.Countries)
+        {
+            foreach (var metric in new[]
+                     {
+                         InformationMetric.Population,
+                         InformationMetric.Gdp,
+                         InformationMetric.Treasury,
+                         InformationMetric.Debt,
+                         InformationMetric.MonthlyTaxRevenue,
+                         InformationMetric.MonthlyTradeIncome,
+                         InformationMetric.MonthlyExpenses,
+                         InformationMetric.MonthlyBalance,
+                         InformationMetric.AdministrativeEfficiency,
+                         InformationMetric.ArmySize,
+                         InformationMetric.ArmyReadiness,
+                         InformationMetric.WarExhaustion,
+                         InformationMetric.PublicUnrest,
+                         InformationMetric.GovernmentStability,
+                         InformationMetric.PoliticalBacking
+                     })
+            {
+                var key = new InformationKey(metric, country.Id);
+                snapshot.Values[key] =
+                    GetCurrentTruthValue(state, metric, country, null);
+            }
+        }
+
+        var playerCountry = state.Player.Country;
+
+        foreach (var foreign in state.Countries.Where(candidate =>
+                     !ReferenceEquals(candidate, playerCountry)))
+        {
+            foreach (var metric in new[]
+                     {
+                         InformationMetric.DiplomaticRelations,
+                         InformationMetric.DiplomaticTrust,
+                         InformationMetric.DiplomaticTension
+                     })
+            {
+                var key = new InformationKey(
+                    metric,
+                    foreign.Id,
+                    playerCountry.Id);
+
+                snapshot.Values[key] =
+                    GetCurrentTruthValue(
+                        state,
+                        metric,
+                        foreign,
+                        playerCountry.Id);
+            }
+        }
+
+        foreach (var war in state.Wars.Where(war =>
+                     war.Status == WarStatus.Active &&
+                     war.IsParticipant(playerCountry)))
+        {
+            var enemy = war.OpponentOf(playerCountry);
+            var key = new InformationKey(
+                InformationMetric.WarScore,
+                playerCountry.Id,
+                enemy.Id);
+
+            snapshot.Values[key] =
+                GetCurrentTruthValue(
+                    state,
+                    InformationMetric.WarScore,
+                    playerCountry,
+                    enemy.Id);
+        }
+
+        state.InformationHistory.Add(snapshot);
+        state.InformationHistory.Sort((a, b) =>
+            CompareDates(a.Date, b.Date));
+
+        if (state.InformationHistory.Count > 36)
+            state.InformationHistory.RemoveRange(
+                0,
+                state.InformationHistory.Count - 36);
+    }
+
     public static void SeedInitialBriefings(GameState state)
     {
         if (state.AdvisorReports.Count > 0 || state.Knowledge.Latest.Count > 0)
             return;
+
+        if (state.InformationHistory.Count == 0)
+        {
+            CaptureTruthSnapshot(state, SubtractMonths(state.Date, 2));
+            CaptureTruthSnapshot(state, SubtractMonths(state.Date, 1));
+        }
 
         var country = state.Player.Country;
         var treasurer = country.GetOfficeHolder(Position.Treasurer);
@@ -672,11 +773,12 @@ internal static class InformationSystem
         GameDate asOf,
         bool wasRequested)
     {
-        var truth = GetTruthValue(
+        var truth = GetTruthValueAtDate(
             state,
             metric,
             subjectCountry,
-            relatedCountryId);
+            relatedCountryId,
+            asOf);
 
         var foreign = !ReferenceEquals(subjectCountry, state.Player.Country);
         var fog = BaseFog(metric, foreign);
@@ -785,7 +887,35 @@ internal static class InformationSystem
         };
     }
 
-    private static double GetTruthValue(
+    private static double GetTruthValueAtDate(
+        GameState state,
+        InformationMetric metric,
+        Country subject,
+        string? relatedCountryId,
+        GameDate asOf)
+    {
+        var key = new InformationKey(
+            metric,
+            subject.Id,
+            relatedCountryId);
+
+        var snapshot = state.InformationHistory
+            .Where(candidate => CompareDates(candidate.Date, asOf) <= 0)
+            .OrderByDescending(candidate => candidate.Date.Year)
+            .ThenByDescending(candidate => candidate.Date.Month)
+            .FirstOrDefault(candidate => candidate.Values.ContainsKey(key));
+
+        if (snapshot is not null)
+            return snapshot.Values[key];
+
+        return GetCurrentTruthValue(
+            state,
+            metric,
+            subject,
+            relatedCountryId);
+    }
+
+    private static double GetCurrentTruthValue(
         GameState state,
         InformationMetric metric,
         Country subject,
@@ -1165,7 +1295,12 @@ internal static class InformationSystem
                 ? state.Player.Country.Id
                 : null;
 
-            var truth = GetTruthValue(state, metric, subject, relatedId);
+            var truth = GetTruthValueAtDate(
+                state,
+                metric,
+                subject,
+                relatedId,
+                asOf);
             var fog = BaseFog(metric, !ReferenceEquals(subject, state.Player.Country));
             var estimate = RoundEstimate(metric, truth);
             var margin = RoundMargin(
@@ -1308,6 +1443,15 @@ internal static class InformationSystem
             InformationTopic.DomesticPolitics => "Domestic politics",
             _ => topic.ToString()
         };
+    }
+
+    private static int CompareDates(GameDate first, GameDate second)
+    {
+        var year = first.Year.CompareTo(second.Year);
+
+        return year != 0
+            ? year
+            : first.Month.CompareTo(second.Month);
     }
 
     private static GameDate SubtractMonths(GameDate date, int months)
