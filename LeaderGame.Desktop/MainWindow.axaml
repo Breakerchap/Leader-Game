@@ -403,73 +403,108 @@
               <ItemsControl ItemsSource="{Binding View.IntelligenceReports}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Border Classes="card" Margin="0,0,0,10">
-                      <StackPanel Spacing="8">
-                        <Grid ColumnDefinitions="*,Auto">
-                          <StackPanel>
-                            <TextBlock
-                                Text="{Binding Title}"
-                                FontSize="17"
-                                FontWeight="SemiBold"
-                                TextWrapping="Wrap" />
-                            <TextBlock
-                                Text="{Binding Source}"
-                                FontSize="12"
-                                Classes="muted" />
-                          </StackPanel>
-                          <StackPanel Grid.Column="1" HorizontalAlignment="Right">
-                            <TextBlock Text="{Binding Origin}" HorizontalAlignment="Right" />
-                            <TextBlock
-                                Text="{Binding DataAge}"
-                                FontSize="11"
-                                Classes="muted"
-                                HorizontalAlignment="Right" />
-                          </StackPanel>
-                        </Grid>
-
-                        <TextBlock
-                            Text="{Binding Summary}"
-                            TextWrapping="Wrap"
-                            Foreground="#C4CED9" />
-
-                        <ItemsControl ItemsSource="{Binding Facts}">
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                              <Grid
-                                  ColumnDefinitions="190,110,90,*"
-                                  Margin="0,3">
-                                <TextBlock Text="{Binding Label}" />
-                                <TextBlock
-                                    Grid.Column="1"
-                                    Text="{Binding Value}"
-                                    FontWeight="SemiBold" />
-                                <TextBlock
-                                    Grid.Column="2"
-                                    Text="{Binding Margin}"
-                                    Classes="muted" />
-                                <TextBlock
-                                    Grid.Column="3"
-                                    Text="{Binding Confidence}"
-                                    FontSize="11"
-                                    Classes="muted" />
-                              </Grid>
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <ItemsControl ItemsSource="{Binding Caveats}">
-                          <ItemsControl.ItemTemplate>
-                            <DataTemplate>
+                    <Border Classes="card" Margin="0,0,0,10" Padding="0">
+                      <Grid ColumnDefinitions="5,*">
+                        <Border
+                            Background="{Binding Source, Converter={StaticResource AdvisorRoleBrush}}"
+                            CornerRadius="8,0,0,8" />
+                        <StackPanel Grid.Column="1" Spacing="9" Margin="14">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="4">
                               <TextBlock
-                                  Text="{Binding}"
-                                  TextWrapping="Wrap"
-                                  Foreground="#C69A61"
-                                  FontSize="12"
-                                  Margin="0,2" />
-                            </DataTemplate>
-                          </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                      </StackPanel>
+                                  Text="{Binding Title}"
+                                  FontSize="17"
+                                  FontWeight="SemiBold"
+                                  TextWrapping="Wrap" />
+                              <StackPanel Orientation="Horizontal" Spacing="7">
+                                <Border
+                                    Classes="badge"
+                                    Background="{Binding Source, Converter={StaticResource AdvisorRoleBrush}}">
+                                  <TextBlock
+                                      Text="{Binding Source}"
+                                      FontSize="10"
+                                      FontWeight="Bold"
+                                      Foreground="#081016" />
+                                </Border>
+                                <TextBlock
+                                    Text="{Binding DataAge}"
+                                    FontSize="11"
+                                    Classes="muted"
+                                    VerticalAlignment="Center" />
+                              </StackPanel>
+                            </StackPanel>
+                            <Border
+                                Grid.Column="1"
+                                Classes="badge"
+                                Background="#1A2430"
+                                VerticalAlignment="Top">
+                              <TextBlock
+                                  Text="{Binding Origin}"
+                                  FontSize="10"
+                                  Foreground="#B9C5D3" />
+                            </Border>
+                          </Grid>
+
+                          <TextBlock
+                              Text="{Binding Summary}"
+                              TextWrapping="Wrap"
+                              Foreground="#C4CED9" />
+
+                          <Border Background="#0D141C" CornerRadius="7" Padding="10">
+                            <ItemsControl ItemsSource="{Binding Facts}">
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                  <Grid
+                                      ColumnDefinitions="190,110,90,*"
+                                      Margin="0,4">
+                                    <TextBlock Text="{Binding Label}" Foreground="#D8E0E8" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Text="{Binding Value}"
+                                        FontWeight="SemiBold"
+                                        Foreground="#F1F5F9" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        Text="{Binding Margin}"
+                                        Foreground="#D8A657" />
+                                    <TextBlock
+                                        Grid.Column="3"
+                                        Text="{Binding Confidence}"
+                                        FontSize="11"
+                                        Classes="muted" />
+                                  </Grid>
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </Border>
+
+                          <ItemsControl ItemsSource="{Binding Caveats}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate>
+                                <Border
+                                    Background="#2A2115"
+                                    BorderBrush="#6D542D"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="9,7"
+                                    Margin="0,2">
+                                  <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <TextBlock
+                                        Text="▲"
+                                        Foreground="#E3B76C"
+                                        FontWeight="Bold" />
+                                    <TextBlock
+                                        Text="{Binding}"
+                                        TextWrapping="Wrap"
+                                        Foreground="#E0C28D"
+                                        FontSize="12" />
+                                  </StackPanel>
+                                </Border>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </Grid>
                     </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
