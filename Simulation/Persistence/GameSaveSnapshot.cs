@@ -47,6 +47,8 @@ public sealed class GameSaveSnapshot
 
     public List<CabinetProposalSnapshot> CabinetProposals { get; init; } = [];
 
+    public List<ElectionPromiseSnapshot> ElectionPromises { get; init; } = [];
+
     public List<DiplomaticProposalSnapshot> DiplomaticProposals { get; init; } = [];
 
     public List<SimulationReportSnapshot> Reports { get; init; } = [];
@@ -360,6 +362,25 @@ public sealed class CabinetProposalSnapshot
     public int MonthsOpen { get; init; }
 
     public CabinetProposalStatus Status { get; init; }
+}
+
+public sealed class ElectionPromiseSnapshot
+{
+    public Guid Id { get; init; }
+
+    public required string CountryId { get; init; }
+
+    public int CandidateId { get; init; }
+
+    public ElectionPromiseType Type { get; init; }
+
+    public decimal TargetValue { get; init; }
+
+    public required DateSnapshot MadeOn { get; init; }
+
+    public ElectionPromiseStatus Status { get; init; }
+
+    public int MonthsSinceElection { get; init; }
 }
 
 public sealed class DiplomaticProposalSnapshot
