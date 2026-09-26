@@ -349,6 +349,144 @@ public class CrisisSystemTests
     }
 
     [Fact]
+    public void AgeingMonarch_WithUnsettledHeir_TriggersSuccessionCrisis()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+
+        country.Ruler.Age = 66;
+        country.Ruler.Health = 72;
+
+        var reports =
+            CrisisSystem.ProcessMonth(state)
+                .ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis =>
+                crisis.Type ==
+                    PoliticalCrisisType.SuccessionDispute &&
+                crisis.Status ==
+                    PoliticalCrisisStatus.Active);
+
+        Assert.True(crisis.AwaitingDecision);
+        Assert.Contains(
+            reports,
+            report => report.Title.Contains(
+                "succession",
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void PubliclyNamingStrongHeir_CanSettleSuccessionCrisis()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var heir = country.SuccessionOrder[0];
+
+        country.Ruler.Age = 66;
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis => crisis.Type ==
+                PoliticalCrisisType.SuccessionDispute);
+
+        var legitimacy = heir.Legitimacy;
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.PubliclyNameSuccessor);
+
+        Assert.True(heir.Legitimacy > legitimacy);
+        Assert.Equal(
+            PoliticalCrisisStatus.Resolved,
+            crisis.Status);
+    }
+
+    [Fact]
+    public void SuccessionCrisis_ProducesCompetingCabinetAdvice()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.SuccessionDispute,
+            StartedOn = state.Date
+        };
+
+        var advice =
+            CrisisSystem.GetAdvice(
+                state,
+                crisis);
+
+        Assert.Contains(
+            advice,
+            item =>
+                item.Advisor.Position ==
+                    Position.Marshal &&
+                item.Response ==
+                    PoliticalCrisisResponse.PubliclyNameSuccessor);
+
+        Assert.Contains(
+            advice,
+            item =>
+                item.Advisor.Position ==
+                    Position.Chancellor &&
+                item.Response ==
+                    PoliticalCrisisResponse.ConveneSuccessionSettlement);
+
+        Assert.Contains(
+            advice,
+            item =>
+                item.Advisor.Position ==
+                    Position.Treasurer &&
+                item.Response ==
+                    PoliticalCrisisResponse.BalanceSuccessionFactions);
+    }
+
+    [Fact]
+    public void FailedSuccessionSettlement_CreatesRivalFaction()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var rival = country.SuccessionOrder[1];
+
+        country.Ruler.Age = 66;
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.SuccessionDispute,
+            StartedOn = state.Date,
+            Stage = 3,
+            MonthsAtCurrentStage = 1,
+            AwaitingDecision = true
+        };
+        state.PoliticalCrises.Add(crisis);
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        Assert.Equal(
+            PoliticalCrisisStatus.BrokeAgainstGovernment,
+            crisis.Status);
+
+        Assert.Contains(
+            state.PoliticalBlocs,
+            bloc =>
+                bloc.IsActive &&
+                ReferenceEquals(
+                    bloc.Leader,
+                    rival));
+
+        Assert.False(state.Player.HasLost);
+    }
+
+    [Fact]
     public void CrisisState_RoundTripsThroughSave()
     {
         var state = DemoScenario.Create();
