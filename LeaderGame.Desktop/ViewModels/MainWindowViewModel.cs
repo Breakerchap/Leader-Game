@@ -56,6 +56,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                  !View.HasWon &&
                  !IsCampaignSetupVisible);
 
+        _loadCommand = new RelayCommand(
+            _ =>
+            {
+                _session.LoadDefault();
+                IsCampaignSetupVisible = false;
+                CurrentSection = "Briefing";
+                SyncPolicyTargets();
+                RefreshBindings();
+                _advanceMonthCommand.RaiseCanExecuteChanged();
+            },
+            _ => _session.DefaultSaveExists);
+
         SaveCommand = new RelayCommand(_ =>
         {
             _session.SaveDefault();
@@ -87,18 +99,6 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         {
             IsCampaignSetupVisible = true;
         });
-
-        _loadCommand = new RelayCommand(
-            _ =>
-            {
-                _session.LoadDefault();
-                IsCampaignSetupVisible = false;
-                CurrentSection = "Briefing";
-                SyncPolicyTargets();
-                RefreshBindings();
-                _advanceMonthCommand.RaiseCanExecuteChanged();
-            },
-            _ => _session.DefaultSaveExists);
 
         _recoverAutosaveCommand = new RelayCommand(
             _ =>
