@@ -762,6 +762,10 @@
                             Text="{Binding View.Government.AdministrativeEfficiency}"
                             FontSize="16"
                             FontWeight="SemiBold" />
+                        <TextBlock
+                            Text="{Binding View.Government.AdministrativeDevelopment}"
+                            FontSize="11"
+                            Foreground="#86B49A" />
                       </StackPanel>
                       <TextBlock
                           Grid.Column="1"
