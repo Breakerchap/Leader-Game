@@ -361,6 +361,7 @@ public static partial class GameSaveService
                     ? RequireRegion(country, regionId)
                     : null,
                 RelatedBlocId = saved.RelatedBlocId,
+                RelatedWarId = saved.RelatedWarId,
                 StartedOn = GameDate(saved.StartedOn),
                 Stage = saved.Stage <= 0
                     ? 1
