@@ -7,7 +7,9 @@ public enum CampaignObjectiveType
     TradeNetwork,
     DiplomaticStanding,
     PeacefulRealm,
-    ElectoralMandate
+    ElectoralMandate,
+    RestorePoliticalControl,
+    ConsolidateRestoration
 }
 
 public sealed class CampaignObjective
