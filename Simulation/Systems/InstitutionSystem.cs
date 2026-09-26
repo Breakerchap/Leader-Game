@@ -124,7 +124,7 @@ internal static class InstitutionSystem
             LegislativeBodyType.Assembly =>
                 "Taxation and budgets require Assembly approval. Political backing inside the institutions matters as much as issuing the directive.",
             LegislativeBodyType.RoyalCouncil =>
-                "The Royal Council can block extraordinary taxation or extreme funding changes, while ordinary fiscal administration remains a crown prerogative.",
+                "The Royal Council can block extraordinary taxation, while ordinary spending remains a crown prerogative.",
             _ =>
                 "Fiscal policy can be enacted by executive decree, though advisers and political constituencies can still resist its implementation."
         };
@@ -146,19 +146,12 @@ internal static class InstitutionSystem
         Countries.Country country,
         SetBudgetOrder order)
     {
-        if (country.Government.LegislativeBody == LegislativeBodyType.Assembly)
-            return true;
-
-        if (country.Government.LegislativeBody != LegislativeBodyType.RoyalCouncil)
-            return false;
-
-        return IsExtraordinaryFunding(order.TargetArmyFunding) ||
-               IsExtraordinaryFunding(order.TargetAdministrationFunding) ||
-               IsExtraordinaryFunding(order.TargetCourtFunding);
+        // In the current feudal model the crown retains ordinary control
+        // over expenditure, while extraordinary taxation requires council
+        // consent. Republics place the full budget before the Assembly.
+        return country.Government.LegislativeBody ==
+            LegislativeBodyType.Assembly;
     }
-
-    private static bool IsExtraordinaryFunding(decimal target) =>
-        target <= 0.50m || target >= 1.50m;
 
     private static bool HasPendingProposal(
         GameState state,
