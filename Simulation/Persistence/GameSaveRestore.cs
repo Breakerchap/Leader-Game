@@ -776,6 +776,21 @@ public static partial class GameSaveService
                     nameof(saved.TargetPowerBase))
             },
 
+            SaveOrderKind.AdministrativeReform => new AdministrativeReformOrder
+            {
+                Id = saved.Id,
+                Issuer = issuer,
+                Recipient = recipient,
+                IssuedOn = issuedOn,
+                Country = RequireCountry(countries, saved.CountryId),
+                Function = Require(
+                    saved.AdministrativeFunction,
+                    nameof(saved.AdministrativeFunction)),
+                ReformType = Require(
+                    saved.AdministrativeReform,
+                    nameof(saved.AdministrativeReform))
+            },
+
             _ => throw new InvalidDataException(
                 $"Unsupported pending order kind {saved.Kind}.")
         };
