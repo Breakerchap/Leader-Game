@@ -127,6 +127,12 @@ public sealed class PlayerSnapshot
     public string? WinReason { get; init; }
 
     public int ElectionsWon { get; init; }
+
+    public int MonthsOutOfPower { get; init; }
+
+    public int ConsecutiveLowViabilityMonths { get; init; }
+
+    public double PoliticalViability { get; init; } = 100;
 }
 
 public sealed class CharacterSnapshot
