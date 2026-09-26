@@ -503,6 +503,21 @@ public sealed class GameSession
         var target = state.FindCountry(countryId);
         var chancellor = country.GetOfficeHolder(Position.Chancellor);
 
+        var normalisedAim =
+            aimName.Replace(
+                " ",
+                string.Empty,
+                StringComparison.Ordinal);
+
+        if (!Enum.TryParse<WarAim>(
+                normalisedAim,
+                ignoreCase: true,
+                out var aim))
+        {
+            Refresh("That war aim is not recognised.");
+            return;
+        }
+
         if (target is null || ReferenceEquals(target, country))
         {
             Refresh("Choose another country for diplomatic outreach.");
@@ -575,7 +590,9 @@ public sealed class GameSession
         Refresh($"Trade negotiations with {target.Name} queued through {chancellor.FullName}.");
     }
 
-    public void DeclareWar(string countryId)
+    public void DeclareWar(
+        string countryId,
+        string aimName = "Reparations")
     {
         var state = _simulation.State;
         var country = state.Player.Country;
@@ -615,10 +632,12 @@ public sealed class GameSession
             Recipient = chancellor,
             IssuedOn = state.Date,
             SourceCountry = country,
-            TargetCountry = target
+            TargetCountry = target,
+            Aim = aim
         });
 
-        Refresh($"Declaration of war on {target.Name} queued through {chancellor.FullName}.");
+        Refresh(
+            $"Declaration of war on {target.Name} queued through {chancellor.FullName} with the aim of {WarAimSystem.Label(aim).ToLowerInvariant()}.");
     }
 
     public void RespondToDiplomaticProposal(Guid proposalId, bool accept)
@@ -2052,6 +2071,9 @@ public sealed class GameSession
                     enemy.Name,
                     $"Month {war.MonthsActive}",
                     war.GetStance(country).ToString(),
+                    ReferenceEquals(war.Attacker, country)
+                        ? $"Our aim: {WarAimSystem.Label(war.AttackerAim)}"
+                        : $"Enemy aim: {WarAimSystem.Label(war.AttackerAim)}",
                     KnownShort(
                         state,
                         InformationMetric.WarScore,
