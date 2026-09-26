@@ -21,6 +21,19 @@ public class GameSimulation
         if (State.Player.HasWon)
             throw new InvalidOperationException("Orders cannot be issued after the campaign has been won.");
 
+        if (!State.Player.IsInPower &&
+            ReferenceEquals(order.Issuer, State.Player.Country.Ruler))
+        {
+            order.Status = OrderStatus.Rejected;
+            State.Reports.Add(new Reports.SimulationReport(
+                State.Date,
+                Reports.ReportCategory.Order,
+                "Government order unavailable",
+                $"{State.Player.Lineage.Name} does not currently control the government of " +
+                $"{State.Player.Country.Name}, so it cannot issue directives in the ruler's name."));
+            return;
+        }
+
         if (!order.Issuer.IsAlive)
             throw new InvalidOperationException("A dead character cannot issue an order.");
 
@@ -38,6 +51,10 @@ public class GameSimulation
         State.Reports.AddRange(LifeSystem.ProcessMonth(State));
 
         State.Reports.AddRange(SuccessionSystem.Process(State));
+        State.Reports.AddRange(PlayerContinuitySystem.ResolveLeadership(State));
+
+        if (State.Player.HasLost)
+            return;
 
         ProcessOrders();
 
@@ -66,6 +83,8 @@ public class GameSimulation
         State.Reports.AddRange(CabinetProposalSystem.ProcessMonth(State));
 
         State.Reports.AddRange(PlotSystem.ProcessMonth(State));
+
+        State.Reports.AddRange(PlayerContinuitySystem.ProcessMonth(State));
 
         State.Reports.AddRange(CampaignSystem.ProcessMonth(State));
 
