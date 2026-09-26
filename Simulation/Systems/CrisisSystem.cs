@@ -998,6 +998,35 @@ internal static class CrisisSystem
                     StartedOn = state.Date
                 },
                 reports);
+
+            activeCount++;
+        }
+
+        if (activeCount >= MaxActiveCrises)
+            return;
+
+        var strainedMinister =
+            FindStrainedMinister(
+                state,
+                country);
+
+        if (strainedMinister is not null &&
+            !HasRecentCabinetRift(
+                state,
+                country,
+                strainedMinister))
+        {
+            AddCrisis(
+                state,
+                new PoliticalCrisis
+                {
+                    Country = country,
+                    Type = PoliticalCrisisType.CabinetRift,
+                    RelatedCharacterId =
+                        strainedMinister.Id,
+                    StartedOn = state.Date
+                },
+                reports);
         }
     }
 
@@ -1014,6 +1043,42 @@ internal static class CrisisSystem
             Title(crisis),
             Summary(state, crisis) +
             " The ruler must choose a response; doing nothing will allow the crisis to escalate."));
+    }
+
+    private static Character? FindStrainedMinister(
+        GameState state,
+        Country country)
+    {
+        return country.ActiveAdvisors
+            .Select(advisor =>
+            {
+                var relationship =
+                    state.Relationships.GetOrCreate(
+                        advisor,
+                        country.Ruler);
+                var willingness =
+                    PoliticalCalculations.GetOrderWillingness(
+                        state,
+                        country,
+                        advisor,
+                        country.Ruler);
+
+                return new
+                {
+                    Advisor = advisor,
+                    Relationship = relationship,
+                    Willingness = willingness
+                };
+            })
+            .Where(entry =>
+                entry.Relationship.Trust <= 18 &&
+                entry.Relationship.Opinion <= -25 ||
+                entry.Willingness < 22 &&
+                entry.Advisor.Ambition >= 60)
+            .OrderBy(entry => entry.Willingness)
+            .ThenBy(entry => entry.Relationship.Trust)
+            .Select(entry => entry.Advisor)
+            .FirstOrDefault();
     }
 
     private static bool ShouldTriggerFiscalCrisis(
@@ -1180,6 +1245,11 @@ internal static class CrisisSystem
                     state,
                     crisis),
 
+            PoliticalCrisisType.CabinetRift =>
+                CabinetRiftResolved(
+                    state,
+                    crisis),
+
             _ => true
         };
     }
@@ -1243,6 +1313,22 @@ internal static class CrisisSystem
                 crisis.Country.Ruler.ChangePowerBaseStanding(
                     PowerBaseType.Military,
                     -stage);
+                break;
+
+            case PoliticalCrisisType.CabinetRift:
+                crisis.Country.Government.Stability -=
+                    0.12 * stage;
+
+                var minister =
+                    FindRelatedMinister(crisis);
+
+                if (minister is not null)
+                {
+                    minister.Influence =
+                        Math.Min(
+                            100,
+                            minister.Influence + stage);
+                }
                 break;
         }
     }
