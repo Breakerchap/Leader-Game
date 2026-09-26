@@ -206,6 +206,8 @@ public sealed record GovernmentPolicyView(
     IReadOnlyList<LegislativeProposalView> Legislation,
     string AdministrativeEfficiency,
     IReadOnlyList<AdministrativeOfficeView> AdministrativeOffices,
+    bool CanDirectAdministration,
+    string AdministrativeActionStatus,
     string Regime,
     string PoliticalCycle,
     string PoliticalCycleDetail,
