@@ -24,7 +24,17 @@ internal static class CabinetProposalSystem
 
         AdvancePendingProposals(state, country, reports);
 
+        var urgentCrisisDecision =
+            state.PoliticalCrises.Any(crisis =>
+                crisis.Status ==
+                    PoliticalCrisisStatus.Active &&
+                crisis.AwaitingDecision &&
+                ReferenceEquals(
+                    crisis.Country,
+                    country));
+
         if (state.Player.HasLost ||
+            urgentCrisisDecision ||
             state.Date.Month is not (1 or 4 or 7 or 10))
         {
             return reports;
