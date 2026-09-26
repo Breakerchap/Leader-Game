@@ -158,7 +158,7 @@ internal static class InstitutionSystem
     }
 
     private static bool IsExtraordinaryFunding(decimal target) =>
-        target < 0.70m || target > 1.30m;
+        target <= 0.50m || target >= 1.50m;
 
     private static bool HasPendingProposal(
         GameState state,
