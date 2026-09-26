@@ -142,6 +142,25 @@ public static partial class GameSaveService
                 });
             }
 
+            foreach (var region in saved.Regions)
+            {
+                country.Regions.Add(new Region
+                {
+                    Id = region.Id,
+                    Name = region.Name,
+                    EconomicShare = region.EconomicShare,
+                    PopulationShare = region.PopulationShare,
+                    CrownControl = region.CrownControl,
+                    LocalElitePower = region.LocalElitePower,
+                    Unrest = region.Unrest,
+                    Privileges = region.Privileges,
+                    Prosperity = region.Prosperity
+                });
+            }
+
+            if (country.Regions.Count == 0)
+                AddLegacyRegions(country);
+
             countries.Add(country.Id, country);
         }
 
@@ -816,6 +835,21 @@ public static partial class GameSaveService
                     nameof(saved.AdministrativeReform))
             },
 
+            SaveOrderKind.RegionalAction => new RegionalActionOrder
+            {
+                Id = saved.Id,
+                Issuer = issuer,
+                Recipient = recipient,
+                IssuedOn = issuedOn,
+                Country = RequireCountry(countries, saved.CountryId),
+                Region = RequireRegion(
+                    RequireCountry(countries, saved.CountryId),
+                    saved.RegionId),
+                ActionType = Require(
+                    saved.RegionalAction,
+                    nameof(saved.RegionalAction))
+            },
+
             _ => throw new InvalidDataException(
                 $"Unsupported pending order kind {saved.Kind}.")
         };
@@ -846,6 +880,67 @@ public static partial class GameSaveService
         }
 
         return country;
+    }
+
+    private static Region RequireRegion(
+        Country country,
+        string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            throw new InvalidDataException("Save references a regional order without a region.");
+
+        return country.FindRegion(id) ??
+               throw new InvalidDataException(
+                   $"Save references missing region '{id}' in {country.Name}.");
+    }
+
+    private static void AddLegacyRegions(Country country)
+    {
+        var baselineControl =
+            Math.Clamp(
+                (double)country.AdministrativeEfficiency * 100,
+                35,
+                80);
+
+        country.Regions.AddRange(
+        [
+            new Region
+            {
+                Id = $"{country.Id}-core",
+                Name = $"{country.Name} Heartland",
+                EconomicShare = 0.40m,
+                PopulationShare = 0.35m,
+                CrownControl = baselineControl + 10,
+                LocalElitePower = 45,
+                Unrest = Math.Max(8, country.PublicUnrest - 5),
+                Privileges = 40,
+                Prosperity = 65
+            },
+            new Region
+            {
+                Id = $"{country.Id}-provinces",
+                Name = "Inner Provinces",
+                EconomicShare = 0.35m,
+                PopulationShare = 0.40m,
+                CrownControl = baselineControl,
+                LocalElitePower = 62,
+                Unrest = country.PublicUnrest,
+                Privileges = 58,
+                Prosperity = 55
+            },
+            new Region
+            {
+                Id = $"{country.Id}-outer",
+                Name = "Outer Provinces",
+                EconomicShare = 0.25m,
+                PopulationShare = 0.25m,
+                CrownControl = baselineControl - 15,
+                LocalElitePower = 75,
+                Unrest = Math.Min(100, country.PublicUnrest + 8),
+                Privileges = 70,
+                Prosperity = 48
+            }
+        ]);
     }
 
     private static War RequireWar(
