@@ -102,6 +102,21 @@ public static partial class GameSaveService
             foreach (var powerBase in saved.PowerBaseStrengths)
                 country.SetPowerBaseStrength(powerBase.Type, powerBase.Value);
 
+            foreach (var office in saved.AdministrativeOffices)
+            {
+                country.AdministrativeOffices.Add(new AdministrativeOffice
+                {
+                    Function = office.Function,
+                    Name = office.Name,
+                    ResponsiblePosition = office.ResponsiblePosition,
+                    Capacity = office.Capacity,
+                    Reach = office.Reach,
+                    Integrity = office.Integrity,
+                    Workload = office.Workload,
+                    PatronageDependence = office.PatronageDependence
+                });
+            }
+
             countries.Add(country.Id, country);
         }
 
