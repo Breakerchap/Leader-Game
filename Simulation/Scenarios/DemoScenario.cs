@@ -107,7 +107,9 @@ public static class DemoScenario
             Government = new Government
             {
                 Type = GovernmentType.FeudalMonarchy,
-                Stability = 67
+                Stability = 67,
+                LegislativeBody = LegislativeBodyType.RoyalCouncil,
+                LegislativeIndependence = 45
             },
             Ruler = king
         };
@@ -190,7 +192,9 @@ public static class DemoScenario
             Government = new Government
             {
                 Type = GovernmentType.FeudalMonarchy,
-                Stability = 74
+                Stability = 74,
+                LegislativeBody = LegislativeBodyType.RoyalCouncil,
+                LegislativeIndependence = 40
             },
             Ruler = nordmarkQueen
         };
@@ -274,6 +278,8 @@ public static class DemoScenario
             {
                 Type = GovernmentType.Republic,
                 Stability = 59,
+                LegislativeBody = LegislativeBodyType.Assembly,
+                LegislativeIndependence = 75,
                 ElectionIntervalMonths = 48,
                 MonthsUntilElection = 12,
                 ElectionCampaignMonths = 6
