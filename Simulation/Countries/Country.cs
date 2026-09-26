@@ -93,6 +93,13 @@ public class Country
 
     public required Government Government { get; set; }
 
+    public List<AdministrativeOffice> AdministrativeOffices { get; } = [];
+
+    public AdministrativeOffice? GetAdministrativeOffice(
+        AdministrativeFunction function) =>
+        AdministrativeOffices.FirstOrDefault(office =>
+            office.Function == function);
+
     /// <summary>
     /// Structural importance of each organised political constituency or institution.
     /// Missing values default to 50 rather than zero.
