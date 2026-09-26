@@ -22,6 +22,9 @@ public class ElectionSystemTests
         Assert.Equal(
             48,
             state.Player.Country.Government.ElectionIntervalMonths);
+        Assert.Equal(
+            ElectionMethod.CouncilElection,
+            state.Player.Country.Government.ElectionMethod);
     }
 
     [Fact]
@@ -48,7 +51,7 @@ public class ElectionSystemTests
             state.Reports,
             report =>
                 report.Title.Contains(
-                    "wins the Valeria election",
+                    "elected by the Great Council",
                     StringComparison.OrdinalIgnoreCase));
     }
 
