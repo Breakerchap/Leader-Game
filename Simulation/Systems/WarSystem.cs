@@ -284,12 +284,31 @@ internal static class WarSystem
             ? WarStatus.AttackerVictory
             : WarStatus.DefenderVictory;
 
-        var reparations = Math.Min(
-            loser.Treasury,
-            loser.Gdp * 0.01m);
+        var reparationsRate =
+            WarAimSystem.DecisiveReparationRate(
+                war,
+                attackerWon);
 
-        loser.Treasury -= reparations;
-        winner.Treasury += reparations;
+        var reparations =
+            loser.Gdp *
+            reparationsRate;
+
+        var fromTreasury =
+            Math.Min(
+                loser.Treasury,
+                reparations);
+        loser.Treasury -=
+            fromTreasury;
+
+        var borrowed =
+            reparations -
+            fromTreasury;
+
+        if (borrowed > 0)
+            loser.Debt += borrowed;
+
+        winner.Treasury +=
+            reparations;
 
         winner.Government.Stability += 2;
         loser.Government.Stability -= 3;
@@ -300,12 +319,19 @@ internal static class WarSystem
         relation.Trust = Math.Min(relation.Trust, 10);
         relation.Tension = 80;
 
+        var aimText =
+            attackerWon
+                ? WarAimSystem.ApplyAttackerAim(
+                    state,
+                    war)
+                : string.Empty;
+
         return PlayerRelevantReport(
             state,
             war,
             $"{winner.Name} wins the war",
             $"{winner.Name} defeats {loser.Name} after {war.MonthsActive} months. " +
-            $"The victor receives {reparations:N0} in reparations.");
+            $"The victor receives {reparations:N0} in reparations.{aimText}");
     }
 
     private static SimulationReport? PlayerRelevantReport(
