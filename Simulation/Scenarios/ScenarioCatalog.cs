@@ -38,8 +38,8 @@ public static class ScenarioCatalog
             "Marco Vieri",
             "Vieri Coalition",
             PoliticalLineageType.Party,
-            "A richer merchant republic with a stronger bureaucracy, a powerful commercial class and a much weaker royal tradition.",
-            "Turn commercial strength into durable political dominance while keeping rivals, neighbours and your own coalition from unravelling.")
+            "An oligarchic merchant republic with a strong chancery, powerful commercial families and a chief magistrate chosen within the governing council.",
+            "Turn commercial strength into durable influence inside the Great Council while keeping rival patrician networks, neighbours and your own coalition from unravelling.")
     ];
 
     public static ScenarioDefinition Get(string id) =>
@@ -145,7 +145,7 @@ public static class ScenarioCatalog
                         Id = "renew-mandate",
                         Title = "Renew the Mandate",
                         Description =
-                            "Win a scheduled republican election while keeping the Vieri Coalition in power.",
+                            "Win a scheduled Great Council election while keeping the Vieri Coalition in power.",
                         Type = CampaignObjectiveType.ElectoralMandate,
                         TargetValue = 1
                     }
