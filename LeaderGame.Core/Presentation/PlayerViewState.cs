@@ -192,6 +192,16 @@ public sealed record AdministrativeOfficeView(
     string Workload,
     string Structure);
 
+public sealed record RegionView(
+    string Id,
+    string Name,
+    string Importance,
+    string CentralControl,
+    string LocalPower,
+    string Unrest,
+    string Privileges,
+    string Prosperity);
+
 public sealed record GovernmentPolicyView(
     double TaxPercent,
     double ArmyFundingPercent,
@@ -209,6 +219,9 @@ public sealed record GovernmentPolicyView(
     IReadOnlyList<AdministrativeOfficeView> AdministrativeOffices,
     bool CanDirectAdministration,
     string AdministrativeActionStatus,
+    IReadOnlyList<RegionView> Regions,
+    bool CanDirectRegions,
+    string RegionalActionStatus,
     string Regime,
     string PoliticalCycle,
     string PoliticalCycleDetail,
