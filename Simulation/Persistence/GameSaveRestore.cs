@@ -110,7 +110,11 @@ public static partial class GameSaveService
             LossReason = snapshot.Player.LossReason,
             HasWon = snapshot.Player.HasWon,
             WinReason = snapshot.Player.WinReason,
-            ElectionsWon = snapshot.Player.ElectionsWon
+            ElectionsWon = snapshot.Player.ElectionsWon,
+            MonthsOutOfPower = snapshot.Player.MonthsOutOfPower,
+            ConsecutiveLowViabilityMonths =
+                snapshot.Player.ConsecutiveLowViabilityMonths,
+            PoliticalViability = snapshot.Player.PoliticalViability
         };
 
         var state = new GameState
