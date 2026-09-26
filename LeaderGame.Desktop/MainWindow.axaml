@@ -87,6 +87,11 @@
                 Classes="muted" />
           </StackPanel>
           <Button
+              Classes="action"
+              Command="{Binding AdvanceUntilDecisionCommand}"
+              Content="Until decision  »"
+              ToolTip.Tip="Advance through quiet months and stop when a new decision, crisis, proposal or election campaign appears." />
+          <Button
               Classes="primary"
               Command="{Binding AdvanceMonthCommand}"
               Content="Advance month  →" />
