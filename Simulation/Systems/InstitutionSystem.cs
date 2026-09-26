@@ -114,6 +114,8 @@ internal static class InstitutionSystem
     public static string BodyName(LegislativeBodyType body) => body switch
     {
         LegislativeBodyType.RoyalCouncil => "Royal Council",
+        LegislativeBodyType.EstatesAssembly => "Estates of the Realm",
+        LegislativeBodyType.GreatCouncil => "Great Council",
         LegislativeBodyType.Assembly => "Assembly",
         _ => "Executive"
     };
@@ -121,10 +123,14 @@ internal static class InstitutionSystem
     public static string AuthorityDescription(Government government) =>
         government.LegislativeBody switch
         {
+            LegislativeBodyType.GreatCouncil =>
+                "Taxation and budgets require approval of the Great Council. Mercantile and patrician backing therefore constrains the chief magistrate.",
             LegislativeBodyType.Assembly =>
-                "Taxation and budgets require Assembly approval. Political backing inside the institutions matters as much as issuing the directive.",
+                "Taxation and budgets require Assembly approval. Political backing inside the institution matters as much as issuing the directive.",
+            LegislativeBodyType.EstatesAssembly =>
+                "Ordinary crown finance remains executive business, but a large extraordinary tax requires consent from the Estates of the Realm.",
             LegislativeBodyType.RoyalCouncil =>
-                "The Royal Council can block extraordinary taxation, while ordinary spending remains a crown prerogative.",
+                "The Royal Council can block exceptional taxation, while ordinary spending remains a crown prerogative.",
             _ =>
                 "Fiscal policy can be enacted by executive decree, though advisers and political constituencies can still resist its implementation."
         };
@@ -135,7 +141,10 @@ internal static class InstitutionSystem
     {
         return country.Government.LegislativeBody switch
         {
+            LegislativeBodyType.GreatCouncil => true,
             LegislativeBodyType.Assembly => true,
+            LegislativeBodyType.EstatesAssembly =>
+                order.TargetTaxRate - country.TaxRate >= 0.06m,
             LegislativeBodyType.RoyalCouncil =>
                 order.TargetTaxRate - country.TaxRate >= 0.10m,
             _ => false
@@ -146,10 +155,12 @@ internal static class InstitutionSystem
         Countries.Country country,
         SetBudgetOrder order)
     {
-        // In the current feudal model the crown retains ordinary control
-        // over expenditure, while extraordinary taxation requires council
-        // consent. Republics place the full budget before the Assembly.
-        return country.Government.LegislativeBody ==
+        // Late-medieval representative bodies are modelled primarily as
+        // constraints on extraordinary taxation. The mercantile republic,
+        // however, governs collectively and therefore places ordinary budgets
+        // before its central council as well.
+        return country.Government.LegislativeBody is
+            LegislativeBodyType.GreatCouncil or
             LegislativeBodyType.Assembly;
     }
 
@@ -210,6 +221,14 @@ internal static class InstitutionSystem
 
         var bases = government.LegislativeBody switch
         {
+            LegislativeBodyType.GreatCouncil => new (PowerBaseType Type, double Weight)[]
+            {
+                (PowerBaseType.Merchants, 2.1),
+                (PowerBaseType.Party, 1.5),
+                (PowerBaseType.Bureaucracy, 1.1),
+                (PowerBaseType.RegionalElites, 0.8),
+                (PowerBaseType.Aristocracy, 0.7)
+            },
             LegislativeBodyType.Assembly => new (PowerBaseType Type, double Weight)[]
             {
                 (PowerBaseType.Party, 2.0),
@@ -219,7 +238,14 @@ internal static class InstitutionSystem
                 (PowerBaseType.Workers, 0.8),
                 (PowerBaseType.Peasantry, 0.5)
             },
-            LegislativeBodyType.RoyalCouncil => new (PowerBaseType, double)[]
+            LegislativeBodyType.EstatesAssembly => new (PowerBaseType Type, double Weight)[]
+            {
+                (PowerBaseType.Aristocracy, 2.0),
+                (PowerBaseType.Clergy, 1.5),
+                (PowerBaseType.RegionalElites, 1.3),
+                (PowerBaseType.Merchants, 0.7)
+            },
+            LegislativeBodyType.RoyalCouncil => new (PowerBaseType Type, double Weight)[]
             {
                 (PowerBaseType.Aristocracy, 2.0),
                 (PowerBaseType.Clergy, 1.2),
