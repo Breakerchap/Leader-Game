@@ -521,6 +521,12 @@ public static partial class GameSaveService
                 OppositionAction = typed.ActionType,
                 TargetPowerBase = typed.TargetPowerBase
             },
+            AdministrativeReformOrder typed => snapshot with
+            {
+                CountryId = typed.Country.Id,
+                AdministrativeFunction = typed.Function,
+                AdministrativeReform = typed.ReformType
+            },
             _ => throw new NotSupportedException(
                 $"Saving order type {order.GetType().Name} is not supported.")
         };
@@ -546,6 +552,7 @@ public static partial class GameSaveService
             RespondToDiplomaticProposalOrder => SaveOrderKind.RespondToDiplomaticProposal,
             RequestReportOrder => SaveOrderKind.RequestReport,
             OppositionActionOrder => SaveOrderKind.OppositionAction,
+            AdministrativeReformOrder => SaveOrderKind.AdministrativeReform,
             _ => throw new NotSupportedException(
                 $"Saving order type {order.GetType().Name} is not supported.")
         };
