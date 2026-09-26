@@ -1630,6 +1630,24 @@
               </StackPanel>
             </Border>
 
+            <Border
+                Classes="panel"
+                Background="#18141D"
+                BorderBrush="#4B3A59">
+              <StackPanel Spacing="5">
+                <TextBlock Text="PERSONAL ATTENTION" Classes="eyebrow" Foreground="#C096E2" />
+                <TextBlock
+                    Text="{Binding View.Court.CourtActionStatus}"
+                    TextWrapping="Wrap"
+                    Foreground="#D8C9E4" />
+                <TextBlock
+                    Text="An audience builds trust but raises access and influence. Patronage buys stronger loyalty while empowering the recipient. A rebuke can restore fear and cut influence while storing up resentment."
+                    TextWrapping="Wrap"
+                    FontSize="11"
+                    Classes="muted" />
+              </StackPanel>
+            </Border>
+
             <StackPanel Spacing="8">
               <TextBlock Text="POLITICAL FIGURES" Classes="eyebrow" />
               <ItemsControl ItemsSource="{Binding View.Court.Figures}">
@@ -1685,6 +1703,27 @@
                               Orientation="Horizontal"
                               HorizontalAlignment="Right"
                               Margin="0,3,0,0">
+                            <Button
+                                IsVisible="{Binding CanReceiveCourtAction}"
+                                Margin="0,0,6,0"
+                                Classes="action politics"
+                                Command="{Binding #Root.DataContext.PrivateAudienceCommand}"
+                                CommandParameter="{Binding}"
+                                Content="Audience" />
+                            <Button
+                                IsVisible="{Binding CanReceiveCourtAction}"
+                                Margin="0,0,6,0"
+                                Classes="action politics"
+                                Command="{Binding #Root.DataContext.GrantPatronageCommand}"
+                                CommandParameter="{Binding}"
+                                Content="Patronage" />
+                            <Button
+                                IsVisible="{Binding CanReceiveCourtAction}"
+                                Margin="0,0,6,0"
+                                Classes="action"
+                                Command="{Binding #Root.DataContext.PublicRebukeCommand}"
+                                CommandParameter="{Binding}"
+                                Content="Rebuke" />
                             <Button
                                 IsVisible="{Binding CanInvestigate}"
                                 Margin="0,0,6,0"
