@@ -62,7 +62,25 @@ public static partial class GameSaveService
                     ElectionCampaignMonths =
                         saved.ElectionCampaignMonths > 0
                             ? saved.ElectionCampaignMonths
-                            : 6
+                            : 6,
+                    LegislativeBody =
+                        saved.LegislativeBody != LegislativeBodyType.None
+                            ? saved.LegislativeBody
+                            : saved.GovernmentType switch
+                            {
+                                GovernmentType.Republic => LegislativeBodyType.Assembly,
+                                GovernmentType.FeudalMonarchy => LegislativeBodyType.RoyalCouncil,
+                                _ => LegislativeBodyType.None
+                            },
+                    LegislativeIndependence =
+                        saved.LegislativeIndependence > 0
+                            ? saved.LegislativeIndependence
+                            : saved.GovernmentType switch
+                            {
+                                GovernmentType.Republic => 75,
+                                GovernmentType.FeudalMonarchy => 45,
+                                _ => 0
+                            }
                 },
                 Ruler = RequireCharacter(characters, saved.RulerId)
             };
@@ -383,6 +401,25 @@ public static partial class GameSaveService
             }
 
             state.InformationHistory.Add(history);
+        }
+
+        foreach (var saved in snapshot.LegislativeProposals)
+        {
+            state.LegislativeProposals.Add(new LegislativeProposal
+            {
+                Id = saved.Id,
+                Country = RequireCountry(countries, saved.CountryId),
+                Sponsor = RequireCharacter(characters, saved.SponsorId),
+                Drafter = RequireCharacter(characters, saved.DrafterId),
+                Type = saved.Type,
+                CreatedOn = GameDate(saved.CreatedOn),
+                MonthsOpen = saved.MonthsOpen,
+                Status = saved.Status,
+                TargetTaxRate = saved.TargetTaxRate,
+                TargetArmyFunding = saved.TargetArmyFunding,
+                TargetAdministrationFunding = saved.TargetAdministrationFunding,
+                TargetCourtFunding = saved.TargetCourtFunding
+            });
         }
 
         foreach (var saved in snapshot.PendingOrders)
