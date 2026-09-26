@@ -39,6 +39,7 @@ internal static class OrderProcessor
             RequestReportOrder reportOrder => ProcessRequestReportOrder(state, reportOrder),
             OppositionActionOrder oppositionOrder => OppositionActionSystem.ProcessPlayerAction(state, oppositionOrder),
             AdministrativeReformOrder administrativeOrder => AdministrativeReformSystem.Process(state, administrativeOrder),
+            RegionalActionOrder regionalOrder => RegionalSystem.Process(state, regionalOrder),
             _ => RejectUnknownOrder(state, order)
         };
     }
