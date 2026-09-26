@@ -38,6 +38,7 @@ internal static class OrderProcessor
             ReleasePrisonerOrder releaseOrder => ProcessReleasePrisonerOrder(state, releaseOrder),
             RequestReportOrder reportOrder => ProcessRequestReportOrder(state, reportOrder),
             OppositionActionOrder oppositionOrder => OppositionActionSystem.ProcessPlayerAction(state, oppositionOrder),
+            AdministrativeReformOrder administrativeOrder => AdministrativeReformSystem.Process(state, administrativeOrder),
             _ => RejectUnknownOrder(state, order)
         };
     }
