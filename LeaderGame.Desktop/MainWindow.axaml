@@ -1685,7 +1685,7 @@
                     </Border>
                     <Border Grid.Column="1" Background="#0D141C" CornerRadius="7" Padding="10">
                       <StackPanel Spacing="4">
-                        <TextBlock Text="REPORTED GDP" Classes="eyebrow" Foreground="#75C493" />
+                        <TextBlock Text="REPORTED ECONOMIC SCALE" Classes="eyebrow" Foreground="#75C493" />
                         <TextBlock Text="{Binding SelectedForeignState.Gdp}" FontSize="16" FontWeight="SemiBold" />
                       </StackPanel>
                     </Border>
