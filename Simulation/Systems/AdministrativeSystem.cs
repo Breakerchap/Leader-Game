@@ -20,6 +20,7 @@ internal static class AdministrativeSystem
             }
 
             UpdateAdministrativeEfficiency(country);
+            ApplyLocalAdministrationConsequences(country);
 
             if (ReferenceEquals(country, state.Player.Country) &&
                 state.Date.Month % 3 == 0)
@@ -211,6 +212,42 @@ internal static class AdministrativeSystem
                  funding >= 1.0m)
         {
             office.Integrity += 1;
+        }
+    }
+
+    private static void ApplyLocalAdministrationConsequences(
+        Country country)
+    {
+        var localPerformance =
+            GetPerformance(
+                country,
+                AdministrativeFunction.LocalGovernment);
+
+        // Weak local government does not immediately produce revolt; it makes
+        // ordinary disorder, evasion and non-compliance harder to contain.
+        // The monthly effect is deliberately modest so long-term institutional
+        // weakness matters without creating a death spiral in a few turns.
+        if (localPerformance < 30)
+        {
+            country.PublicUnrest +=
+                0.12 + (30 - localPerformance) * 0.012;
+            country.Government.Stability -=
+                0.06 + (30 - localPerformance) * 0.007;
+            return;
+        }
+
+        if (localPerformance < 45 &&
+            country.PublicUnrest >= 45)
+        {
+            country.PublicUnrest +=
+                (45 - localPerformance) * 0.006;
+            return;
+        }
+
+        if (localPerformance >= 75 &&
+            country.PublicUnrest > 15)
+        {
+            country.PublicUnrest -= 0.06;
         }
     }
 
