@@ -50,6 +50,9 @@ public class GameSimulation
 
         State.Reports.AddRange(LifeSystem.ProcessMonth(State));
 
+        State.Reports.AddRange(
+            LineageDevelopmentSystem.ProcessMonth(State));
+
         State.Reports.AddRange(SuccessionSystem.Process(State));
         State.Reports.AddRange(PlayerContinuitySystem.ResolveLeadership(State));
 
