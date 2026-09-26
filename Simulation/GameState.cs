@@ -26,6 +26,8 @@ public class GameState
 
     public List<PoliticalBloc> PoliticalBlocs { get; } = [];
 
+    public List<LegislativeProposal> LegislativeProposals { get; } = [];
+
     public List<CabinetProposal> CabinetProposals { get; } = [];
 
     public List<ElectionPromise> ElectionPromises { get; } = [];
