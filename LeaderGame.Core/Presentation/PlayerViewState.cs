@@ -59,6 +59,12 @@ public sealed record CrisisChoiceView(
     string Label,
     string Description);
 
+public sealed record CrisisAdviceView(
+    string Advisor,
+    string Office,
+    string Recommendation,
+    string Reason);
+
 public sealed record CrisisView(
     Guid Id,
     string Title,
@@ -67,6 +73,7 @@ public sealed record CrisisView(
     string Age,
     string ResponseStatus,
     bool CanRespond,
+    IReadOnlyList<CrisisAdviceView> Advice,
     IReadOnlyList<CrisisChoiceView> Choices);
 
 public sealed record PendingOrderView(
