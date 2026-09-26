@@ -165,6 +165,43 @@ public class AdministrativeSystemTests
     }
 
     [Fact]
+    public void LaterAdministrativeForms_CostMoreAndUsePeriodAppropriateOfficeNames()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+
+        var patrimonialCostMultiplier =
+            AdministrativeSystem.GetAdministrationCostMultiplier(
+                AdministrativeDevelopment.PatrimonialCourt);
+        var professionalCostMultiplier =
+            AdministrativeSystem.GetAdministrationCostMultiplier(
+                AdministrativeDevelopment.ProfessionalCivilService);
+
+        Assert.True(
+            professionalCostMultiplier >
+            patrimonialCostMultiplier);
+
+        country.AdministrativeDevelopment =
+            AdministrativeDevelopment.ProfessionalCivilService;
+
+        var revenueOffice = country.GetAdministrativeOffice(
+            AdministrativeFunction.Revenue)!;
+        var militaryOffice = country.GetAdministrativeOffice(
+            AdministrativeFunction.MilitaryLogistics)!;
+
+        Assert.Equal(
+            "Treasury",
+            AdministrativeSystem.DisplayName(
+                country,
+                revenueOffice));
+        Assert.Equal(
+            "War Ministry",
+            AdministrativeSystem.DisplayName(
+                country,
+                militaryOffice));
+    }
+
+    [Fact]
     public void GovernmentView_ReportsAdministrationInCoarsePoliticalTerms()
     {
         var session = new GameSession(
