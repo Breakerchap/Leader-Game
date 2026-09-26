@@ -53,7 +53,11 @@ public static partial class GameSaveService
                 LossReason = state.Player.LossReason,
                 HasWon = state.Player.HasWon,
                 WinReason = state.Player.WinReason,
-                ElectionsWon = state.Player.ElectionsWon
+                ElectionsWon = state.Player.ElectionsWon,
+                MonthsOutOfPower = state.Player.MonthsOutOfPower,
+                ConsecutiveLowViabilityMonths =
+                    state.Player.ConsecutiveLowViabilityMonths,
+                PoliticalViability = state.Player.PoliticalViability
             },
             Campaign = state.Campaign is null
                 ? null
