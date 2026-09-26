@@ -40,6 +40,7 @@ internal static class OrderProcessor
             OppositionActionOrder oppositionOrder => OppositionActionSystem.ProcessPlayerAction(state, oppositionOrder),
             AdministrativeReformOrder administrativeOrder => AdministrativeReformSystem.Process(state, administrativeOrder),
             RegionalActionOrder regionalOrder => RegionalSystem.Process(state, regionalOrder),
+            CourtActionOrder courtOrder => CourtActionSystem.Process(state, courtOrder),
             _ => RejectUnknownOrder(state, order)
         };
     }
