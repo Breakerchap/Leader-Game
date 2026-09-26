@@ -430,10 +430,13 @@ internal static class ElectionSystem
             return;
         }
 
-        state.Player.HasLost = true;
-        state.Player.LossReason =
-            $"{winner.FullName} won the election in {country.Name}, ending " +
-            $"{state.Player.Lineage.Name}'s control of the government.";
+        // Losing an election moves the lineage into opposition. It only becomes
+        // a campaign defeat later if the lineage remains politically irrelevant
+        // with no credible route back to power.
+        var oppositionLeader = GetPlayerLineageNominee(state, country);
+
+        if (oppositionLeader is not null)
+            state.Player.CurrentCharacter = oppositionLeader;
     }
 
     private static ElectionPromise CreatePromise(
@@ -690,7 +693,7 @@ internal static class ElectionSystem
 
         return state.Player.Lineage.Contains(winner)
             ? $"{state.Player.Lineage.Name} retains control of the government."
-            : $"{state.Player.Lineage.Name} loses control of the government.";
+            : $"{state.Player.Lineage.Name} moves into opposition; the campaign continues while it remains politically viable.";
     }
 
     private static double GetBaseElectionScore(
