@@ -174,6 +174,7 @@ public static partial class GameSaveService
                     Type = crisis.Type,
                     RegionId = crisis.Region?.Id,
                     RelatedBlocId = crisis.RelatedBlocId,
+                    RelatedWarId = crisis.RelatedWarId,
                     StartedOn = Date(crisis.StartedOn),
                     Stage = crisis.Stage,
                     MonthsActive = crisis.MonthsActive,
