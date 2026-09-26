@@ -52,8 +52,12 @@ internal static class WorldDynamicsSystem
 
         var debtRatio = country.Debt / country.Gdp;
 
+        var regionalProsperity =
+            GetRegionalProsperity(country);
+
         var monthlyRate =
             0.0008 +
+            (regionalProsperity - 55) * 0.000015 +
             ((double)country.AdministrativeEfficiency - 0.70) * 0.0030 +
             (country.Government.Stability - 50) * 0.000015 -
             country.PublicUnrest * 0.000012 +
@@ -73,6 +77,25 @@ internal static class WorldDynamicsSystem
             0.0035);
 
         country.Gdp *= 1m + (decimal)monthlyRate;
+    }
+
+    private static double GetRegionalProsperity(
+        Country country)
+    {
+        if (country.Regions.Count == 0)
+            return 55;
+
+        var totalWeight =
+            country.Regions.Sum(region =>
+                Math.Max(0.01m, region.EconomicShare));
+
+        if (totalWeight <= 0)
+            return 55;
+
+        return country.Regions.Sum(region =>
+            region.Prosperity *
+            (double)Math.Max(0.01m, region.EconomicShare)) /
+            (double)totalWeight;
     }
 
     private static void ApplyPopulationChange(
