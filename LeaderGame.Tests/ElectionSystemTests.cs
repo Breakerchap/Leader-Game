@@ -1,5 +1,6 @@
 using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Campaign;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
