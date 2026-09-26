@@ -221,6 +221,88 @@ public class CrisisSystemTests
     }
 
     [Fact]
+    public void FiscalCrisis_ProducesConflictingInterestShapedAdvice()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.FiscalEmergency,
+            StartedOn = state.Date
+        };
+
+        var advice = CrisisSystem.GetAdvice(
+            state,
+            crisis);
+
+        Assert.Equal(3, advice.Count);
+        Assert.Equal(
+            3,
+            advice.Select(item => item.Response)
+                .Distinct()
+                .Count());
+
+        Assert.Contains(
+            advice,
+            item =>
+                item.Advisor.Position == Position.Treasurer &&
+                item.Response ==
+                    PoliticalCrisisResponse.CutStateCommitments);
+
+        Assert.Contains(
+            advice,
+            item =>
+                item.Advisor.Position == Position.Marshal &&
+                item.Response ==
+                    PoliticalCrisisResponse.BorrowForTime);
+
+        Assert.Contains(
+            advice,
+            item =>
+                item.Advisor.Position == Position.Chancellor &&
+                item.Response ==
+                    PoliticalCrisisResponse.RaiseEmergencyRevenue);
+    }
+
+    [Fact]
+    public void FollowingAdviserCrisisAdvice_ImprovesThatRelationship()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var marshal = country.GetOfficeHolder(
+            Position.Marshal)!;
+
+        country.Debt = country.Gdp * 0.25m;
+        country.LastMonthlyBalance = -100_000m;
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.FiscalEmergency,
+            StartedOn = state.Date
+        };
+        state.PoliticalCrises.Add(crisis);
+
+        var relationship =
+            state.Relationships.GetOrCreate(
+                marshal,
+                country.Ruler);
+
+        var opinion = relationship.Opinion;
+        var trust = relationship.Trust;
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.BorrowForTime);
+
+        Assert.True(relationship.Opinion > opinion);
+        Assert.True(relationship.Trust > trust);
+    }
+
+    [Fact]
     public void CrisisState_RoundTripsThroughSave()
     {
         var state = DemoScenario.Create();
