@@ -115,7 +115,8 @@ internal static class LineageDevelopmentSystem
                     CreateDynasticRelative(
                         state,
                         player.Country,
-                        legitimacyFloor: 35),
+                        legitimacyFloor: 35,
+                        surname: PlayerDynastySurname(player)),
 
                 PoliticalLineageType.Party or
                 PoliticalLineageType.Faction =>
@@ -174,6 +175,15 @@ internal static class LineageDevelopmentSystem
             if (active >= 4)
                 return;
 
+            // A politically dead but biologically surviving house should not
+            // manufacture new active claimants and escape irrelevance for free.
+            // Emergency cadet continuity is reserved for actual extinction.
+            if (!player.IsInPower &&
+                active == 0)
+            {
+                return;
+            }
+
             var chance =
                 active switch
                 {
@@ -192,7 +202,8 @@ internal static class LineageDevelopmentSystem
                 CreateDynasticRelative(
                     state,
                     player.Country,
-                    legitimacyFloor: 50);
+                    legitimacyFloor: 50,
+                    surname: PlayerDynastySurname(player));
 
             AddPoliticalFigure(
                 player.Country,
@@ -225,6 +236,15 @@ internal static class LineageDevelopmentSystem
 
         if (active >= 5)
             return;
+
+        // An entirely inactive movement does not receive free annual recruits
+        // while drifting into irrelevance. If every member actually dies,
+        // EnsurePlayerContinuity can still surface a successor organisation.
+        if (!player.IsInPower &&
+            active == 0)
+        {
+            return;
+        }
 
         var recruitmentChance =
             active switch
@@ -313,6 +333,7 @@ internal static class LineageDevelopmentSystem
         if (ReferenceEquals(
                 country,
                 state.Player.Country) &&
+            state.Player.IsInPower &&
             state.Player.Lineage.Type ==
                 PoliticalLineageType.Dynasty &&
             !state.Player.Lineage.Contains(
@@ -374,9 +395,10 @@ internal static class LineageDevelopmentSystem
     private static Character CreateDynasticRelative(
         GameState state,
         Country country,
-        int legitimacyFloor)
+        int legitimacyFloor,
+        string? surname = null)
     {
-        var surname =
+        surname ??=
             country.Ruler.LastName;
 
         var character = new Character
@@ -556,6 +578,14 @@ internal static class LineageDevelopmentSystem
                 character);
         }
     }
+
+    private static string PlayerDynastySurname(
+        PlayerState player) =>
+        player.Lineage.Members
+            .Select(member => member.LastName)
+            .FirstOrDefault(name =>
+                !string.IsNullOrWhiteSpace(name)) ??
+        player.CurrentCharacter.LastName;
 
     private static int NextCharacterId(
         GameState state) =>
