@@ -973,9 +973,14 @@
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
               <Border Classes="card">
                 <StackPanel Spacing="12">
-                  <TextBlock Text="TAX POLICY" Classes="eyebrow" Foreground="#75C493" />
+                  <TextBlock Text="FISCAL DEMAND" Classes="eyebrow" Foreground="#75C493" />
+                  <TextBlock
+                      Text="An abstraction of customs, dues, assessments and direct levies — not a modern uniform income-tax rate."
+                      TextWrapping="Wrap"
+                      FontSize="11"
+                      Classes="muted" />
                   <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="Official tax rate" Classes="muted" />
+                    <TextBlock Text="Effective fiscal burden" Classes="muted" />
                     <TextBlock
                         Grid.Column="1"
                         Text="{Binding View.Government.TaxPercent, StringFormat='{}{0:F0}%'}"
@@ -997,7 +1002,7 @@
                         Grid.Column="1"
                         Classes="action economy"
                         Command="{Binding ApplyTaxCommand}"
-                        Content="Issue tax directive" />
+                        Content="Adjust fiscal demand" />
                   </Grid>
                 </StackPanel>
               </Border>
