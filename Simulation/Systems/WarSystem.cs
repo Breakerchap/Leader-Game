@@ -122,6 +122,12 @@ internal static class WarSystem
             0.70 + commander.Competence / 250.0;
         var willingnessFactor =
             0.80 + willingness / 500.0;
+        var logisticsPerformance =
+            AdministrativeSystem.GetPerformance(
+                country,
+                AdministrativeFunction.MilitaryLogistics);
+        var logisticsFactor =
+            0.90 + logisticsPerformance / 500.0;
         var stanceFactor = stance switch
         {
             WarStance.Aggressive => 1.08,
@@ -139,6 +145,7 @@ internal static class WarSystem
             fundingFactor *
             commanderFactor *
             willingnessFactor *
+            logisticsFactor *
             stanceFactor *
             randomFactor);
     }
