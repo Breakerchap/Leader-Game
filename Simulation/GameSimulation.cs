@@ -93,6 +93,8 @@ public class GameSimulation
 
         State.Reports.AddRange(PlotSystem.ProcessMonth(State));
 
+        State.Reports.AddRange(CrisisSystem.ProcessMonth(State));
+
         State.Reports.AddRange(PlayerContinuitySystem.ProcessMonth(State));
 
         State.Reports.AddRange(CampaignSystem.ProcessMonth(State));
