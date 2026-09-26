@@ -182,6 +182,16 @@ public sealed record LegislativeProposalView(
     string Age,
     string Status);
 
+public sealed record AdministrativeOfficeView(
+    string Name,
+    string Function,
+    string Head,
+    string Performance,
+    string Reach,
+    string Integrity,
+    string Workload,
+    string Structure);
+
 public sealed record GovernmentPolicyView(
     double TaxPercent,
     double ArmyFundingPercent,
@@ -194,6 +204,8 @@ public sealed record GovernmentPolicyView(
     string LegislativeAuthority,
     bool HasLegislation,
     IReadOnlyList<LegislativeProposalView> Legislation,
+    string AdministrativeEfficiency,
+    IReadOnlyList<AdministrativeOfficeView> AdministrativeOffices,
     string Regime,
     string PoliticalCycle,
     string PoliticalCycleDetail,
