@@ -8,7 +8,8 @@ public static class WarDeclarationService
     public static War Declare(
         GameState state,
         Country source,
-        Country target)
+        Country target,
+        WarAim aim = WarAim.Reparations)
     {
         if (ReferenceEquals(source, target))
             throw new ArgumentException("A country cannot declare war on itself.");
@@ -60,7 +61,8 @@ public static class WarDeclarationService
         {
             Attacker = source,
             Defender = target,
-            StartedOn = state.Date
+            StartedOn = state.Date,
+            AttackerAim = aim
         };
 
         state.Wars.Add(war);
