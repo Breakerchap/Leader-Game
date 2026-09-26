@@ -77,7 +77,9 @@ internal static class EconomySystem
         return country.Gdp *
                0.015m /
                12m *
-               country.AdministrationFunding;
+               country.AdministrationFunding *
+               AdministrativeSystem.GetAdministrationCostMultiplier(
+                   country.AdministrativeDevelopment);
     }
 
     private static decimal CalculateArmyCost(Country country)
