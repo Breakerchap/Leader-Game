@@ -88,6 +88,14 @@ internal static class OrderProcessor
                 "their willingness to carry out the ruler's wishes is very low.");
         }
 
+        if (InstitutionSystem.TrySubmitProposal(
+                state,
+                order,
+                out var institutionalTaxReport))
+        {
+            return institutionalTaxReport!;
+        }
+
         var oldRate = order.Country.TaxRate;
         var requestedChange = order.TargetTaxRate - oldRate;
         var implementationFactor =
@@ -178,6 +186,14 @@ internal static class OrderProcessor
                 $"{treasurer.FullName} refuses the budget order",
                 $"{treasurer.FullName} refuses to reorganise government spending. " +
                 "The refusal indicates serious resistance inside the treasury.");
+        }
+
+        if (InstitutionSystem.TrySubmitProposal(
+                state,
+                order,
+                out var institutionalBudgetReport))
+        {
+            return institutionalBudgetReport!;
         }
 
         var implementationFactor =
