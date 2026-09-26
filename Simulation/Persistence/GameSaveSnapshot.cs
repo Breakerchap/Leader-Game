@@ -413,6 +413,8 @@ public sealed class PoliticalCrisisSnapshot
 
     public Guid? RelatedBlocId { get; init; }
 
+    public Guid? RelatedWarId { get; init; }
+
     public required DateSnapshot StartedOn { get; init; }
 
     public int Stage { get; init; }
