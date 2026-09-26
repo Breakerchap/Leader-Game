@@ -43,7 +43,7 @@ internal static class InstitutionSystem
             state.Date,
             ReportCategory.Order,
             $"Tax proposal submitted to {BodyName(order.Country.Government.LegislativeBody)}",
-            $"{order.Recipient.FullName} has drafted the requested tax change to {order.TargetTaxRate:P1}. " +
+            $"{order.Recipient.FullName} has drafted a change in the state's effective fiscal burden to {order.TargetTaxRate:P1}. " +
             "It is now awaiting formal institutional approval rather than taking effect immediately.");
         return true;
     }
@@ -440,7 +440,7 @@ internal static class InstitutionSystem
     private static string ProposalLabel(LegislativeProposal proposal) =>
         proposal.Type switch
         {
-            LegislativeProposalType.TaxRate => "tax proposal",
+            LegislativeProposalType.TaxRate => "fiscal levy proposal",
             LegislativeProposalType.Budget => "budget",
             _ => "proposal"
         };
