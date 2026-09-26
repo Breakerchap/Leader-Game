@@ -886,6 +886,23 @@ public static partial class GameSaveService
                     nameof(saved.RegionalAction))
             },
 
+            SaveOrderKind.CourtAction => new CourtActionOrder
+            {
+                Id = saved.Id,
+                Issuer = issuer,
+                Recipient = recipient,
+                IssuedOn = issuedOn,
+                Country = RequireCountry(countries, saved.CountryId),
+                Subject = RequireCharacter(
+                    characters,
+                    Require(
+                        saved.SubjectCharacterId,
+                        nameof(saved.SubjectCharacterId))),
+                ActionType = Require(
+                    saved.CourtAction,
+                    nameof(saved.CourtAction))
+            },
+
             _ => throw new InvalidDataException(
                 $"Unsupported pending order kind {saved.Kind}.")
         };
