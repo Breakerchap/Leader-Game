@@ -993,6 +993,13 @@ public class CrisisSystemTests
         var marshal = country.GetOfficeHolder(
             Position.Marshal)!;
 
+        var relationship =
+            state.Relationships.GetOrCreate(
+                marshal,
+                country.Ruler);
+        relationship.Opinion = -60;
+        relationship.Trust = 5;
+
         var crisis = new PoliticalCrisis
         {
             Country = country,
