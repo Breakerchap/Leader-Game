@@ -250,6 +250,7 @@ public static partial class GameSaveService
                 Attacker = RequireCountry(countries, saved.AttackerId),
                 Defender = RequireCountry(countries, saved.DefenderId),
                 StartedOn = GameDate(saved.StartedOn),
+                AttackerAim = saved.AttackerAim,
                 WarScore = saved.WarScore,
                 AttackerStance = saved.AttackerStance,
                 DefenderStance = saved.DefenderStance
@@ -780,7 +781,9 @@ public static partial class GameSaveService
                     saved.SourceCountryId),
                 TargetCountry = RequireCountry(
                     countries,
-                    saved.TargetCountryId)
+                    saved.TargetCountryId),
+                Aim = saved.WarAim ??
+                    WarAim.Reparations
             },
 
             SaveOrderKind.SetWarStance => new SetWarStanceOrder
