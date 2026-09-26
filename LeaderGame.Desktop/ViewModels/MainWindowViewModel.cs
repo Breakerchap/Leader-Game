@@ -18,6 +18,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _selectedPeaceTerms = "WhitePeace";
     private string _selectedElectionPromise = "Tax relief";
     private string _selectedOppositionPowerBase = string.Empty;
+    private string _selectedAdministrativeOffice = string.Empty;
     private string _archiveSearchText = string.Empty;
     private string _selectedArchiveCategory = "All";
     private double _targetTaxPercent;
@@ -37,6 +38,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         _selectedCampaign = View.Military.Campaigns.FirstOrDefault();
         _selectedOppositionPowerBase =
             View.Court.OppositionPowerBases.FirstOrDefault() ?? string.Empty;
+        _selectedAdministrativeOffice =
+            View.Government.AdministrativeOffices.FirstOrDefault()?.Name ??
+            string.Empty;
 
         SyncPolicyTargets();
 
@@ -163,6 +167,30 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             RunAndRefresh(() =>
                 _session.MakeElectionPromise(
                     SelectedElectionPromise)));
+
+        AuditAdministrativeOfficeCommand = new RelayCommand(_ =>
+            RunAndRefresh(() =>
+                _session.TakeAdministrativeAction(
+                    "AuditAccounts",
+                    SelectedAdministrativeOffice)));
+
+        StrengthenAdministrativeClerksCommand = new RelayCommand(_ =>
+            RunAndRefresh(() =>
+                _session.TakeAdministrativeAction(
+                    "StrengthenClerks",
+                    SelectedAdministrativeOffice)));
+
+        ExtendAdministrativeCommissionsCommand = new RelayCommand(_ =>
+            RunAndRefresh(() =>
+                _session.TakeAdministrativeAction(
+                    "ExtendCommissions",
+                    SelectedAdministrativeOffice)));
+
+        DelegateAdministrationCommand = new RelayCommand(_ =>
+            RunAndRefresh(() =>
+                _session.TakeAdministrativeAction(
+                    "DelegateToNotables",
+                    SelectedAdministrativeOffice)));
 
         OrganiseOppositionSupportCommand = new RelayCommand(_ =>
             RunAndRefresh(() =>
@@ -391,6 +419,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ICommand MakeElectionPromiseCommand { get; }
 
+    public ICommand AuditAdministrativeOfficeCommand { get; }
+
+    public ICommand StrengthenAdministrativeClerksCommand { get; }
+
+    public ICommand ExtendAdministrativeCommissionsCommand { get; }
+
+    public ICommand DelegateAdministrationCommand { get; }
+
     public ICommand OrganiseOppositionSupportCommand { get; }
 
     public ICommand BuildOppositionCoalitionCommand { get; }
@@ -544,6 +580,24 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public IReadOnlyList<string> OppositionPowerBaseOptions =>
         View.Court.OppositionPowerBases;
+
+    public IReadOnlyList<string> AdministrativeOfficeOptions =>
+        View.Government.AdministrativeOffices
+            .Select(office => office.Name)
+            .ToList();
+
+    public string SelectedAdministrativeOffice
+    {
+        get => _selectedAdministrativeOffice;
+        set
+        {
+            if (_selectedAdministrativeOffice == value)
+                return;
+
+            _selectedAdministrativeOffice = value;
+            OnPropertyChanged();
+        }
+    }
 
     public string SelectedOppositionPowerBase
     {
@@ -833,6 +887,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 string.Empty;
         }
 
+        if (string.IsNullOrWhiteSpace(SelectedAdministrativeOffice) ||
+            !View.Government.AdministrativeOffices.Any(office =>
+                office.Name == SelectedAdministrativeOffice))
+        {
+            SelectedAdministrativeOffice =
+                View.Government.AdministrativeOffices.FirstOrDefault()?.Name ??
+                string.Empty;
+        }
+
         if (SelectedCampaign is null ||
             !View.Military.Campaigns.Any(campaign =>
                 campaign.Id == SelectedCampaign.Id))
@@ -852,6 +915,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(AppointmentCandidates));
         OnPropertyChanged(nameof(OppositionPowerBaseOptions));
         OnPropertyChanged(nameof(SelectedOppositionPowerBase));
+        OnPropertyChanged(nameof(AdministrativeOfficeOptions));
+        OnPropertyChanged(nameof(SelectedAdministrativeOffice));
         OnPropertyChanged(nameof(SelectedCampaign));
         OnPropertyChanged(nameof(SelectedForeignCountry));
         OnPropertyChanged(nameof(SelectedCourtFigure));
@@ -872,6 +937,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             figure.IsAvailableForOffice);
         SelectedOppositionPowerBase =
             View.Court.OppositionPowerBases.FirstOrDefault() ??
+            string.Empty;
+        SelectedAdministrativeOffice =
+            View.Government.AdministrativeOffices.FirstOrDefault()?.Name ??
             string.Empty;
         SelectedCampaign = View.Military.Campaigns.FirstOrDefault();
     }
