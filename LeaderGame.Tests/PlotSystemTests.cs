@@ -51,7 +51,7 @@ public class PlotSystemTests
     }
 
     [Fact]
-    public void SuccessfulUsurpation_IsPlayerLossEvenWithinSameLineage()
+    public void SuccessfulUsurpationWithinLineage_TransfersPlayerControl()
     {
         var state = DemoScenario.Create();
         var simulation = new GameSimulation(state);
@@ -82,9 +82,9 @@ public class PlotSystemTests
         simulation.AdvanceMonth();
 
         Assert.Same(heir, country.Ruler);
-        Assert.True(state.Player.HasLost);
-        Assert.Same(oldRuler, state.Player.CurrentCharacter);
-        Assert.Contains("overthrew", state.Player.LossReason);
+        Assert.False(state.Player.HasLost);
+        Assert.Same(heir, state.Player.CurrentCharacter);
+        Assert.True(state.Player.IsInPower);
     }
 
     [Fact]
