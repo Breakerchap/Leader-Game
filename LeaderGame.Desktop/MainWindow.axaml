@@ -681,6 +681,74 @@
                 </Grid>
 
                 <Border
+                    Background="#111820"
+                    BorderBrush="#354454"
+                    BorderThickness="1"
+                    CornerRadius="7"
+                    Padding="12">
+                  <StackPanel Spacing="9">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Spacing="3">
+                        <TextBlock Text="LAWMAKING" Classes="eyebrow" Foreground="#AAB5C2" />
+                        <TextBlock
+                            Text="{Binding View.Government.LegislativeBody}"
+                            FontSize="16"
+                            FontWeight="SemiBold" />
+                      </StackPanel>
+                      <Border Grid.Column="1" Classes="badge" Background="#171E27" VerticalAlignment="Top">
+                        <TextBlock
+                            Text="Institutional route"
+                            FontSize="10"
+                            Foreground="#B9C5D3" />
+                      </Border>
+                    </Grid>
+                    <TextBlock
+                        Text="{Binding View.Government.LegislativeAuthority}"
+                        TextWrapping="Wrap"
+                        Classes="muted" />
+
+                    <ItemsControl
+                        IsVisible="{Binding View.Government.HasLegislation}"
+                        ItemsSource="{Binding View.Government.Legislation}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Border
+                              Background="#151D26"
+                              BorderBrush="#2C3947"
+                              BorderThickness="1"
+                              CornerRadius="6"
+                              Padding="10"
+                              Margin="0,3,0,0">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                              <StackPanel Spacing="3">
+                                <TextBlock
+                                    Text="{Binding Title}"
+                                    FontWeight="SemiBold" />
+                                <TextBlock
+                                    Text="{Binding Detail}"
+                                    TextWrapping="Wrap"
+                                    FontSize="11"
+                                    Classes="muted" />
+                                <TextBlock
+                                    Text="{Binding Age}"
+                                    FontSize="10"
+                                    Classes="muted" />
+                              </StackPanel>
+                              <Border Grid.Column="1" Classes="badge" Background="#202934" VerticalAlignment="Top">
+                                <TextBlock
+                                    Text="{Binding Status}"
+                                    FontSize="10"
+                                    Foreground="#C6D0DB" />
+                              </Border>
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+
+                <Border
                     IsVisible="{Binding View.Government.HasElection}"
                     Background="#101821"
                     BorderBrush="#294052"
