@@ -1019,6 +1019,40 @@ internal static class CrisisSystem
             .FirstOrDefault();
     }
 
+    private static bool PoliticalStandoffResolved(
+        GameState state,
+        PoliticalCrisis crisis)
+    {
+        var linkedBloc =
+            FindRelatedBloc(
+                state,
+                crisis);
+
+        if (crisis.RelatedBlocId.HasValue)
+        {
+            if (linkedBloc is null ||
+                !linkedBloc.IsActive ||
+                linkedBloc.Cohesion < 45)
+            {
+                return true;
+            }
+
+            var rulerBacking =
+                PoliticalCalculations.GetPowerBaseInfluence(
+                    crisis.Country,
+                    crisis.Country.Ruler);
+
+            return
+                crisis.Country.Government.Stability >= 65 &&
+                rulerBacking >= 60;
+        }
+
+        return
+            GetStandoffBloc(
+                state,
+                crisis.Country) is null;
+    }
+
     private static bool UnderlyingProblemResolved(
         GameState state,
         PoliticalCrisis crisis)
@@ -1039,11 +1073,9 @@ internal static class CrisisSystem
                 DebtRatio(crisis.Country) < 0.24m,
 
             PoliticalCrisisType.PoliticalStandoff =>
-                GetStandoffBloc(state, crisis.Country) is null ||
-                crisis.Country.Government.Stability >= 60 ||
-                PoliticalCalculations.GetPowerBaseInfluence(
-                    crisis.Country,
-                    crisis.Country.Ruler) >= 60,
+                PoliticalStandoffResolved(
+                    state,
+                    crisis),
 
             PoliticalCrisisType.SuccessionDispute =>
                 SuccessionIsSettled(crisis.Country),
