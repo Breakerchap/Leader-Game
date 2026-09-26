@@ -212,7 +212,7 @@ public class ElectionPromiseTests
             {
                 character.SetPowerBaseStanding(
                     powerBase,
-                    ReferenceEquals(character, candidate) ? 100 : 0);
+                    ReferenceEquals(character, candidate) ? 90 : 0);
             }
 
             character.Influence =
@@ -222,7 +222,7 @@ public class ElectionPromiseTests
             character.Ambition =
                 ReferenceEquals(character, candidate) ? 100 : 0;
             character.Legitimacy =
-                ReferenceEquals(character, candidate) ? 100 : 0;
+                ReferenceEquals(character, candidate) ? 80 : 0;
         }
     }
 }
