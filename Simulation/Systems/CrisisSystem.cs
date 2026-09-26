@@ -25,6 +25,25 @@ internal static class CrisisSystem
         var reports = new List<SimulationReport>();
         var country = state.Player.Country;
 
+        if (!state.Player.IsInPower)
+        {
+            foreach (var crisis in state.PoliticalCrises.Where(crisis =>
+                         crisis.Status == PoliticalCrisisStatus.Active &&
+                         ReferenceEquals(crisis.Country, country)))
+            {
+                crisis.Status = PoliticalCrisisStatus.Resolved;
+                crisis.ResolvedOn = state.Date;
+
+                reports.Add(new SimulationReport(
+                    state.Date,
+                    ReportCategory.Politics,
+                    $"{Title(crisis)} passes to the new government",
+                    $"The crisis itself has not necessarily vanished, but {state.Player.Lineage.Name} no longer controls the state and therefore no longer chooses the government's response. The underlying conditions remain part of the simulation."));
+            }
+
+            return reports;
+        }
+
         foreach (var crisis in state.PoliticalCrises
                      .Where(crisis =>
                          crisis.Status == PoliticalCrisisStatus.Active &&
@@ -44,6 +63,15 @@ internal static class CrisisSystem
         Guid crisisId,
         PoliticalCrisisResponse response)
     {
+        if (!state.Player.IsInPower)
+        {
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Politics,
+                "Government crisis response unavailable",
+                $"{state.Player.Lineage.Name} is outside government and cannot choose the state's response to a governing crisis.");
+        }
+
         var crisis = state.PoliticalCrises.FirstOrDefault(candidate =>
             candidate.Id == crisisId &&
             candidate.Status == PoliticalCrisisStatus.Active &&
