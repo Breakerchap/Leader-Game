@@ -313,6 +313,59 @@ public sealed class GameSession
         Refresh($"Dismissal of {holder.FullName} from {position} queued.");
     }
 
+    public void TakeCourtAction(
+        string actionName,
+        int characterId)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+
+        if (!state.Player.IsInPower)
+        {
+            Refresh("Personal ruler actions are unavailable while your lineage is outside government.");
+            return;
+        }
+
+        if (state.PendingOrders.OfType<CourtActionOrder>().Any())
+        {
+            Refresh("The ruler has already committed their personal political attention this month.");
+            return;
+        }
+
+        var subject = country.PoliticalFigures.FirstOrDefault(character =>
+            character.Id == characterId &&
+            character.IsPoliticallyActive &&
+            !ReferenceEquals(character, country.Ruler));
+
+        if (subject is null)
+        {
+            Refresh("That political figure is not currently available for a personal court action.");
+            return;
+        }
+
+        if (!Enum.TryParse<CourtActionType>(
+                actionName,
+                ignoreCase: true,
+                out var action))
+        {
+            Refresh("That court action is not recognised.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new CourtActionOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = subject,
+            IssuedOn = state.Date,
+            Country = country,
+            Subject = subject,
+            ActionType = action
+        });
+
+        Refresh(
+            $"{CourtActionSystem.ActionLabel(action)} with {subject.FullName} queued.");
+    }
+
     public void InvestigateCharacter(int characterId)
     {
         var state = _simulation.State;
@@ -1713,6 +1766,14 @@ public sealed class GameSession
             })
             .ToList();
 
+        var pendingCourtAction = state.PendingOrders
+            .OfType<CourtActionOrder>()
+            .FirstOrDefault();
+
+        var canTakeCourtAction =
+            state.Player.IsInPower &&
+            pendingCourtAction is null;
+
         var figures = country.PoliticalFigures
             .Where(character =>
                 character.IsAlive &&
@@ -1782,7 +1843,9 @@ public sealed class GameSession
                     character.IsPoliticallyActive &&
                         country.GetOfficeHolder(Position.Marshal) is { } arrestMarshal &&
                         !ReferenceEquals(character, arrestMarshal),
-                    character.Status == PoliticalStatus.Imprisoned);
+                    character.Status == PoliticalStatus.Imprisoned,
+                    canTakeCourtAction &&
+                        character.IsPoliticallyActive);
             })
             .ToList();
 
@@ -1860,6 +1923,12 @@ public sealed class GameSession
                     ? $"{playerCharacter.FullName}'s organisation is already committed to {pendingOppositionAction.ActionType} this month."
                     : $"{playerCharacter.FullName} can direct one major opposition effort before the next month advances.";
 
+        var courtActionStatus = !state.Player.IsInPower
+            ? "Only the government ruler can use personal court authority."
+            : pendingCourtAction is not null
+                ? $"{CourtActionSystem.ActionLabel(pendingCourtAction.ActionType)} with {pendingCourtAction.Subject.FullName} is already queued for this month."
+                : "The ruler may devote personal attention to one political figure before the next month advances.";
+
         var court = new CourtPoliticsView(
             offices,
             figures,
@@ -1869,7 +1938,9 @@ public sealed class GameSession
             !state.Player.IsInPower,
             canTakeOppositionAction,
             oppositionPowerBases,
-            oppositionStatus);
+            oppositionStatus,
+            canTakeCourtAction,
+            courtActionStatus);
 
         var chancellor = country.GetOfficeHolder(Position.Chancellor);
         var chancellorObedience = chancellor is null
@@ -2282,6 +2353,9 @@ public sealed class GameSession
 
             RegionalActionOrder typed =>
                 $"{RegionalSystem.ActionLabel(typed.ActionType)} in {typed.Region.Name}.",
+
+            CourtActionOrder typed =>
+                $"{CourtActionSystem.ActionLabel(typed.ActionType)} with {typed.Subject.FullName}.",
 
             _ => order.GetType().Name
         };
