@@ -17,6 +17,10 @@ internal sealed record CrisisAdviceDefinition(
     PoliticalCrisisResponse Response,
     string Reason);
 
+internal sealed record CrisisTriggerCandidate(
+    PoliticalCrisis Crisis,
+    double Priority);
+
 internal static class CrisisSystem
 {
     private const int MonthsPerStage = 2;
@@ -866,12 +870,19 @@ internal static class CrisisSystem
         Country country,
         List<SimulationReport> reports)
     {
-        var activeCount = state.PoliticalCrises.Count(crisis =>
-            crisis.Status == PoliticalCrisisStatus.Active &&
-            ReferenceEquals(crisis.Country, country));
+        var activeCount =
+            state.PoliticalCrises.Count(crisis =>
+                crisis.Status ==
+                    PoliticalCrisisStatus.Active &&
+                ReferenceEquals(
+                    crisis.Country,
+                    country));
 
         if (activeCount >= MaxActiveCrises)
             return;
+
+        var candidates =
+            new List<CrisisTriggerCandidate>();
 
         var region = country.Regions
             .Where(candidate =>
@@ -890,22 +901,23 @@ internal static class CrisisSystem
 
         if (region is not null)
         {
-            AddCrisis(
-                state,
-                new PoliticalCrisis
-                {
-                    Country = country,
-                    Type = PoliticalCrisisType.RegionalBreakdown,
-                    Region = region,
-                    StartedOn = state.Date
-                },
-                reports);
-
-            activeCount++;
+            candidates.Add(
+                new CrisisTriggerCandidate(
+                    new PoliticalCrisis
+                    {
+                        Country = country,
+                        Type =
+                            PoliticalCrisisType.RegionalBreakdown,
+                        Region = region,
+                        StartedOn = state.Date
+                    },
+                    35 +
+                    region.Unrest * 0.45 +
+                    Math.Max(
+                        0,
+                        55 - region.CrownControl) * 0.45 +
+                    region.LocalElitePower * 0.12));
         }
-
-        if (activeCount >= MaxActiveCrises)
-            return;
 
         if (ShouldTriggerFiscalCrisis(country) &&
             !HasRecentTypeCrisis(
@@ -914,23 +926,34 @@ internal static class CrisisSystem
                 PoliticalCrisisType.FiscalEmergency,
                 12))
         {
-            AddCrisis(
-                state,
-                new PoliticalCrisis
-                {
-                    Country = country,
-                    Type = PoliticalCrisisType.FiscalEmergency,
-                    StartedOn = state.Date
-                },
-                reports);
+            var deficitPressure =
+                country.LastMonthlyBalance < 0
+                    ? Math.Min(
+                        18,
+                        (double)(-country.LastMonthlyBalance /
+                                 Math.Max(
+                                     1m,
+                                     country.Gdp / 120m)) * 6)
+                    : 0;
 
-            activeCount++;
+            candidates.Add(
+                new CrisisTriggerCandidate(
+                    new PoliticalCrisis
+                    {
+                        Country = country,
+                        Type =
+                            PoliticalCrisisType.FiscalEmergency,
+                        StartedOn = state.Date
+                    },
+                    45 +
+                    (double)DebtRatio(country) * 100 +
+                    deficitPressure));
         }
 
-        if (activeCount >= MaxActiveCrises)
-            return;
-
-        var bloc = GetStandoffBloc(state, country);
+        var bloc =
+            GetStandoffBloc(
+                state,
+                country);
 
         if (bloc is not null &&
             !HasRecentTypeCrisis(
@@ -939,22 +962,23 @@ internal static class CrisisSystem
                 PoliticalCrisisType.PoliticalStandoff,
                 12))
         {
-            AddCrisis(
-                state,
-                new PoliticalCrisis
-                {
-                    Country = country,
-                    Type = PoliticalCrisisType.PoliticalStandoff,
-                    RelatedBlocId = bloc.Id,
-                    StartedOn = state.Date
-                },
-                reports);
-
-            activeCount++;
+            candidates.Add(
+                new CrisisTriggerCandidate(
+                    new PoliticalCrisis
+                    {
+                        Country = country,
+                        Type =
+                            PoliticalCrisisType.PoliticalStandoff,
+                        RelatedBlocId = bloc.Id,
+                        StartedOn = state.Date
+                    },
+                    45 +
+                    bloc.Cohesion * 0.35 +
+                    Math.Max(
+                        0,
+                        55 - country.Government.Stability) *
+                    0.75));
         }
-
-        if (activeCount >= MaxActiveCrises)
-            return;
 
         if (ShouldTriggerSuccessionCrisis(country) &&
             !HasRecentTypeCrisis(
@@ -963,24 +987,22 @@ internal static class CrisisSystem
                 PoliticalCrisisType.SuccessionDispute,
                 18))
         {
-            AddCrisis(
-                state,
-                new PoliticalCrisis
-                {
-                    Country = country,
-                    Type = PoliticalCrisisType.SuccessionDispute,
-                    StartedOn = state.Date
-                },
-                reports);
-
-            activeCount++;
+            candidates.Add(
+                new CrisisTriggerCandidate(
+                    new PoliticalCrisis
+                    {
+                        Country = country,
+                        Type =
+                            PoliticalCrisisType.SuccessionDispute,
+                        StartedOn = state.Date
+                    },
+                    SuccessionCrisisPriority(country)));
         }
 
-        if (activeCount >= MaxActiveCrises)
-            return;
-
         var warEmergency =
-            FindWarEmergency(state, country);
+            FindWarEmergency(
+                state,
+                country);
 
         if (warEmergency is not null &&
             !HasRecentWarCrisis(
@@ -988,22 +1010,20 @@ internal static class CrisisSystem
                 country,
                 warEmergency))
         {
-            AddCrisis(
-                state,
-                new PoliticalCrisis
-                {
-                    Country = country,
-                    Type = PoliticalCrisisType.WarEmergency,
-                    RelatedWarId = warEmergency.Id,
-                    StartedOn = state.Date
-                },
-                reports);
-
-            activeCount++;
+            candidates.Add(
+                new CrisisTriggerCandidate(
+                    new PoliticalCrisis
+                    {
+                        Country = country,
+                        Type =
+                            PoliticalCrisisType.WarEmergency,
+                        RelatedWarId = warEmergency.Id,
+                        StartedOn = state.Date
+                    },
+                    WarCrisisPriority(
+                        warEmergency,
+                        country)));
         }
-
-        if (activeCount >= MaxActiveCrises)
-            return;
 
         var strainedMinister =
             FindStrainedMinister(
@@ -1016,16 +1036,34 @@ internal static class CrisisSystem
                 country,
                 strainedMinister))
         {
+            candidates.Add(
+                new CrisisTriggerCandidate(
+                    new PoliticalCrisis
+                    {
+                        Country = country,
+                        Type =
+                            PoliticalCrisisType.CabinetRift,
+                        RelatedCharacterId =
+                            strainedMinister.Id,
+                        StartedOn = state.Date
+                    },
+                    CabinetRiftPriority(
+                        state,
+                        country,
+                        strainedMinister)));
+        }
+
+        var selected =
+            candidates
+                .OrderByDescending(candidate =>
+                    candidate.Priority)
+                .FirstOrDefault();
+
+        if (selected is not null)
+        {
             AddCrisis(
                 state,
-                new PoliticalCrisis
-                {
-                    Country = country,
-                    Type = PoliticalCrisisType.CabinetRift,
-                    RelatedCharacterId =
-                        strainedMinister.Id,
-                    StartedOn = state.Date
-                },
+                selected.Crisis,
                 reports);
         }
     }
@@ -1043,6 +1081,95 @@ internal static class CrisisSystem
             Title(crisis),
             Summary(state, crisis) +
             " The ruler must choose a response; doing nothing will allow the crisis to escalate."));
+    }
+
+    private static double WarCrisisPriority(
+        War war,
+        Country country) =>
+        60 +
+        Math.Max(
+            0,
+            -CountryWarScore(
+                war,
+                country)) * 0.65 +
+        country.WarExhaustion * 0.30 +
+        Math.Max(
+            0,
+            50 - country.ArmyReadiness) * 0.35;
+
+    private static double SuccessionCrisisPriority(
+        Country country)
+    {
+        var candidates =
+            ActiveSuccessionCandidates(
+                country);
+
+        var agePressure =
+            Math.Max(
+                0,
+                country.Ruler.Age - 55) * 1.2;
+        var healthPressure =
+            Math.Max(
+                0,
+                70 - country.Ruler.Health) * 0.5;
+
+        if (candidates.Count < 2)
+        {
+            return
+                48 +
+                agePressure +
+                healthPressure +
+                (candidates.Count == 1
+                    ? Math.Max(
+                        0,
+                        70 - candidates[0].Legitimacy)
+                    : 20);
+        }
+
+        var legitimacyPressure =
+            Math.Max(
+                0,
+                78 - candidates[0].Legitimacy);
+        var rivalryPressure =
+            Math.Max(
+                0,
+                20 -
+                (candidates[0].Legitimacy -
+                 candidates[1].Legitimacy));
+
+        return
+            48 +
+            agePressure +
+            healthPressure +
+            legitimacyPressure +
+            rivalryPressure;
+    }
+
+    private static double CabinetRiftPriority(
+        GameState state,
+        Country country,
+        Character minister)
+    {
+        var relationship =
+            state.Relationships.GetOrCreate(
+                minister,
+                country.Ruler);
+        var willingness =
+            PoliticalCalculations.GetOrderWillingness(
+                state,
+                country,
+                minister,
+                country.Ruler);
+
+        return
+            35 +
+            Math.Max(
+                0,
+                35 - willingness) * 0.8 +
+            Math.Max(
+                0,
+                25 - relationship.Trust) * 0.5 +
+            minister.Ambition * 0.15;
     }
 
     private static Character? FindStrainedMinister(
