@@ -369,6 +369,39 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             }
         });
 
+        PrivateAudienceCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is CourtFigureView figure)
+            {
+                RunAndRefresh(() =>
+                    _session.TakeCourtAction(
+                        "PrivateAudience",
+                        figure.Id));
+            }
+        });
+
+        GrantPatronageCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is CourtFigureView figure)
+            {
+                RunAndRefresh(() =>
+                    _session.TakeCourtAction(
+                        "GrantPatronage",
+                        figure.Id));
+            }
+        });
+
+        PublicRebukeCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is CourtFigureView figure)
+            {
+                RunAndRefresh(() =>
+                    _session.TakeCourtAction(
+                        "PublicRebuke",
+                        figure.Id));
+            }
+        });
+
         InvestigateCharacterCommand = new RelayCommand(parameter =>
         {
             if (parameter is CourtFigureView figure)
@@ -521,6 +554,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public ICommand ConcedePoliticalDemandCommand { get; }
 
     public ICommand RejectPoliticalDemandCommand { get; }
+
+    public ICommand PrivateAudienceCommand { get; }
+
+    public ICommand GrantPatronageCommand { get; }
+
+    public ICommand PublicRebukeCommand { get; }
 
     public ICommand InvestigateCharacterCommand { get; }
 
