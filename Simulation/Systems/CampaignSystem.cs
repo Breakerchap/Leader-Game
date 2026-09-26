@@ -21,9 +21,18 @@ internal static class CampaignSystem
         var reports = new List<SimulationReport>();
         var country = state.Player.Country;
 
+        EnsureDynamicObjectives(state, campaign, reports);
+
         foreach (var objective in campaign.Objectives.Where(objective =>
-                     !objective.IsCompleted))
+                     !objective.IsCompleted).ToList())
         {
+            if (!state.Player.IsInPower &&
+                objective.Type != CampaignObjectiveType.RestorePoliticalControl)
+            {
+                objective.ProgressMonths = 0;
+                continue;
+            }
+
             var satisfied = IsSatisfied(state, country, objective);
 
             objective.ProgressMonths = satisfied
@@ -43,13 +52,16 @@ internal static class CampaignSystem
                 objective.Description));
         }
 
-        if (campaign.Objectives.Count > 0 &&
+        AddPostRestorationObjectives(campaign, reports, state);
+
+        if (state.Player.IsInPower &&
+            campaign.Objectives.Count > 0 &&
             campaign.Objectives.All(objective => objective.IsCompleted))
         {
             state.Player.HasWon = true;
             state.Player.WinReason =
                 $"{campaign.Title} has been completed. " +
-                "Every campaign objective has been secured.";
+                "Every current campaign objective has been secured while the lineage holds power.";
 
             reports.Add(new SimulationReport(
                 state.Date,
@@ -59,6 +71,88 @@ internal static class CampaignSystem
         }
 
         return reports;
+    }
+
+    private static void EnsureDynamicObjectives(
+        GameState state,
+        CampaignState campaign,
+        List<SimulationReport> reports)
+    {
+        if (state.Player.IsInPower)
+            return;
+
+        if (campaign.Objectives.Any(objective =>
+                objective.Type ==
+                    CampaignObjectiveType.RestorePoliticalControl &&
+                !objective.IsCompleted))
+        {
+            return;
+        }
+
+        var objective = new CampaignObjective
+        {
+            Id =
+                $"restore-control-{state.Date.Year:D4}-{state.Date.Month:D2}",
+            Title = "Return to Power",
+            Description =
+                $"Restore {state.Player.Lineage.Name} to control of {state.Player.Country.Name}. " +
+                "Losing office does not end the campaign, but permanent political irrelevance does.",
+            Type = CampaignObjectiveType.RestorePoliticalControl,
+            RequiredMonths = 1
+        };
+
+        campaign.Objectives.Add(objective);
+
+        reports.Add(new SimulationReport(
+            state.Date,
+            ReportCategory.System,
+            "Campaign objective changed: Return to Power",
+            objective.Description));
+    }
+
+    private static void AddPostRestorationObjectives(
+        CampaignState campaign,
+        List<SimulationReport> reports,
+        GameState state)
+    {
+        var completedRestorations = campaign.Objectives
+            .Where(objective =>
+                objective.Type ==
+                    CampaignObjectiveType.RestorePoliticalControl &&
+                objective.IsCompleted)
+            .ToList();
+
+        foreach (var restoration in completedRestorations)
+        {
+            var id = $"consolidate-{restoration.Id}";
+
+            if (campaign.Objectives.Any(objective =>
+                    objective.Id == id))
+            {
+                continue;
+            }
+
+            var objective = new CampaignObjective
+            {
+                Id = id,
+                Title = "Consolidate the Restoration",
+                Description =
+                    "After returning to government, keep stability at or above 55 and " +
+                    "overall lineage backing at or above 45 for three consecutive months.",
+                Type = CampaignObjectiveType.ConsolidateRestoration,
+                TargetValue = 55,
+                SecondaryTargetValue = 45,
+                RequiredMonths = 3
+            };
+
+            campaign.Objectives.Add(objective);
+
+            reports.Add(new SimulationReport(
+                state.Date,
+                ReportCategory.System,
+                "Campaign objective changed: Consolidate the Restoration",
+                objective.Description));
+        }
     }
 
     private static bool IsSatisfied(
@@ -98,6 +192,16 @@ internal static class CampaignSystem
 
             CampaignObjectiveType.ElectoralMandate =>
                 state.Player.ElectionsWon >= objective.TargetValue,
+
+            CampaignObjectiveType.RestorePoliticalControl =>
+                state.Player.IsInPower,
+
+            CampaignObjectiveType.ConsolidateRestoration =>
+                state.Player.IsInPower &&
+                country.Government.Stability >= objective.TargetValue &&
+                PoliticalCalculations.GetPowerBaseInfluence(
+                    country,
+                    country.Ruler) >= objective.SecondaryTargetValue,
 
             _ => false
         };
