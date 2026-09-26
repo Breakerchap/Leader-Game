@@ -114,17 +114,22 @@ internal static class RegionalSystem
 
     public static decimal GetTaxCollectionFactor(Region region)
     {
+        // Regional politics modifies collection around the existing national
+        // baseline rather than replacing it. A reasonably governed starting
+        // realm should still collect close to its old expected revenue, while
+        // a badly controlled, highly privileged or disorderly region can
+        // become a serious fiscal leak.
         var control =
-            0.72m + (decimal)region.CrownControl / 360m;
+            0.90m + (decimal)region.CrownControl / 500m;
         var privilegeReduction =
-            1m - (decimal)region.Privileges / 650m;
+            1m - (decimal)region.Privileges / 1500m;
         var unrestReduction =
-            1m - (decimal)Math.Max(0, region.Unrest - 45) / 500m;
+            1m - (decimal)Math.Max(0, region.Unrest - 45) / 400m;
 
         return Math.Clamp(
             control * privilegeReduction * unrestReduction,
-            0.45m,
-            1.08m);
+            0.55m,
+            1.15m);
     }
 
     public static string ActionLabel(RegionalActionType action) =>
