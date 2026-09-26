@@ -312,6 +312,20 @@ public static partial class GameSaveService
                     Workload = office.Workload,
                     PatronageDependence = office.PatronageDependence
                 })
+                .ToList(),
+            Regions = country.Regions
+                .Select(region => new RegionSnapshot
+                {
+                    Id = region.Id,
+                    Name = region.Name,
+                    EconomicShare = region.EconomicShare,
+                    PopulationShare = region.PopulationShare,
+                    CrownControl = region.CrownControl,
+                    LocalElitePower = region.LocalElitePower,
+                    Unrest = region.Unrest,
+                    Privileges = region.Privileges,
+                    Prosperity = region.Prosperity
+                })
                 .ToList()
         };
     }
@@ -529,6 +543,12 @@ public static partial class GameSaveService
                 AdministrativeFunction = typed.Function,
                 AdministrativeReform = typed.ReformType
             },
+            RegionalActionOrder typed => snapshot with
+            {
+                CountryId = typed.Country.Id,
+                RegionId = typed.Region.Id,
+                RegionalAction = typed.ActionType
+            },
             _ => throw new NotSupportedException(
                 $"Saving order type {order.GetType().Name} is not supported.")
         };
@@ -555,6 +575,7 @@ public static partial class GameSaveService
             RequestReportOrder => SaveOrderKind.RequestReport,
             OppositionActionOrder => SaveOrderKind.OppositionAction,
             AdministrativeReformOrder => SaveOrderKind.AdministrativeReform,
+            RegionalActionOrder => SaveOrderKind.RegionalAction,
             _ => throw new NotSupportedException(
                 $"Saving order type {order.GetType().Name} is not supported.")
         };
