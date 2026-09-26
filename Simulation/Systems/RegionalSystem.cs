@@ -25,6 +25,9 @@ internal static class RegionalSystem
             {
                 ApplyMonthlyDrift(country, region, localAdministration);
 
+                if (state.Date.Month % 3 == 0)
+                    ApplyPoliticalFeedback(country, region);
+
                 if (region.Unrest >= 70)
                     country.Government.Stability -= 0.10;
 
@@ -240,6 +243,24 @@ internal static class RegionalSystem
             region.Unrest += 0.08;
         else if (region.Prosperity > 70)
             region.Unrest -= 0.05;
+    }
+
+    private static void ApplyPoliticalFeedback(
+        Country country,
+        Region region)
+    {
+        if (region.CrownControl < 40 &&
+            region.LocalElitePower >= 70)
+        {
+            country.SetPowerBaseStrength(
+                PowerBaseType.RegionalElites,
+                country.GetPowerBaseStrength(
+                    PowerBaseType.RegionalElites) + 1);
+
+            country.Ruler.ChangePowerBaseStanding(
+                PowerBaseType.RegionalElites,
+                -1);
+        }
     }
 
     private static void UpdateNationalUnrest(Country country)
