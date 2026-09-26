@@ -113,6 +113,58 @@ public class AdministrativeSystemTests
     }
 
     [Fact]
+    public void AdministrativeDevelopment_IsCapabilityGatedNotJustDateGated()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+
+        foreach (var office in country.AdministrativeOffices)
+        {
+            office.Capacity = 90;
+            office.Reach = 90;
+            office.Integrity = 90;
+            office.Workload = 0;
+            office.PatronageDependence = 20;
+        }
+
+        country.AdministrationFunding = 1.25m;
+
+        state.Date = new GameDate(1499, 12);
+        new GameSimulation(state).AdvanceMonth();
+
+        Assert.Equal(
+            AdministrativeDevelopment.PatrimonialCourt,
+            country.AdministrativeDevelopment);
+
+        state.Date = new GameDate(1500, 1);
+        new GameSimulation(state).AdvanceMonth();
+
+        Assert.Equal(
+            AdministrativeDevelopment.CentralisingBureaucracy,
+            country.AdministrativeDevelopment);
+        Assert.Contains(
+            state.Reports,
+            report => report.Title.Contains(
+                "administration changes character",
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void AdministrativeDevelopment_RoundTripsThroughSave()
+    {
+        var state = DemoScenario.Create();
+        state.Player.Country.AdministrativeDevelopment =
+            AdministrativeDevelopment.FiscalMilitaryState;
+
+        var loaded = GameSaveService.Deserialize(
+            GameSaveService.Serialize(state));
+
+        Assert.Equal(
+            AdministrativeDevelopment.FiscalMilitaryState,
+            loaded.Player.Country.AdministrativeDevelopment);
+    }
+
+    [Fact]
     public void GovernmentView_ReportsAdministrationInCoarsePoliticalTerms()
     {
         var session = new GameSession(
@@ -121,6 +173,9 @@ public class AdministrativeSystemTests
         var view = session.View.Government;
 
         Assert.NotEmpty(view.AdministrativeOffices);
+        Assert.Equal(
+            "Patrimonial court administration",
+            view.AdministrativeDevelopment);
         Assert.Contains(
             view.AdministrativeOffices,
             office => office.Name == "Royal Exchequer");
