@@ -786,8 +786,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public IReadOnlyList<string> WarAimOptions { get; } =
     [
         "Reparations",
-        "HumiliateRival",
-        "CommercialAccess"
+        "Humiliate rival",
+        "Commercial access"
     ];
 
     public string SelectedWarAim
