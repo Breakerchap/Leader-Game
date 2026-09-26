@@ -53,7 +53,7 @@ public class ElectionSystemTests
     }
 
     [Fact]
-    public void RivalWinningElection_EndsCurrentPartyCampaign()
+    public void RivalWinningElection_MovesCurrentPartyIntoOpposition()
     {
         var state = DemoScenario.Create(
             ScenarioCatalog.ValeriaId);
@@ -72,14 +72,20 @@ public class ElectionSystemTests
         new GameSimulation(state).AdvanceMonth();
 
         Assert.Same(rival, country.Ruler);
-        Assert.True(state.Player.HasLost);
+        Assert.False(state.Player.HasLost);
+        Assert.True(state.Player.MonthsOutOfPower >= 1);
         Assert.Contains(
-            "election",
-            state.Player.LossReason!,
-            StringComparison.OrdinalIgnoreCase);
+            state.Player.CurrentCharacter,
+            state.Player.Lineage.Members);
         Assert.DoesNotContain(
             rival,
             state.Player.Lineage.Members);
+        Assert.Contains(
+            state.Campaign!.Objectives,
+            objective =>
+                objective.Type ==
+                CampaignObjectiveType.RestorePoliticalControl &&
+                !objective.IsCompleted);
     }
 
     [Fact]
