@@ -640,7 +640,8 @@ public enum SaveOrderKind
     RequestReport,
     OppositionAction,
     AdministrativeReform,
-    RegionalAction
+    RegionalAction,
+    CourtAction
 }
 
 public sealed record OrderSnapshot
@@ -702,4 +703,6 @@ public sealed record OrderSnapshot
     public RegionalActionType? RegionalAction { get; init; }
 
     public string? RegionId { get; init; }
+
+    public CourtActionType? CourtAction { get; init; }
 }
