@@ -93,6 +93,9 @@ public class Country
 
     public required Government Government { get; set; }
 
+    public AdministrativeDevelopment AdministrativeDevelopment { get; set; } =
+        AdministrativeDevelopment.PatrimonialCourt;
+
     public List<AdministrativeOffice> AdministrativeOffices { get; } = [];
 
     public AdministrativeOffice? GetAdministrativeOffice(
