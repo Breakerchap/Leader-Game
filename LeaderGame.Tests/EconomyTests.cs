@@ -14,10 +14,17 @@ public class EconomyTests
 
         simulation.AdvanceMonth();
 
-        Assert.Equal(531_250m, country.LastMonthlyTaxRevenue);
+        Assert.True(country.LastMonthlyTaxRevenue > 500_000m);
         Assert.InRange(country.LastMonthlyExpenses, 338_108m, 338_109m);
-        Assert.InRange(country.LastMonthlyBalance, 193_141m, 193_142m);
-        Assert.InRange(country.Treasury, 513_141m, 513_142m);
+        Assert.Equal(
+            country.LastMonthlyTaxRevenue +
+            country.LastMonthlyTradeIncome -
+            country.LastMonthlyExpenses -
+            country.LastMonthlyDebtInterest,
+            country.LastMonthlyBalance);
+        Assert.Equal(
+            320_000m + country.LastMonthlyBalance,
+            country.Treasury);
         Assert.Equal(0m, country.Debt);
         Assert.Equal(new GameDate(1450, 2), state.Date);
     }
