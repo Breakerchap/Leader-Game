@@ -39,7 +39,7 @@ public class ElectionPromiseTests
             nominee.GetPowerBaseStanding(PowerBaseType.Merchants) >
             oldMerchantBacking);
         Assert.Contains(
-            "promise",
+            "pledge",
             report.Title,
             StringComparison.OrdinalIgnoreCase);
 
@@ -52,6 +52,38 @@ public class ElectionPromiseTests
             "already",
             second.Title,
             StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CouncilElection_TaxPledgeTargetsCouncilInterestsNotMassElectorate()
+    {
+        var state = DemoScenario.Create(ScenarioCatalog.ValeriaId);
+        var country = state.Player.Country;
+        country.Government.MonthsUntilElection = 4;
+
+        var nominee = ElectionSystem.GetPlayerLineageNominee(state, country)!;
+
+        var merchants = nominee.GetPowerBaseStanding(PowerBaseType.Merchants);
+        var party = nominee.GetPowerBaseStanding(PowerBaseType.Party);
+        var workers = nominee.GetPowerBaseStanding(PowerBaseType.Workers);
+        var peasants = nominee.GetPowerBaseStanding(PowerBaseType.Peasantry);
+
+        ElectionSystem.MakePlayerCampaignPromise(
+            state,
+            ElectionPromiseType.TaxRelief);
+
+        Assert.True(
+            nominee.GetPowerBaseStanding(PowerBaseType.Merchants) >
+            merchants);
+        Assert.True(
+            nominee.GetPowerBaseStanding(PowerBaseType.Party) >
+            party);
+        Assert.Equal(
+            workers,
+            nominee.GetPowerBaseStanding(PowerBaseType.Workers));
+        Assert.Equal(
+            peasants,
+            nominee.GetPowerBaseStanding(PowerBaseType.Peasantry));
     }
 
     [Fact]
@@ -115,7 +147,7 @@ public class ElectionPromiseTests
         Assert.Contains(
             state.Reports,
             report => report.Title.Contains(
-                "fulfils an election promise",
+                "fulfils an electoral pledge",
                 StringComparison.OrdinalIgnoreCase));
     }
 
@@ -155,7 +187,7 @@ public class ElectionPromiseTests
         Assert.Contains(
             state.Reports,
             report => report.Title.Contains(
-                "breaks an election promise",
+                "breaks an electoral pledge",
                 StringComparison.OrdinalIgnoreCase));
     }
 
@@ -193,11 +225,11 @@ public class ElectionPromiseTests
 
         Assert.False(session.View.Government.CanMakeElectionPromise);
         Assert.Contains(
-            "tax rate",
+            "effective fiscal burden",
             session.View.Government.ElectionPromise,
             StringComparison.OrdinalIgnoreCase);
         Assert.Equal(
-            "Campaign commitment",
+            "Council-election pledge",
             session.View.Government.ElectionPromiseStatus);
     }
 
