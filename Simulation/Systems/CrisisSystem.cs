@@ -623,6 +623,54 @@ internal static class CrisisSystem
         };
     }
 
+    private static PoliticalCrisisResponse? CabinetRiftAdvice(
+        GameState state,
+        PoliticalCrisis crisis,
+        Character advisor)
+    {
+        var minister =
+            FindRelatedMinister(crisis);
+
+        if (minister is null)
+            return null;
+
+        if (ReferenceEquals(advisor, minister))
+        {
+            return PoliticalCrisisResponse
+                .ReconcileMinister;
+        }
+
+        var towardMinister =
+            state.Relationships.GetOrCreate(
+                advisor,
+                minister);
+
+        if (towardMinister.Opinion <= -30 ||
+            advisor.Ambition >= 78)
+        {
+            return PoliticalCrisisResponse
+                .AcceptMinisterResignation;
+        }
+
+        return advisor.Position switch
+        {
+            Position.Marshal =>
+                PoliticalCrisisResponse
+                    .EnforceMinisterLoyalty,
+
+            Position.Chancellor =>
+                PoliticalCrisisResponse
+                    .ReconcileMinister,
+
+            Position.Treasurer =>
+                PoliticalCrisisResponse
+                    .AcceptMinisterResignation,
+
+            _ => PoliticalCrisisResponse
+                .ReconcileMinister
+        };
+    }
+
     private static string AdviceReason(
         GameState state,
         PoliticalCrisis crisis,
@@ -709,6 +757,24 @@ internal static class CrisisSystem
                 advisor.Position == Position.Treasurer
                     ? "warns that continuing the war is becoming a fiscal decision as much as a military one and prefers a negotiated loss to an uncontrolled financial collapse."
                     : "believes the military position no longer justifies the domestic cost and wants the Chancellor to test what settlement the enemy will actually accept.",
+
+            PoliticalCrisisResponse
+                .ReconcileMinister =>
+                ReferenceEquals(
+                    advisor,
+                    FindRelatedMinister(crisis))
+                    ? "argues that the relationship with the ruler cannot continue on its present terms and wants concrete reassurance before serving normally again."
+                    : "believes losing an experienced minister during a political quarrel would create more damage than making a limited concession now.",
+
+            PoliticalCrisisResponse
+                .AcceptMinisterResignation =>
+                advisor.Ambition >= 78
+                    ? "sees little reason to spend royal capital rescuing a rival's position and is not entirely disinterested in the vacancy that would follow."
+                    : "argues that a minister who no longer trusts the ruler is more dangerous inside government than outside it.",
+
+            PoliticalCrisisResponse
+                .EnforceMinisterLoyalty =>
+                "believes office-holders must not learn that threatening the ruler is a reliable route to concessions and prefers obedience enforced through authority and fear.",
 
             _ => "offers no clear reasoning."
         };
