@@ -340,6 +340,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             }
         });
 
+        RespondToCrisisCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is CrisisChoiceView choice)
+            {
+                RunAndRefresh(() =>
+                    _session.RespondToCrisis(
+                        choice.CrisisId,
+                        choice.Response));
+            }
+        });
+
         ConcedePoliticalDemandCommand = new RelayCommand(parameter =>
         {
             if (parameter is PoliticalDemandView demand)
@@ -505,6 +516,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ICommand RejectCabinetProposalCommand { get; }
 
+    public ICommand RespondToCrisisCommand { get; }
+
     public ICommand ConcedePoliticalDemandCommand { get; }
 
     public ICommand RejectPoliticalDemandCommand { get; }
@@ -593,6 +606,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public bool HasActiveCampaigns => View.Military.Campaigns.Count > 0;
 
     public bool HasCabinetProposals => View.CabinetProposals.Count > 0;
+
+    public bool HasCrises => View.Crises.Count > 0;
 
     public string SectionTitle => CurrentSection;
 
@@ -1009,6 +1024,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(HasPendingReports));
         OnPropertyChanged(nameof(HasActiveCampaigns));
         OnPropertyChanged(nameof(HasCabinetProposals));
+        OnPropertyChanged(nameof(HasCrises));
         OnPropertyChanged(nameof(ArchiveEntries));
         OnPropertyChanged(nameof(SaveLocation));
         _advanceMonthCommand.RaiseCanExecuteChanged();
