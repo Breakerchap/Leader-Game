@@ -757,7 +757,7 @@
                   <StackPanel Spacing="10">
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Spacing="3">
-                        <TextBlock Text="ADMINISTRATION & OFFICES" Classes="eyebrow" Foreground="#86B49A" />
+                        <TextBlock Text="ADMINISTRATION &amp; OFFICES" Classes="eyebrow" Foreground="#86B49A" />
                         <TextBlock
                             Text="{Binding View.Government.AdministrativeEfficiency}"
                             FontSize="16"
