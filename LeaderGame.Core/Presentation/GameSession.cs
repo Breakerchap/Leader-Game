@@ -686,6 +686,26 @@ public sealed class GameSession
         Refresh($"{terms} peace proposal queued through {chancellor.FullName}.");
     }
 
+    public void MakeElectionPromise(string promiseType)
+    {
+        if (!Enum.TryParse<ElectionPromiseType>(
+                promiseType,
+                ignoreCase: true,
+                out var parsed))
+        {
+            Refresh("Unknown election promise.");
+            return;
+        }
+
+        var report = ElectionSystem.MakePlayerCampaignPromise(
+            _simulation.State,
+            parsed);
+
+        _simulation.State.Reports.Add(report);
+        _statusMessage = report.Title;
+        Refresh();
+    }
+
     public void RespondToPowerBaseDemand(Guid demandId, bool concede)
     {
         var response = DomesticPoliticsSystem.RespondToDemand(
@@ -1106,6 +1126,41 @@ public sealed class GameSession
                 ? $"Current first successor: {successor.FullName}."
                 : "No eligible successor is currently identified.";
 
+        var latestElectionPromise = state.ElectionPromises
+            .Where(promise =>
+                ReferenceEquals(promise.Country, country))
+            .OrderByDescending(promise => promise.MadeOn.Year)
+            .ThenByDescending(promise => promise.MadeOn.Month)
+            .FirstOrDefault();
+
+        var isElectionCampaignActive =
+            hasElection &&
+            country.Government.MonthsUntilElection > 0 &&
+            country.Government.MonthsUntilElection <=
+                country.Government.ElectionCampaignMonths;
+
+        var activeElectionPromise =
+            ElectionSystem.GetActivePromise(state, country);
+
+        var electionPromiseText = latestElectionPromise is null
+            ? "No public campaign promise."
+            : ElectionSystem.DescribePromise(latestElectionPromise);
+
+        var electionPromiseStatus = latestElectionPromise?.Status switch
+        {
+            ElectionPromiseStatus.Campaigning =>
+                "Campaign commitment",
+            ElectionPromiseStatus.AwaitingFulfilment =>
+                $"{Math.Max(0, 6 - latestElectionPromise.MonthsSinceElection)} months left to deliver",
+            ElectionPromiseStatus.Fulfilled =>
+                "Fulfilled",
+            ElectionPromiseStatus.Broken =>
+                "Broken",
+            ElectionPromiseStatus.Lapsed =>
+                "Lapsed after election defeat",
+            _ => "No active commitment"
+        };
+
         var government = new GovernmentPolicyView(
             (double)country.TaxRate * 100,
             (double)country.ArmyFunding * 100,
@@ -1118,7 +1173,12 @@ public sealed class GameSession
             governmentType,
             politicalCycle,
             politicalCycleDetail,
-            hasElection);
+            hasElection,
+            isElectionCampaignActive,
+            isElectionCampaignActive &&
+                activeElectionPromise is null,
+            electionPromiseText,
+            electionPromiseStatus);
 
         var offices = Enum.GetValues<Position>()
             .Select(position =>
