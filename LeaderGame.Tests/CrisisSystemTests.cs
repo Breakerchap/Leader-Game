@@ -838,6 +838,190 @@ public class CrisisSystemTests
     }
 
     [Fact]
+    public void CollapsedMinisterRelationship_TriggersCabinetRift()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var treasurer = country.GetOfficeHolder(
+            Position.Treasurer)!;
+
+        var relationship =
+            state.Relationships.GetOrCreate(
+                treasurer,
+                country.Ruler);
+        relationship.Opinion = -55;
+        relationship.Trust = 8;
+
+        var reports =
+            CrisisSystem.ProcessMonth(state)
+                .ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis =>
+                crisis.Type ==
+                    PoliticalCrisisType.CabinetRift &&
+                crisis.Status ==
+                    PoliticalCrisisStatus.Active);
+
+        Assert.Equal(
+            treasurer.Id,
+            crisis.RelatedCharacterId);
+        Assert.Contains(
+            reports,
+            report => report.Title.Contains(
+                treasurer.FullName,
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ReconcilingMinister_RepairsRelationshipAtPoliticalCost()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var treasurer = country.GetOfficeHolder(
+            Position.Treasurer)!;
+
+        var relationship =
+            state.Relationships.GetOrCreate(
+                treasurer,
+                country.Ruler);
+        relationship.Opinion = -45;
+        relationship.Trust = 10;
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis => crisis.Type ==
+                PoliticalCrisisType.CabinetRift);
+
+        var treasury = country.Treasury;
+        var influence = treasurer.Influence;
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.ReconcileMinister);
+
+        Assert.True(relationship.Opinion > -45);
+        Assert.True(relationship.Trust > 10);
+        Assert.True(country.Treasury < treasury);
+        Assert.True(treasurer.Influence > influence);
+        Assert.Equal(
+            PoliticalCrisisStatus.Resolved,
+            crisis.Status);
+    }
+
+    [Fact]
+    public void ForcedMinisterialLoyalty_UsesFearRatherThanTrust()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var marshal = country.GetOfficeHolder(
+            Position.Marshal)!;
+
+        var relationship =
+            state.Relationships.GetOrCreate(
+                marshal,
+                country.Ruler);
+        relationship.Opinion = -40;
+        relationship.Trust = 10;
+        relationship.Fear = 20;
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.CabinetRift,
+            RelatedCharacterId = marshal.Id,
+            StartedOn = state.Date
+        };
+        state.PoliticalCrises.Add(crisis);
+
+        var trust = relationship.Trust;
+        var fear = relationship.Fear;
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.EnforceMinisterLoyalty);
+
+        Assert.True(relationship.Fear > fear);
+        Assert.True(relationship.Trust < trust);
+        Assert.Same(
+            marshal,
+            country.GetOfficeHolder(
+                Position.Marshal));
+    }
+
+    [Fact]
+    public void AcceptingResignation_CreatesRealVacancy()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var chancellor = country.GetOfficeHolder(
+            Position.Chancellor)!;
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.CabinetRift,
+            RelatedCharacterId = chancellor.Id,
+            StartedOn = state.Date
+        };
+        state.PoliticalCrises.Add(crisis);
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.AcceptMinisterResignation);
+
+        Assert.Null(chancellor.Position);
+        Assert.Null(
+            country.GetOfficeHolder(
+                Position.Chancellor));
+        Assert.Equal(
+            PoliticalCrisisStatus.Resolved,
+            crisis.Status);
+    }
+
+    [Fact]
+    public void IgnoredCabinetRift_CanTurnMinisterIntoOppositionLeader()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var marshal = country.GetOfficeHolder(
+            Position.Marshal)!;
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.CabinetRift,
+            RelatedCharacterId = marshal.Id,
+            StartedOn = state.Date,
+            Stage = 3,
+            MonthsAtCurrentStage = 1,
+            AwaitingDecision = true
+        };
+        state.PoliticalCrises.Add(crisis);
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        Assert.Null(marshal.Position);
+        Assert.Equal(
+            PoliticalCrisisStatus.BrokeAgainstGovernment,
+            crisis.Status);
+        Assert.Contains(
+            state.PoliticalBlocs,
+            bloc =>
+                bloc.IsActive &&
+                ReferenceEquals(
+                    bloc.Leader,
+                    marshal));
+        Assert.False(state.Player.HasLost);
+    }
+
+    [Fact]
     public void CrisisState_RoundTripsThroughSave()
     {
         var state = DemoScenario.Create();
