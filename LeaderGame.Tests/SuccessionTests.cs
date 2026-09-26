@@ -55,11 +55,12 @@ public class SuccessionTests
     }
 
     [Fact]
-    public void ExtinctLineage_IsImmediateLossEvenIfCountryFindsSuccessor()
+    public void ExtinctSeniorLine_SurvivesThroughWeakCadetBranch()
     {
         var state = DemoScenario.Create();
         var country = state.Player.Country;
         var oldRuler = country.Ruler;
+        var originalSurname = oldRuler.LastName;
         var heir = state.Player.Lineage.Members.Single(member =>
             !ReferenceEquals(member, oldRuler));
         var outsider = country.SuccessionOrder.First(candidate =>
@@ -73,11 +74,21 @@ public class SuccessionTests
         new GameSimulation(state).AdvanceMonth();
 
         Assert.Same(outsider, country.Ruler);
-        Assert.True(state.Player.HasLost);
+        Assert.False(state.Player.HasLost);
+        Assert.False(state.Player.IsInPower);
+
+        var cadet = Assert.Single(
+            state.Player.Lineage.Members,
+            member =>
+                member.IsAlive);
+
+        Assert.Equal(originalSurname, cadet.LastName);
+        Assert.Same(cadet, state.Player.CurrentCharacter);
         Assert.Contains(
-            "no living member",
-            state.Player.LossReason!,
-            StringComparison.OrdinalIgnoreCase);
+            state.Reports,
+            report => report.Title.Contains(
+                "cadet branch",
+                StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
