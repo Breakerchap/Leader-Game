@@ -6,6 +6,21 @@ public class Government
 
     public GovernmentType Type { get; set; }
 
+    public LegislativeBodyType LegislativeBody { get; set; }
+
+    private int _legislativeIndependence;
+
+    /// <summary>
+    /// How capable the formal lawmaking body is of resisting the executive.
+    /// Zero means effectively executive rule; 100 means a highly independent
+    /// institution. This is structural power, not current political support.
+    /// </summary>
+    public int LegislativeIndependence
+    {
+        get => _legislativeIndependence;
+        set => _legislativeIndependence = Math.Clamp(value, 0, 100);
+    }
+
     /// <summary>
     /// Length of an elected term. Zero means this government does not hold
     /// scheduled elections.
@@ -35,4 +50,12 @@ public enum GovernmentType
     FeudalMonarchy,
     AbsoluteMonarchy,
     Republic
+}
+
+
+public enum LegislativeBodyType
+{
+    None,
+    RoyalCouncil,
+    Assembly
 }
