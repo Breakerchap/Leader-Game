@@ -1409,7 +1409,7 @@ public sealed class GameSession
                 };
 
                 return new AdministrativeOfficeView(
-                    office.Name,
+                    AdministrativeSystem.DisplayName(country, office),
                     function,
                     head?.FullName ?? "No effective head",
                     AdministrativeSystem.DescribePerformance(performance),
