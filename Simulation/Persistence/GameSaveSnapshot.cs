@@ -521,7 +521,8 @@ public enum SaveOrderKind
     SetWarStance,
     OfferPeace,
     RespondToDiplomaticProposal,
-    RequestReport
+    RequestReport,
+    OppositionAction
 }
 
 public sealed record OrderSnapshot
@@ -571,4 +572,8 @@ public sealed record OrderSnapshot
     public string? SubjectCountryId { get; init; }
 
     public string? RelatedCountryId { get; init; }
+
+    public OppositionActionType? OppositionAction { get; init; }
+
+    public PowerBaseType? TargetPowerBase { get; init; }
 }
