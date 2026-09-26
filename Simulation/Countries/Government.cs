@@ -57,5 +57,7 @@ public enum LegislativeBodyType
 {
     None,
     RoyalCouncil,
+    EstatesAssembly,
+    GreatCouncil,
     Assembly
 }
