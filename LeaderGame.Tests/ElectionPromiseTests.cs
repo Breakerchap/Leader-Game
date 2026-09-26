@@ -3,6 +3,7 @@ using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
+using LeaderGame.Simulation.Systems;
 
 namespace LeaderGame.Tests;
 
@@ -23,7 +24,7 @@ public class ElectionPromiseTests
         var oldMerchantBacking =
             nominee.GetPowerBaseStanding(PowerBaseType.Merchants);
 
-        var report = Systems.ElectionSystem.MakePlayerCampaignPromise(
+        var report = ElectionSystem.MakePlayerCampaignPromise(
             state,
             ElectionPromiseType.TaxRelief);
 
@@ -42,7 +43,7 @@ public class ElectionPromiseTests
             report.Title,
             StringComparison.OrdinalIgnoreCase);
 
-        var second = Systems.ElectionSystem.MakePlayerCampaignPromise(
+        var second = ElectionSystem.MakePlayerCampaignPromise(
             state,
             ElectionPromiseType.MilitaryInvestment);
 
@@ -63,7 +64,7 @@ public class ElectionPromiseTests
         MakeDominantCandidate(country, nominee);
         country.Government.MonthsUntilElection = 1;
 
-        Systems.ElectionSystem.MakePlayerCampaignPromise(
+        ElectionSystem.MakePlayerCampaignPromise(
             state,
             ElectionPromiseType.AdministrativeInvestment);
 
@@ -89,7 +90,7 @@ public class ElectionPromiseTests
         MakeDominantCandidate(country, nominee);
         country.Government.MonthsUntilElection = 1;
 
-        Systems.ElectionSystem.MakePlayerCampaignPromise(
+        ElectionSystem.MakePlayerCampaignPromise(
             state,
             ElectionPromiseType.MilitaryInvestment);
 
@@ -128,7 +129,7 @@ public class ElectionPromiseTests
         MakeDominantCandidate(country, nominee);
         country.Government.MonthsUntilElection = 1;
 
-        Systems.ElectionSystem.MakePlayerCampaignPromise(
+        ElectionSystem.MakePlayerCampaignPromise(
             state,
             ElectionPromiseType.CoalitionPatronage);
 
