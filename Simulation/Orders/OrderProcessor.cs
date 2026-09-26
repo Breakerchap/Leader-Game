@@ -700,6 +700,14 @@ internal static class OrderProcessor
             order.SourceCountry,
             chancellor);
 
+        var diplomaticAdministration =
+            AdministrativeSystem.GetPerformance(
+                order.SourceCountry,
+                AdministrativeFunction.ForeignAffairs);
+        var administrativeFactor =
+            0.75 + diplomaticAdministration / 200.0;
+        effectiveness *= administrativeFactor;
+
         var improvement = Math.Clamp(
             (int)Math.Round(2 + effectiveness / 18.0 - relation.Tension / 45.0),
             1,
@@ -790,6 +798,13 @@ internal static class OrderProcessor
             order.SourceCountry,
             order.TargetCountry,
             chancellor);
+
+        var diplomaticAdministration =
+            AdministrativeSystem.GetPerformance(
+                order.SourceCountry,
+                AdministrativeFunction.ForeignAffairs);
+        acceptance +=
+            (diplomaticAdministration - 50) * 0.15;
 
         if (acceptance < 55)
         {
