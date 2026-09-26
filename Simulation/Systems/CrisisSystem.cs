@@ -116,6 +116,8 @@ internal static class CrisisSystem
                 ApplyFiscalResponse(state, crisis, response),
             PoliticalCrisisType.PoliticalStandoff =>
                 ApplyPoliticalResponse(state, crisis, response),
+            PoliticalCrisisType.SuccessionDispute =>
+                ApplySuccessionResponse(state, crisis, response),
             _ => "No response was carried out."
         };
 
@@ -157,6 +159,8 @@ internal static class CrisisSystem
                 "State finances under emergency pressure",
             PoliticalCrisisType.PoliticalStandoff =>
                 "Government and opposition in open standoff",
+            PoliticalCrisisType.SuccessionDispute =>
+                "Succession factions are hardening",
             _ => "Political crisis"
         };
 
@@ -176,6 +180,9 @@ internal static class CrisisSystem
 
             PoliticalCrisisType.PoliticalStandoff =>
                 PoliticalStandoffSummary(state, crisis),
+
+            PoliticalCrisisType.SuccessionDispute =>
+                SuccessionSummary(crisis.Country),
 
             _ => "The government faces an unresolved political emergency."
         };
@@ -242,6 +249,22 @@ internal static class CrisisSystem
                     "Try to break the coalition through political pressure. Success can restore authority; failure can radicalise the crisis.")
             ],
 
+            PoliticalCrisisType.SuccessionDispute =>
+            [
+                new(
+                    PoliticalCrisisResponse.PubliclyNameSuccessor,
+                    "Publicly name the successor",
+                    "Commit the ruler's authority behind the first heir. Clarifies the succession quickly, but rivals and their allies may feel shut out."),
+                new(
+                    PoliticalCrisisResponse.BalanceSuccessionFactions,
+                    "Balance the claimants",
+                    "Keep rival factions inside the tent through offices and assurances. Reduces immediate tension but deliberately preserves ambiguity."),
+                new(
+                    PoliticalCrisisResponse.ConveneSuccessionSettlement,
+                    "Convene a succession settlement",
+                    "Bring leading institutions and elites into a formal settlement. Builds legitimacy around the heir but gives those institutions a stronger precedent.")
+            ],
+
             _ => []
         };
 
@@ -280,6 +303,11 @@ internal static class CrisisSystem
 
             PoliticalCrisisType.PoliticalStandoff =>
                 PoliticalAdvice(
+                    crisis,
+                    advisor),
+
+            PoliticalCrisisType.SuccessionDispute =>
+                SuccessionAdvice(
                     crisis,
                     advisor),
 
@@ -441,6 +469,45 @@ internal static class CrisisSystem
         };
     }
 
+    private static PoliticalCrisisResponse? SuccessionAdvice(
+        PoliticalCrisis crisis,
+        Character advisor)
+    {
+        if (advisor.GetPowerBaseStanding(
+                PowerBaseType.RoyalFamily) >= 75)
+        {
+            return PoliticalCrisisResponse
+                .PubliclyNameSuccessor;
+        }
+
+        if (advisor.GetPowerBaseStanding(
+                PowerBaseType.Aristocracy) >= 75 ||
+            advisor.GetPowerBaseStanding(
+                PowerBaseType.RegionalElites) >= 75)
+        {
+            return PoliticalCrisisResponse
+                .ConveneSuccessionSettlement;
+        }
+
+        return advisor.Position switch
+        {
+            Position.Marshal =>
+                PoliticalCrisisResponse
+                    .PubliclyNameSuccessor,
+
+            Position.Chancellor =>
+                PoliticalCrisisResponse
+                    .ConveneSuccessionSettlement,
+
+            Position.Treasurer =>
+                PoliticalCrisisResponse
+                    .BalanceSuccessionFactions,
+
+            _ => PoliticalCrisisResponse
+                .BalanceSuccessionFactions
+        };
+    }
+
     private static string AdviceReason(
         GameState state,
         PoliticalCrisis crisis,
@@ -495,6 +562,21 @@ internal static class CrisisSystem
             PoliticalCrisisResponse
                 .ConfrontOpposition =>
                 "believes compromise will be read as weakness and wants the government to test whether the opposition coalition is really as strong as it appears.",
+
+            PoliticalCrisisResponse
+                .PubliclyNameSuccessor =>
+                advisor.GetPowerBaseStanding(
+                    PowerBaseType.RoyalFamily) >= 75
+                    ? "is strongly tied to the ruling family and argues that uncertainty is more dangerous than disappointing rival claimants."
+                    : "believes a clear chain of command matters more than preserving every faction's hopes.",
+
+            PoliticalCrisisResponse
+                .BalanceSuccessionFactions =>
+                "wants to prevent a pre-emptive struggle at court and prefers to keep competing interests invested in the current regime, even if the eventual succession remains murky.",
+
+            PoliticalCrisisResponse
+                .ConveneSuccessionSettlement =>
+                "argues that an heir will be safer if major institutions and magnates publicly bind themselves to the settlement before the throne becomes vacant.",
 
             _ => "offers no clear reasoning."
         };
@@ -669,6 +751,29 @@ internal static class CrisisSystem
                     StartedOn = state.Date
                 },
                 reports);
+
+            activeCount++;
+        }
+
+        if (activeCount >= MaxActiveCrises)
+            return;
+
+        if (ShouldTriggerSuccessionCrisis(country) &&
+            !HasRecentTypeCrisis(
+                state,
+                country,
+                PoliticalCrisisType.SuccessionDispute,
+                18))
+        {
+            AddCrisis(
+                state,
+                new PoliticalCrisis
+                {
+                    Country = country,
+                    Type = PoliticalCrisisType.SuccessionDispute,
+                    StartedOn = state.Date
+                },
+                reports);
         }
     }
 
@@ -700,6 +805,38 @@ internal static class CrisisSystem
             country.LastMonthlyBalance < 0 ||
             country.Treasury <= 0 &&
             debtRatio >= 0.12m;
+    }
+
+    private static bool ShouldTriggerSuccessionCrisis(
+        Country country)
+    {
+        if (country.Government.Type ==
+            GovernmentType.Republic)
+        {
+            return false;
+        }
+
+        if (country.Ruler.Age < 58 &&
+            country.Ruler.Health > 65)
+        {
+            return false;
+        }
+
+        var candidates =
+            ActiveSuccessionCandidates(country);
+
+        if (candidates.Count == 0)
+            return false;
+
+        if (candidates.Count == 1)
+            return candidates[0].Legitimacy < 60;
+
+        var first = candidates[0];
+        var second = candidates[1];
+
+        return
+            first.Legitimacy < 75 ||
+            first.Legitimacy - second.Legitimacy < 18;
     }
 
     private static PoliticalBloc? GetStandoffBloc(
@@ -752,6 +889,9 @@ internal static class CrisisSystem
                     crisis.Country,
                     crisis.Country.Ruler) >= 60,
 
+            PoliticalCrisisType.SuccessionDispute =>
+                SuccessionIsSettled(crisis.Country),
+
             _ => true
         };
     }
@@ -787,6 +927,24 @@ internal static class CrisisSystem
                         bloc.Cohesion + 1.5 * stage,
                         0,
                         100);
+                break;
+
+            case PoliticalCrisisType.SuccessionDispute:
+                crisis.Country.Government.Stability -=
+                    0.18 * stage;
+
+                var candidates =
+                    ActiveSuccessionCandidates(
+                        crisis.Country);
+
+                if (candidates.Count > 1)
+                {
+                    candidates[1].Influence =
+                        Math.Min(
+                            100,
+                            candidates[1].Influence +
+                            stage);
+                }
                 break;
         }
     }
@@ -1007,6 +1165,100 @@ internal static class CrisisSystem
         }
     }
 
+    private static string ApplySuccessionResponse(
+        GameState state,
+        PoliticalCrisis crisis,
+        PoliticalCrisisResponse response)
+    {
+        var country = crisis.Country;
+        var candidates =
+            ActiveSuccessionCandidates(country);
+
+        if (candidates.Count == 0)
+            return "No living recognised successor remains to settle.";
+
+        var heir = candidates[0];
+        var rival = candidates.Count > 1
+            ? candidates[1]
+            : null;
+
+        switch (response)
+        {
+            case PoliticalCrisisResponse.PubliclyNameSuccessor:
+                heir.Legitimacy += 13;
+                heir.Influence += 5;
+                country.Government.Stability += 2;
+
+                if (rival is not null)
+                {
+                    rival.Legitimacy -= 3;
+
+                    var rivalToRuler =
+                        state.Relationships.GetOrCreate(
+                            rival,
+                            country.Ruler);
+                    rivalToRuler.ChangeOpinion(-8);
+                    rivalToRuler.ChangeTrust(-5);
+                }
+
+                country.Ruler.ChangePowerBaseStanding(
+                    PowerBaseType.RoyalFamily,
+                    4);
+                country.Ruler.ChangePowerBaseStanding(
+                    PowerBaseType.Aristocracy,
+                    -2);
+
+                return rival is null
+                    ? $"The ruler publicly confirms {heir.FullName} as the successor. The clear designation strengthens the heir's legitimacy."
+                    : $"The ruler publicly confirms {heir.FullName} as the successor. The designation strengthens the heir quickly, but {rival.FullName}'s faction loses hope of a negotiated opening.";
+
+            case PoliticalCrisisResponse.BalanceSuccessionFactions:
+                country.Government.Stability += 3;
+                heir.Influence += 2;
+
+                if (rival is not null)
+                    rival.Influence += 3;
+
+                country.Ruler.ChangePowerBaseStanding(
+                    PowerBaseType.Aristocracy,
+                    3);
+                country.Ruler.ChangePowerBaseStanding(
+                    PowerBaseType.RegionalElites,
+                    3);
+
+                return
+                    "The ruler distributes assurances and access across the competing succession factions. Court tension falls for now, but no claimant has been made strong enough to end the underlying uncertainty.";
+
+            case PoliticalCrisisResponse.ConveneSuccessionSettlement:
+                heir.Legitimacy += 9;
+                heir.Influence += 3;
+                country.Government.Stability += 4;
+
+                if (rival is not null)
+                {
+                    rival.Legitimacy -= 2;
+
+                    var rivalToHeir =
+                        state.Relationships.GetOrCreate(
+                            rival,
+                            heir);
+                    rivalToHeir.ChangeTrust(-2);
+                }
+
+                if (country.Government.LegislativeBody !=
+                    LegislativeBodyType.None)
+                {
+                    country.Government.LegislativeIndependence += 5;
+                }
+
+                return
+                    $"Leading institutions and magnates are assembled around a public settlement recognising {heir.FullName}. The heir gains broader legitimacy, but the bodies asked to guarantee the succession gain a durable precedent for involvement.";
+
+            default:
+                return "No succession response was carried out.";
+        }
+    }
+
     private static string ConfrontOpposition(
         GameState state,
         PoliticalCrisis crisis,
@@ -1095,6 +1347,9 @@ internal static class CrisisSystem
 
             PoliticalCrisisType.PoliticalStandoff =>
                 PoliticalBreak(state, crisis),
+
+            PoliticalCrisisType.SuccessionDispute =>
+                SuccessionBreak(state, crisis),
 
             _ => "The crisis breaks against the government."
         };
@@ -1188,6 +1443,114 @@ internal static class CrisisSystem
 
         return
             "The confrontation badly damages the ruler's legitimacy and leaves the government politically fractured.";
+    }
+
+    private static string SuccessionBreak(
+        GameState state,
+        PoliticalCrisis crisis)
+    {
+        var country = crisis.Country;
+        var candidates =
+            ActiveSuccessionCandidates(country);
+
+        country.Government.Stability -= 6;
+
+        if (candidates.Count < 2)
+        {
+            if (candidates.Count == 1)
+                candidates[0].Legitimacy -= 5;
+
+            return
+                "The court reaches the succession without a convincing settlement. Confidence in an orderly transfer of power deteriorates and the regime enters the future transition weakened.";
+        }
+
+        var heir = candidates[0];
+        var rival = candidates[1];
+
+        rival.Influence += 8;
+        rival.Legitimacy += 5;
+        heir.Legitimacy -= 6;
+
+        var existingBloc =
+            state.PoliticalBlocs.FirstOrDefault(bloc =>
+                bloc.IsActive &&
+                ReferenceEquals(
+                    bloc.Country,
+                    country) &&
+                ReferenceEquals(
+                    bloc.Leader,
+                    rival));
+
+        if (existingBloc is null &&
+            rival.IsPoliticallyActive)
+        {
+            var bloc = new PoliticalBloc
+            {
+                Country = country,
+                Leader = rival,
+                Cohesion = 65
+            };
+
+            bloc.PowerBases.Add(
+                PowerBaseType.Aristocracy);
+            bloc.PowerBases.Add(
+                PowerBaseType.RegionalElites);
+            bloc.PowerBases.Add(
+                PowerBaseType.RoyalFamily);
+
+            state.PoliticalBlocs.Add(bloc);
+        }
+
+        return
+            $"The ruler fails to impose a durable succession settlement. {rival.FullName} now leads a recognisable rival faction, while {heir.FullName}'s claim looks less inevitable. The eventual succession is likely to become a political struggle rather than a routine transfer.";
+    }
+
+    private static List<Character> ActiveSuccessionCandidates(
+        Country country) =>
+        country.SuccessionOrder
+            .Where(candidate =>
+                candidate.IsPoliticallyActive &&
+                !ReferenceEquals(
+                    candidate,
+                    country.Ruler))
+            .DistinctBy(candidate =>
+                candidate.Id)
+            .ToList();
+
+    private static bool SuccessionIsSettled(
+        Country country)
+    {
+        var candidates =
+            ActiveSuccessionCandidates(country);
+
+        if (candidates.Count == 0)
+            return true;
+
+        if (candidates.Count == 1)
+            return candidates[0].Legitimacy >= 68;
+
+        return
+            candidates[0].Legitimacy >= 75 &&
+            candidates[0].Legitimacy -
+                candidates[1].Legitimacy >= 15;
+    }
+
+    private static string SuccessionSummary(
+        Country country)
+    {
+        var candidates =
+            ActiveSuccessionCandidates(country);
+
+        if (candidates.Count == 0)
+            return
+                "The ruler is ageing or unwell, but no recognised living successor has enough standing to make the future transfer of power routine.";
+
+        if (candidates.Count == 1)
+            return
+                $"{candidates[0].FullName} is the recognised successor, but the claim is not yet strong enough to prevent factions from preparing for uncertainty around the future transfer of power.";
+
+        return
+            $"{candidates[0].FullName} stands first in the succession, while {candidates[1].FullName} remains a plausible focus for rival factions. The problem is not the legal order alone: elites are deciding which future ruler they can live with.";
     }
 
     private static PoliticalBloc? FindRelatedBloc(
