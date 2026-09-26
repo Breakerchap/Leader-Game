@@ -1230,6 +1230,18 @@ public sealed class GameSession
                         choice.Description))
                     .ToList();
 
+                var advice = CrisisSystem.GetAdvice(
+                        state,
+                        crisis)
+                    .Select(item => new CrisisAdviceView(
+                        item.Advisor.FullName,
+                        item.Advisor.Position?.ToString() ?? "Adviser",
+                        choices.First(choice =>
+                            choice.Response ==
+                            item.Response.ToString()).Label,
+                        item.Reason))
+                    .ToList();
+
                 var responseStatus = crisis.AwaitingDecision
                     ? "Decision required"
                     : crisis.LastResponse is { } lastResponse
@@ -1251,6 +1263,7 @@ public sealed class GameSession
                             : $"{crisis.MonthsActive} months active",
                     responseStatus,
                     crisis.AwaitingDecision,
+                    advice,
                     choices);
             })
             .ToList();
