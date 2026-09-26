@@ -710,6 +710,73 @@ public sealed class GameSession
         Refresh();
     }
 
+    public void TakeAdministrativeAction(
+        string reformName,
+        string officeName)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+
+        if (!state.Player.IsInPower)
+        {
+            Refresh("Your lineage cannot direct the state administration while it is outside government.");
+            return;
+        }
+
+        if (state.PendingOrders.OfType<AdministrativeReformOrder>().Any())
+        {
+            Refresh("A major administrative initiative is already being prepared this month.");
+            return;
+        }
+
+        var office = country.AdministrativeOffices.FirstOrDefault(candidate =>
+            string.Equals(
+                candidate.Name,
+                officeName,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (office is null)
+        {
+            Refresh("Choose a valid administrative office first.");
+            return;
+        }
+
+        var normalisedReform = reformName
+            .Replace(" ", string.Empty, StringComparison.Ordinal);
+
+        if (!Enum.TryParse<AdministrativeReformType>(
+                normalisedReform,
+                ignoreCase: true,
+                out var reform))
+        {
+            Refresh("That administrative strategy is not recognised.");
+            return;
+        }
+
+        var recipient = office.ResponsiblePosition is { } position
+            ? country.GetOfficeHolder(position)
+            : country.Ruler;
+
+        if (recipient is null)
+        {
+            Refresh($"{office.Name} has no effective political head to carry the initiative.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new AdministrativeReformOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = recipient,
+            IssuedOn = state.Date,
+            Country = country,
+            Function = office.Function,
+            ReformType = reform
+        });
+
+        Refresh(
+            $"{AdministrativeReformSystem.Describe(reform)} queued for {office.Name}.");
+    }
+
     public void TakeOppositionAction(
         string actionName,
         string powerBaseName)
@@ -1333,6 +1400,21 @@ public sealed class GameSession
             })
             .ToList();
 
+        var pendingAdministrativeReform = state.PendingOrders
+            .OfType<AdministrativeReformOrder>()
+            .FirstOrDefault();
+
+        var canDirectAdministration =
+            state.Player.IsInPower &&
+            pendingAdministrativeReform is null;
+
+        var administrativeActionStatus = !state.Player.IsInPower
+            ? $"{state.Player.Lineage.Name} cannot direct the state administration from opposition."
+            : pendingAdministrativeReform is not null
+                ? $"{AdministrativeReformSystem.Describe(pendingAdministrativeReform.ReformType)} is already being prepared for " +
+                  $"{country.GetAdministrativeOffice(pendingAdministrativeReform.Function)?.Name ?? "an administrative office"}."
+                : "You may direct one major administrative initiative before the next month advances.";
+
         var government = new GovernmentPolicyView(
             (double)country.TaxRate * 100,
             (double)country.ArmyFunding * 100,
@@ -1351,6 +1433,8 @@ public sealed class GameSession
             legislation,
             $"{country.AdministrativeEfficiency:P0} effective central administration",
             administrativeOffices,
+            canDirectAdministration,
+            administrativeActionStatus,
             governmentType,
             politicalCycle,
             politicalCycleDetail,
@@ -1887,6 +1971,7 @@ public sealed class GameSession
             RespondToDiplomaticProposalOrder => "Diplomacy",
             RequestReportOrder => "Report",
             OppositionActionOrder => "Opposition",
+            AdministrativeReformOrder => "Administration",
             _ => "Order"
         };
     }
@@ -1958,6 +2043,10 @@ public sealed class GameSession
                         $"Mobilise {FormatPowerBase(typed.TargetPowerBase).ToLowerInvariant()} pressure against the government.",
                     _ => "Conduct opposition political activity."
                 },
+
+            AdministrativeReformOrder typed =>
+                $"{AdministrativeReformSystem.Describe(typed.ReformType)} in " +
+                $"{typed.Country.GetAdministrativeOffice(typed.Function)?.Name ?? "the administration"}.",
 
             _ => order.GetType().Name
         };
