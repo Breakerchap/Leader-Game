@@ -1435,6 +1435,73 @@ public sealed class GameSession
                   $"{country.GetAdministrativeOffice(pendingAdministrativeReform.Function)?.Name ?? "an administrative office"}."
                 : "You may direct one major administrative initiative before the next month advances.";
 
+        var regionViews = country.Regions
+            .OrderByDescending(region => region.EconomicShare)
+            .Select(region => new RegionView(
+                region.Id,
+                region.Name,
+                region.EconomicShare switch
+                {
+                    >= 0.30m => "Core economic region",
+                    >= 0.20m => "Major region",
+                    >= 0.12m => "Significant region",
+                    _ => "Peripheral region"
+                },
+                region.CrownControl switch
+                {
+                    >= 75 => "Firm central control",
+                    >= 55 => "Shared but reliable",
+                    >= 35 => "Loose central control",
+                    _ => "Weak central reach"
+                },
+                region.LocalElitePower switch
+                {
+                    >= 80 => "Dominant local elites",
+                    >= 65 => "Powerful local elites",
+                    >= 45 => "Important local elites",
+                    _ => "Limited local power"
+                },
+                region.Unrest switch
+                {
+                    >= 75 => "Volatile",
+                    >= 55 => "Restive",
+                    >= 35 => "Tense",
+                    _ => "Calm"
+                },
+                region.Privileges switch
+                {
+                    >= 75 => "Extensive privileges",
+                    >= 55 => "Broad privileges",
+                    >= 35 => "Some privileges",
+                    _ => "Few privileges"
+                },
+                region.Prosperity switch
+                {
+                    >= 80 => "Very prosperous",
+                    >= 65 => "Prosperous",
+                    >= 45 => "Modest",
+                    >= 30 => "Struggling",
+                    _ => "Impoverished"
+                }))
+            .ToList();
+
+        var pendingRegionalAction = state.PendingOrders
+            .OfType<RegionalActionOrder>()
+            .FirstOrDefault();
+
+        var canDirectRegions =
+            state.Player.IsInPower &&
+            country.GetOfficeHolder(Position.Chancellor) is not null &&
+            pendingRegionalAction is null;
+
+        var regionalActionStatus = !state.Player.IsInPower
+            ? $"{state.Player.Lineage.Name} cannot direct regional government while outside power."
+            : country.GetOfficeHolder(Position.Chancellor) is null
+                ? "The Chancellery is vacant, so no major regional initiative can be coordinated."
+                : pendingRegionalAction is not null
+                    ? $"{RegionalSystem.ActionLabel(pendingRegionalAction.ActionType)} is already being prepared in {pendingRegionalAction.Region.Name}."
+                    : "You may commit the government to one major regional intervention before the next month advances.";
+
         var government = new GovernmentPolicyView(
             (double)country.TaxRate * 100,
             (double)country.ArmyFunding * 100,
@@ -1457,6 +1524,9 @@ public sealed class GameSession
             administrativeOffices,
             canDirectAdministration,
             administrativeActionStatus,
+            regionViews,
+            canDirectRegions,
+            regionalActionStatus,
             governmentType,
             politicalCycle,
             politicalCycleDetail,
