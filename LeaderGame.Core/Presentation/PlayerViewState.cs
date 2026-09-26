@@ -232,7 +232,11 @@ public sealed record CourtPoliticsView(
     IReadOnlyList<CourtFigureView> Figures,
     IReadOnlyList<PoliticalDemandView> Demands,
     string KnownOpposition,
-    string KnownPressure);
+    string KnownPressure,
+    bool IsPlayerInOpposition,
+    bool CanTakeOppositionAction,
+    IReadOnlyList<string> OppositionPowerBases,
+    string OppositionStatus);
 
 public sealed record PlayerViewState(
     string CountryName,
