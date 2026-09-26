@@ -2,6 +2,7 @@ using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Information;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Reports;
+using LeaderGame.Simulation.Systems;
 
 namespace LeaderGame.Simulation.Orders;
 
@@ -35,6 +36,7 @@ internal static class OrderProcessor
             ArrestCharacterOrder arrestOrder => ProcessArrestOrder(state, arrestOrder),
             ReleasePrisonerOrder releaseOrder => ProcessReleasePrisonerOrder(state, releaseOrder),
             RequestReportOrder reportOrder => ProcessRequestReportOrder(state, reportOrder),
+            OppositionActionOrder oppositionOrder => OppositionActionSystem.ProcessPlayerAction(state, oppositionOrder),
             _ => RejectUnknownOrder(state, order)
         };
     }
