@@ -279,6 +279,7 @@ public static partial class GameSaveService
             LastMonthlyDebtInterest = country.LastMonthlyDebtInterest,
             LastMonthlyBalance = country.LastMonthlyBalance,
             GovernmentType = country.Government.Type,
+            AdministrativeDevelopment = country.AdministrativeDevelopment,
             GovernmentStability = country.Government.Stability,
             ElectionIntervalMonths = country.Government.ElectionIntervalMonths,
             MonthsUntilElection = country.Government.MonthsUntilElection,
