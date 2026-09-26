@@ -612,9 +612,13 @@ internal static class ElectionSystem
                     reports.Add(new SimulationReport(
                         state.Date,
                         ReportCategory.Politics,
-                        $"{promise.Candidate.FullName} fulfils an election promise",
+                        IsCouncilElection(promise.Country)
+                            ? $"{promise.Candidate.FullName} fulfils an electoral pledge"
+                            : $"{promise.Candidate.FullName} fulfils an election promise",
                         DescribePromise(promise) +
-                        " Delivering the commitment strengthens the government's credibility with the constituencies that backed it."));
+                        (IsCouncilElection(promise.Country)
+                            ? " Delivering the pledge strengthens credibility among the factions and interests that backed the candidate."
+                            : " Delivering the commitment strengthens the government's credibility with the constituencies that backed it.")));
                 }
 
                 continue;
@@ -633,7 +637,9 @@ internal static class ElectionSystem
                 reports.Add(new SimulationReport(
                     state.Date,
                     ReportCategory.Politics,
-                    $"{promise.Candidate.FullName} breaks an election promise",
+                    IsCouncilElection(promise.Country)
+                        ? $"{promise.Candidate.FullName} breaks an electoral pledge"
+                        : $"{promise.Candidate.FullName} breaks an election promise",
                     DescribePromise(promise) +
                     " Six months have passed without delivery. The broken commitment damages political credibility and creates fresh unrest."));
             }
