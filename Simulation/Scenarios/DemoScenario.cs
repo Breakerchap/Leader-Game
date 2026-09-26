@@ -478,6 +478,15 @@ public static class DemoScenario
         };
         falkenLineage.Members.AddRange([king, heir]);
 
+        var nordmarkLineage = new PoliticalLineage
+        {
+            Id = "house_af_skeld",
+            Name = "House af Skeld",
+            Type = PoliticalLineageType.Dynasty
+        };
+        nordmarkLineage.Members.AddRange(
+            [nordmarkQueen, nordmarkHeir]);
+
         var valeriaLineage = new PoliticalLineage
         {
             Id = "vieri_coalition",
@@ -495,6 +504,13 @@ public static class DemoScenario
                 CurrentCharacter = king,
                 Country = falkenreich,
                 Lineage = falkenLineage
+            },
+
+            ScenarioCatalog.NordmarkId => new PlayerState
+            {
+                CurrentCharacter = nordmarkQueen,
+                Country = nordmark,
+                Lineage = nordmarkLineage
             },
 
             ScenarioCatalog.ValeriaId => new PlayerState
