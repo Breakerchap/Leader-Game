@@ -1,6 +1,7 @@
 using LeaderGame.Presentation;
 using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Persistence;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
@@ -483,6 +484,250 @@ public class CrisisSystemTests
                     bloc.Leader,
                     rival));
 
+        Assert.False(state.Player.HasLost);
+    }
+
+    [Fact]
+    public void LosingWar_CanBecomeDomesticMilitaryCrisis()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var opponent = state.FindCountry("nordmark")!;
+
+        var war = new War
+        {
+            Attacker = country,
+            Defender = opponent,
+            StartedOn = state.Date,
+            WarScore = -42
+        };
+        war.MonthsActive = 5;
+        state.Wars.Add(war);
+
+        var reports =
+            CrisisSystem.ProcessMonth(state)
+                .ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis =>
+                crisis.Type ==
+                    PoliticalCrisisType.WarEmergency &&
+                crisis.Status ==
+                    PoliticalCrisisStatus.Active);
+
+        Assert.Equal(war.Id, crisis.RelatedWarId);
+        Assert.Contains(
+            reports,
+            report => report.Title.Contains(
+                "military",
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void EmergencyMobilisation_TradesMoneyAndUnrestForMilitaryCapacity()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var opponent = state.FindCountry("nordmark")!;
+
+        var war = new War
+        {
+            Attacker = country,
+            Defender = opponent,
+            StartedOn = state.Date,
+            WarScore = -45
+        };
+        war.MonthsActive = 5;
+        state.Wars.Add(war);
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis => crisis.Type ==
+                PoliticalCrisisType.WarEmergency);
+
+        var army = country.ArmySize;
+        var readiness = country.ArmyReadiness;
+        var unrest = country.PublicUnrest;
+        var treasury = country.Treasury;
+        var debt = country.Debt;
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.EmergencyMobilisation);
+
+        Assert.True(country.ArmySize > army);
+        Assert.True(country.ArmyReadiness > readiness);
+        Assert.True(country.PublicUnrest > unrest);
+        Assert.True(
+            country.Treasury < treasury ||
+            country.Debt > debt);
+    }
+
+    [Fact]
+    public void DismissingMarshal_ShiftsBlameButCreatesCommandVacancy()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var opponent = state.FindCountry("nordmark")!;
+        var marshal = country.GetOfficeHolder(
+            Position.Marshal)!;
+
+        var war = new War
+        {
+            Attacker = country,
+            Defender = opponent,
+            StartedOn = state.Date,
+            WarScore = -45
+        };
+        war.MonthsActive = 5;
+        state.Wars.Add(war);
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis => crisis.Type ==
+                PoliticalCrisisType.WarEmergency);
+
+        var readiness = country.ArmyReadiness;
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.DismissMarshal);
+
+        Assert.Null(marshal.Position);
+        Assert.Null(
+            country.GetOfficeHolder(
+                Position.Marshal));
+        Assert.True(country.ArmyReadiness < readiness);
+    }
+
+    [Fact]
+    public void PeaceCrisisChoice_UsesRealPeaceAcceptance()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var opponent = state.FindCountry("nordmark")!;
+
+        var war = new War
+        {
+            Attacker = country,
+            Defender = opponent,
+            StartedOn = state.Date,
+            WarScore = -55
+        };
+        war.MonthsActive = 8;
+        opponent.WarExhaustion = 90;
+        opponent.ArmyReadiness = 25;
+        state.Wars.Add(war);
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis => crisis.Type ==
+                PoliticalCrisisType.WarEmergency);
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.SeekPeaceSettlement);
+
+        Assert.NotEqual(
+            WarStatus.Active,
+            war.Status);
+        Assert.Equal(
+            PoliticalCrisisStatus.Resolved,
+            crisis.Status);
+    }
+
+    [Fact]
+    public void FailedPeaceAttempt_LeavesWarCrisisAlive()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var opponent = state.FindCountry("nordmark")!;
+
+        var war = new War
+        {
+            Attacker = country,
+            Defender = opponent,
+            StartedOn = state.Date,
+            WarScore = -55
+        };
+        war.MonthsActive = 5;
+        opponent.WarExhaustion = 0;
+        opponent.ArmyReadiness = 95;
+        state.Wars.Add(war);
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis => crisis.Type ==
+                PoliticalCrisisType.WarEmergency);
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.SeekPeaceSettlement);
+
+        Assert.Equal(
+            WarStatus.Active,
+            war.Status);
+        Assert.Equal(
+            PoliticalCrisisStatus.Active,
+            crisis.Status);
+        Assert.False(crisis.AwaitingDecision);
+    }
+
+    [Fact]
+    public void MilitaryBreakingPoint_CreatesPressureToEndWar()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var opponent = state.FindCountry("nordmark")!;
+
+        var war = new War
+        {
+            Attacker = country,
+            Defender = opponent,
+            StartedOn = state.Date,
+            WarScore = -70
+        };
+        war.MonthsActive = 10;
+        state.Wars.Add(war);
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.WarEmergency,
+            RelatedWarId = war.Id,
+            StartedOn = state.Date,
+            Stage = 3,
+            MonthsAtCurrentStage = 1
+        };
+        state.PoliticalCrises.Add(crisis);
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        Assert.Equal(
+            PoliticalCrisisStatus.BrokeAgainstGovernment,
+            crisis.Status);
+        Assert.Equal(
+            WarStance.Defensive,
+            war.GetStance(country));
+        Assert.Contains(
+            state.PowerBaseDemands,
+            demand =>
+                !demand.IsResolved &&
+                demand.Type ==
+                    PowerBaseDemandType.EndWar);
         Assert.False(state.Player.HasLost);
     }
 
