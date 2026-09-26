@@ -1,5 +1,6 @@
 using LeaderGame.Presentation;
 using LeaderGame.Simulation;
+using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Military;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Persistence;
@@ -39,7 +40,7 @@ public class WarAimTests
         var target = state.FindCountry("nordmark")!;
         var chancellor =
             country.GetOfficeHolder(
-                Simulation.Characters.Position.Chancellor)!;
+                Position.Chancellor)!;
 
         var order = new DeclareWarOrder
         {
@@ -189,7 +190,7 @@ public class WarAimTests
         var target = state.FindCountry("nordmark")!;
         var chancellor =
             country.GetOfficeHolder(
-                Simulation.Characters.Position.Chancellor)!;
+                Position.Chancellor)!;
 
         state.Wars.Add(new War
         {
