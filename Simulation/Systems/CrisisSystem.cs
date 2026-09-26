@@ -1,3 +1,4 @@
+using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Reports;
@@ -8,6 +9,11 @@ internal sealed record CrisisChoiceDefinition(
     PoliticalCrisisResponse Response,
     string Label,
     string Description);
+
+internal sealed record CrisisAdviceDefinition(
+    Character Advisor,
+    PoliticalCrisisResponse Response,
+    string Reason);
 
 internal static class CrisisSystem
 {
@@ -71,6 +77,9 @@ internal static class CrisisSystem
                 "That response does not apply to this crisis.");
         }
 
+        var adviceBeforeDecision =
+            GetAdvice(state, crisis);
+
         var details = crisis.Type switch
         {
             PoliticalCrisisType.RegionalBreakdown =>
@@ -81,6 +90,12 @@ internal static class CrisisSystem
                 ApplyPoliticalResponse(state, crisis, response),
             _ => "No response was carried out."
         };
+
+        details += ApplyAdviceReaction(
+            state,
+            crisis,
+            response,
+            adviceBeforeDecision);
 
         crisis.LastResponse = response;
         crisis.AwaitingDecision = false;
@@ -201,6 +216,299 @@ internal static class CrisisSystem
 
             _ => []
         };
+
+    public static IReadOnlyList<CrisisAdviceDefinition> GetAdvice(
+        GameState state,
+        PoliticalCrisis crisis)
+    {
+        return crisis.Country.ActiveAdvisors
+            .OrderBy(advisor => advisor.Position)
+            .Select(advisor =>
+                AdviceFor(
+                    state,
+                    crisis,
+                    advisor))
+            .Where(advice => advice is not null)
+            .Select(advice => advice!)
+            .ToList();
+    }
+
+    private static CrisisAdviceDefinition? AdviceFor(
+        GameState state,
+        PoliticalCrisis crisis,
+        Character advisor)
+    {
+        var response = crisis.Type switch
+        {
+            PoliticalCrisisType.RegionalBreakdown =>
+                RegionalAdvice(
+                    crisis,
+                    advisor),
+
+            PoliticalCrisisType.FiscalEmergency =>
+                FiscalAdvice(
+                    crisis,
+                    advisor),
+
+            PoliticalCrisisType.PoliticalStandoff =>
+                PoliticalAdvice(
+                    crisis,
+                    advisor),
+
+            _ => null
+        };
+
+        return response is null
+            ? null
+            : new CrisisAdviceDefinition(
+                advisor,
+                response.Value,
+                AdviceReason(
+                    state,
+                    crisis,
+                    advisor,
+                    response.Value));
+    }
+
+    private static PoliticalCrisisResponse? RegionalAdvice(
+        PoliticalCrisis crisis,
+        Character advisor)
+    {
+        var region = crisis.Region;
+
+        if (region is null)
+            return null;
+
+        if (advisor.GetPowerBaseStanding(
+                PowerBaseType.RegionalElites) >= 72)
+        {
+            return PoliticalCrisisResponse
+                .OfferRegionalConcessions;
+        }
+
+        return advisor.Position switch
+        {
+            Position.Marshal =>
+                PoliticalCrisisResponse
+                    .StrengthenRegionalControl,
+
+            Position.Treasurer
+                when crisis.Country.Treasury >
+                     crisis.Country.Gdp *
+                     Math.Max(
+                         0.05m,
+                         region.EconomicShare) *
+                     0.0015m =>
+                PoliticalCrisisResponse
+                    .FundRegionalRelief,
+
+            Position.Treasurer =>
+                PoliticalCrisisResponse
+                    .OfferRegionalConcessions,
+
+            Position.Chancellor
+                when region.LocalElitePower >
+                     region.CrownControl + 20 =>
+                PoliticalCrisisResponse
+                    .OfferRegionalConcessions,
+
+            Position.Chancellor =>
+                PoliticalCrisisResponse
+                    .StrengthenRegionalControl,
+
+            _ => PoliticalCrisisResponse
+                .FundRegionalRelief
+        };
+    }
+
+    private static PoliticalCrisisResponse? FiscalAdvice(
+        PoliticalCrisis crisis,
+        Character advisor)
+    {
+        if (advisor.GetPowerBaseStanding(
+                PowerBaseType.Military) >= 78)
+        {
+            return PoliticalCrisisResponse
+                .BorrowForTime;
+        }
+
+        if (advisor.GetPowerBaseStanding(
+                PowerBaseType.Merchants) >= 78)
+        {
+            return PoliticalCrisisResponse
+                .CutStateCommitments;
+        }
+
+        return advisor.Position switch
+        {
+            Position.Treasurer
+                when crisis.Country.TaxRate <=
+                     0.13m =>
+                PoliticalCrisisResponse
+                    .RaiseEmergencyRevenue,
+
+            Position.Treasurer =>
+                PoliticalCrisisResponse
+                    .CutStateCommitments,
+
+            Position.Marshal =>
+                PoliticalCrisisResponse
+                    .BorrowForTime,
+
+            Position.Chancellor
+                when crisis.Country.Government
+                         .LegislativeBody !=
+                     LegislativeBodyType.None =>
+                PoliticalCrisisResponse
+                    .RaiseEmergencyRevenue,
+
+            _ => PoliticalCrisisResponse
+                .CutStateCommitments
+        };
+    }
+
+    private static PoliticalCrisisResponse? PoliticalAdvice(
+        PoliticalCrisis crisis,
+        Character advisor)
+    {
+        if (advisor.GetPowerBaseStanding(
+                PowerBaseType.Military) >= 80)
+        {
+            return PoliticalCrisisResponse
+                .ConfrontOpposition;
+        }
+
+        if (advisor.GetPowerBaseStanding(
+                PowerBaseType.RegionalElites) >= 75 ||
+            advisor.GetPowerBaseStanding(
+                PowerBaseType.Aristocracy) >= 78)
+        {
+            return PoliticalCrisisResponse
+                .CooptOpposition;
+        }
+
+        return advisor.Position switch
+        {
+            Position.Marshal =>
+                PoliticalCrisisResponse
+                    .ConfrontOpposition,
+
+            Position.Chancellor =>
+                PoliticalCrisisResponse
+                    .ConstitutionalCompromise,
+
+            Position.Treasurer
+                when crisis.Country.Treasury >
+                     crisis.Country.Gdp *
+                     0.001m =>
+                PoliticalCrisisResponse
+                    .CooptOpposition,
+
+            Position.Treasurer =>
+                PoliticalCrisisResponse
+                    .ConstitutionalCompromise,
+
+            _ => PoliticalCrisisResponse
+                .CooptOpposition
+        };
+    }
+
+    private static string AdviceReason(
+        GameState state,
+        PoliticalCrisis crisis,
+        Character advisor,
+        PoliticalCrisisResponse response)
+    {
+        return response switch
+        {
+            PoliticalCrisisResponse
+                .StrengthenRegionalControl =>
+                advisor.Position == Position.Marshal
+                    ? "argues that visible weakness will encourage further defiance and wants the centre to demonstrate that its orders still matter."
+                    : "believes the crisis is fundamentally a problem of weak state reach rather than insufficient concessions.",
+
+            PoliticalCrisisResponse
+                .OfferRegionalConcessions =>
+                advisor.GetPowerBaseStanding(
+                    PowerBaseType.RegionalElites) >= 72
+                    ? "has strong ties to regional elites and argues that their cooperation is cheaper than trying to govern around them."
+                    : "believes the government lacks the local leverage for a clean confrontation and should buy a workable settlement.",
+
+            PoliticalCrisisResponse
+                .FundRegionalRelief =>
+                "argues that material grievances can be reduced without permanently surrendering as much political authority.",
+
+            PoliticalCrisisResponse
+                .RaiseEmergencyRevenue =>
+                "prioritises keeping the machinery of government funded now, even at the cost of a fresh political fight over extraordinary levies.",
+
+            PoliticalCrisisResponse
+                .CutStateCommitments =>
+                advisor.GetPowerBaseStanding(
+                    PowerBaseType.Merchants) >= 78
+                    ? "is closely aligned with commercial interests and strongly prefers spending cuts to another round of extraordinary collections."
+                    : "argues that borrowing or new levies only postpone the need to bring recurring expenditure under control.",
+
+            PoliticalCrisisResponse
+                .BorrowForTime =>
+                advisor.GetPowerBaseStanding(
+                    PowerBaseType.Military) >= 78
+                    ? "is strongly tied to the military establishment and resists cuts that would immediately weaken readiness."
+                    : "argues that preserving state capacity through the immediate emergency matters more than the future debt burden.",
+
+            PoliticalCrisisResponse
+                .CooptOpposition =>
+                "believes the coalition can be divided more cheaply than it can be defeated, though doing so will reward some of its leaders.",
+
+            PoliticalCrisisResponse
+                .ConstitutionalCompromise =>
+                "argues that the opposition is expressing a durable balance of power and should be channelled into formal institutions rather than fought indefinitely.",
+
+            PoliticalCrisisResponse
+                .ConfrontOpposition =>
+                "believes compromise will be read as weakness and wants the government to test whether the opposition coalition is really as strong as it appears.",
+
+            _ => "offers no clear reasoning."
+        };
+    }
+
+    private static string ApplyAdviceReaction(
+        GameState state,
+        PoliticalCrisis crisis,
+        PoliticalCrisisResponse response,
+        IReadOnlyList<CrisisAdviceDefinition> advice)
+    {
+        var supporters = new List<string>();
+
+        foreach (var recommendation in advice)
+        {
+            var relationship =
+                state.Relationships.GetOrCreate(
+                    recommendation.Advisor,
+                    crisis.Country.Ruler);
+
+            if (recommendation.Response == response)
+            {
+                relationship.ChangeOpinion(2);
+                relationship.ChangeTrust(1);
+                supporters.Add(
+                    recommendation.Advisor.FullName);
+            }
+            else if (recommendation.Advisor.Ambition >= 70)
+            {
+                relationship.ChangeOpinion(-1);
+            }
+        }
+
+        return supporters.Count switch
+        {
+            0 => string.Empty,
+            1 =>
+                $" {supporters[0]} had argued for this course and gains some standing from the decision.",
+            _ =>
+                $" {string.Join(", ", supporters)} had argued for this course and gain some standing from the decision."
+        };
+    }
 
     private static void ProcessActiveCrisis(
         GameState state,
