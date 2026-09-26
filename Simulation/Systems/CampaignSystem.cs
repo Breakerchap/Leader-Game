@@ -193,6 +193,16 @@ internal static class CampaignSystem
             CampaignObjectiveType.ElectoralMandate =>
                 state.Player.ElectionsWon >= objective.TargetValue,
 
+            CampaignObjectiveType.RegionalAuthority =>
+                IsRegionalAuthoritySatisfied(
+                    country,
+                    objective),
+
+            CampaignObjectiveType.MilitaryPreparedness =>
+                country.ArmyReadiness >= objective.TargetValue &&
+                (double)country.ArmyFunding >=
+                    objective.SecondaryTargetValue,
+
             CampaignObjectiveType.RestorePoliticalControl =>
                 state.Player.IsInPower,
 
@@ -205,6 +215,34 @@ internal static class CampaignSystem
 
             _ => false
         };
+    }
+
+    private static bool IsRegionalAuthoritySatisfied(
+        Countries.Country country,
+        CampaignObjective objective)
+    {
+        if (country.Regions.Count == 0)
+            return false;
+
+        var totalWeight =
+            country.Regions.Sum(region =>
+                Math.Max(
+                    0.01m,
+                    region.PopulationShare));
+
+        var weightedControl =
+            country.Regions.Sum(region =>
+                region.CrownControl *
+                (double)Math.Max(
+                    0.01m,
+                    region.PopulationShare)) /
+            (double)totalWeight;
+
+        return
+            weightedControl >= objective.TargetValue &&
+            country.Regions.All(region =>
+                region.Unrest <
+                objective.SecondaryTargetValue);
     }
 
     private static bool IsDiplomaticStandingSatisfied(
