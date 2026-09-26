@@ -1,5 +1,6 @@
 using LeaderGame.Presentation;
 using LeaderGame.Simulation;
+using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Persistence;
@@ -17,7 +18,7 @@ public class AdministrativeReformTests
         var office = country.GetAdministrativeOffice(
             AdministrativeFunction.Revenue)!;
         var treasurer = country.GetOfficeHolder(
-            Characters.Position.Treasurer)!;
+            Position.Treasurer)!;
 
         var integrity = office.Integrity;
         var workload = office.Workload;
@@ -49,7 +50,7 @@ public class AdministrativeReformTests
         var office = country.GetAdministrativeOffice(
             AdministrativeFunction.LocalGovernment)!;
         var chancellor = country.GetOfficeHolder(
-            Characters.Position.Chancellor)!;
+            Position.Chancellor)!;
 
         office.Workload = 80;
         var patronage = office.PatronageDependence;
@@ -108,7 +109,7 @@ public class AdministrativeReformTests
         var office = country.GetAdministrativeOffice(
             AdministrativeFunction.Chancery)!;
         var chancellor = country.GetOfficeHolder(
-            Characters.Position.Chancellor)!;
+            Position.Chancellor)!;
 
         state.PendingOrders.Add(new AdministrativeReformOrder
         {
@@ -137,7 +138,7 @@ public class AdministrativeReformTests
             restored.Country);
         Assert.Same(
             loaded.Player.Country.GetOfficeHolder(
-                Characters.Position.Chancellor),
+                Position.Chancellor),
             restored.Recipient);
     }
 }
