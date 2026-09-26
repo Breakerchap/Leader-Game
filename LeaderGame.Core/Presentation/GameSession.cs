@@ -1244,6 +1244,39 @@ public sealed class GameSession
             _ => "No active commitment"
         };
 
+        var legislation = state.LegislativeProposals
+            .Where(proposal => ReferenceEquals(proposal.Country, country))
+            .OrderByDescending(proposal => proposal.CreatedOn.Year)
+            .ThenByDescending(proposal => proposal.CreatedOn.Month)
+            .Take(8)
+            .Select(proposal => new LegislativeProposalView(
+                proposal.Id,
+                proposal.Type switch
+                {
+                    LegislativeProposalType.TaxRate =>
+                        $"Tax proposal · {proposal.TargetTaxRate:P0}",
+                    LegislativeProposalType.Budget =>
+                        "Budget proposal",
+                    _ => "Government proposal"
+                },
+                proposal.Type switch
+                {
+                    LegislativeProposalType.TaxRate =>
+                        $"Proposed tax rate {proposal.TargetTaxRate:P1}.",
+                    LegislativeProposalType.Budget =>
+                        $"Army {proposal.TargetArmyFunding:P0}, administration " +
+                        $"{proposal.TargetAdministrationFunding:P0}, court " +
+                        $"{proposal.TargetCourtFunding:P0}.",
+                    _ => string.Empty
+                },
+                proposal.Status == LegislativeProposalStatus.Pending
+                    ? proposal.MonthsOpen == 0
+                        ? "Awaiting consideration"
+                        : $"{proposal.MonthsOpen} month(s) before the institution"
+                    : $"Submitted {proposal.CreatedOn}",
+                proposal.Status.ToString()))
+            .ToList();
+
         var government = new GovernmentPolicyView(
             (double)country.TaxRate * 100,
             (double)country.ArmyFunding * 100,
@@ -1256,6 +1289,10 @@ public sealed class GameSession
                   "Their real effects still have to be learned through reports."
                 : $"These settings belong to {ruler.FullName}'s government. " +
                   $"{state.Player.Lineage.Name} is in opposition and can observe them, but cannot issue government directives.",
+            InstitutionSystem.BodyName(country.Government.LegislativeBody),
+            InstitutionSystem.AuthorityDescription(country.Government),
+            legislation.Count > 0,
+            legislation,
             governmentType,
             politicalCycle,
             politicalCycleDetail,
