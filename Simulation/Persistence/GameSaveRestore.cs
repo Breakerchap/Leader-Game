@@ -43,6 +43,13 @@ public static partial class GameSaveService
                 CourtFunding = saved.CourtFunding,
                 WarExhaustion = saved.WarExhaustion,
                 PublicUnrest = saved.PublicUnrest,
+                AdministrativeDevelopment =
+                    saved.AdministrativeDevelopment !=
+                        AdministrativeDevelopment.PatrimonialCourt
+                        ? saved.AdministrativeDevelopment
+                        : saved.Id == "valeria"
+                            ? AdministrativeDevelopment.CollegiateCivic
+                            : AdministrativeDevelopment.PatrimonialCourt,
                 Government = new Government
                 {
                     Type = saved.GovernmentType,
