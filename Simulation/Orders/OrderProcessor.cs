@@ -999,12 +999,20 @@ internal static class OrderProcessor
                 : $" {order.Country.Name} pays {transfer:N0} in reparations."
             : string.Empty;
 
+        var aimText =
+            order.Terms == Military.PeaceOfferTerms.DemandReparations &&
+            ReferenceEquals(order.Country, order.War.Attacker)
+                ? WarAimSystem.ApplyAttackerAim(
+                    state,
+                    order.War)
+                : string.Empty;
+
         return new SimulationReport(
             state.Date,
             ReportCategory.Diplomacy,
             $"{order.Country.Name} and {opponent.Name} make peace",
             $"{opponent.Name} accepts the {order.Terms} settlement after " +
-            $"{order.War.MonthsActive} months of war.{reparationsText}");
+            $"{order.War.MonthsActive} months of war.{reparationsText}{aimText}");
     }
 
     private static decimal TransferPayment(
@@ -1142,7 +1150,8 @@ internal static class OrderProcessor
         var war = Military.WarDeclarationService.Declare(
             state,
             order.SourceCountry,
-            order.TargetCountry);
+            order.TargetCountry,
+            order.Aim);
 
         order.Status = OrderStatus.Completed;
 
@@ -1150,7 +1159,8 @@ internal static class OrderProcessor
             state.Date,
             ReportCategory.Military,
             $"{order.SourceCountry.Name} declares war on {order.TargetCountry.Name}",
-            $"{chancellor.FullName} delivers the declaration. Trade and pending " +
+            $"{chancellor.FullName} delivers the declaration. The stated war aim is " +
+            $"{WarAimSystem.Label(order.Aim).ToLowerInvariant()}. Trade and pending " +
             "diplomatic offers between the two states end immediately. Reliable information " +
             "about the opening military position will depend on subsequent field reports.");
     }
