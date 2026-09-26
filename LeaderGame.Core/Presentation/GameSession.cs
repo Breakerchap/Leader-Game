@@ -688,8 +688,12 @@ public sealed class GameSession
 
     public void MakeElectionPromise(string promiseType)
     {
+        var normalised = promiseType
+            .Replace(" ", string.Empty, StringComparison.Ordinal)
+            .Replace("&", string.Empty, StringComparison.Ordinal);
+
         if (!Enum.TryParse<ElectionPromiseType>(
-                promiseType,
+                normalised,
                 ignoreCase: true,
                 out var parsed))
         {
