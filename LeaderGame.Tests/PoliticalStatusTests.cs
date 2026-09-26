@@ -159,6 +159,9 @@ public class PoliticalStatusTests
         simulation.AdvanceMonth();
 
         Assert.Same(outsider, country.Ruler);
-        Assert.True(state.Player.HasLost);
+        Assert.False(state.Player.HasLost);
+        Assert.Same(heir, state.Player.CurrentCharacter);
+        Assert.False(state.Player.IsInPower);
+        Assert.Equal(PoliticalStatus.Imprisoned, heir.Status);
     }
 }
