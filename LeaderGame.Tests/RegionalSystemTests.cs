@@ -4,6 +4,7 @@ using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Persistence;
+using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
 using LeaderGame.Simulation.Systems;
 
@@ -125,21 +126,21 @@ public class RegionalSystemTests
 
         var oldStrength =
             country.GetPowerBaseStrength(
-                Politics.PowerBaseType.RegionalElites);
+                PowerBaseType.RegionalElites);
         var oldStanding =
             country.Ruler.GetPowerBaseStanding(
-                Politics.PowerBaseType.RegionalElites);
+                PowerBaseType.RegionalElites);
 
         RegionalSystem.ProcessMonth(state).ToList();
 
         Assert.Equal(
             oldStrength + 1,
             country.GetPowerBaseStrength(
-                Politics.PowerBaseType.RegionalElites));
+                PowerBaseType.RegionalElites));
         Assert.Equal(
             oldStanding - 1,
             country.Ruler.GetPowerBaseStanding(
-                Politics.PowerBaseType.RegionalElites));
+                PowerBaseType.RegionalElites));
     }
 
     [Fact]
