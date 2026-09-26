@@ -109,9 +109,6 @@ internal static class EconomySystem
 
     private static void ApplyFundingConsequences(Country country)
     {
-        country.AdministrativeEfficiency +=
-            (country.AdministrationFunding - 1m) * 0.003m;
-
         country.ArmyReadiness +=
             ((double)country.ArmyFunding - 1.0) * 4.0;
 
