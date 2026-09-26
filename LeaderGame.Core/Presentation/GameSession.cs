@@ -710,6 +710,76 @@ public sealed class GameSession
         Refresh();
     }
 
+    public void TakeOppositionAction(
+        string actionName,
+        string powerBaseName)
+    {
+        var state = _simulation.State;
+        var player = state.Player;
+
+        if (player.IsInPower)
+        {
+            Refresh("Opposition strategy is only available while your lineage is outside government.");
+            return;
+        }
+
+        if (!player.CurrentCharacter.IsPoliticallyActive)
+        {
+            Refresh($"{player.CurrentCharacter.FullName} cannot currently organise political activity.");
+            return;
+        }
+
+        if (state.PendingOrders.OfType<OppositionActionOrder>().Any())
+        {
+            Refresh("Your opposition organisation is already committed to an action this month.");
+            return;
+        }
+
+        var normalisedAction = actionName
+            .Replace(" ", string.Empty, StringComparison.Ordinal);
+
+        if (!Enum.TryParse<OppositionActionType>(
+                normalisedAction,
+                ignoreCase: true,
+                out var action))
+        {
+            Refresh("That opposition strategy is not recognised.");
+            return;
+        }
+
+        var normalisedBase = powerBaseName
+            .Replace(" ", string.Empty, StringComparison.Ordinal);
+
+        if (!Enum.TryParse<PowerBaseType>(
+                normalisedBase,
+                ignoreCase: true,
+                out var powerBase))
+        {
+            Refresh("Choose a valid political constituency first.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new OppositionActionOrder
+        {
+            Issuer = player.CurrentCharacter,
+            Recipient = player.CurrentCharacter,
+            IssuedOn = state.Date,
+            Country = player.Country,
+            ActionType = action,
+            TargetPowerBase = powerBase
+        });
+
+        var actionLabel = action switch
+        {
+            OppositionActionType.OrganiseSupport => "Organise supporters",
+            OppositionActionType.BuildCoalition => "Build coalition",
+            OppositionActionType.PublicPressure => "Apply public pressure",
+            _ => action.ToString()
+        };
+
+        Refresh($"{actionLabel} queued among {FormatPowerBase(powerBase).ToLowerInvariant()}.");
+    }
+
     public void RespondToPowerBaseDemand(Guid demandId, bool concede)
     {
         var response = DomesticPoliticsSystem.RespondToDemand(
@@ -1356,12 +1426,40 @@ public sealed class GameSession
                     : "Awaiting response"))
             .ToList();
 
+        var oppositionPowerBases = Enum.GetValues<PowerBaseType>()
+            .Where(powerBase =>
+                country.GetPowerBaseStrength(powerBase) > 0)
+            .OrderBy(powerBase => FormatPowerBase(powerBase))
+            .Select(FormatPowerBase)
+            .ToList();
+
+        var pendingOppositionAction = state.PendingOrders
+            .OfType<OppositionActionOrder>()
+            .FirstOrDefault();
+
+        var canTakeOppositionAction =
+            !state.Player.IsInPower &&
+            playerCharacter.IsPoliticallyActive &&
+            pendingOppositionAction is null;
+
+        var oppositionStatus = state.Player.IsInPower
+            ? $"{state.Player.Lineage.Name} currently controls the government."
+            : !playerCharacter.IsPoliticallyActive
+                ? $"{playerCharacter.FullName} is {playerCharacter.Status.ToString().ToLowerInvariant()} and cannot currently organise openly."
+                : pendingOppositionAction is not null
+                    ? $"{playerCharacter.FullName}'s organisation is already committed to {pendingOppositionAction.ActionType} this month."
+                    : $"{playerCharacter.FullName} can direct one major opposition effort before the next month advances.";
+
         var court = new CourtPoliticsView(
             offices,
             figures,
             demandViews,
             opposition,
-            pressure);
+            pressure,
+            !state.Player.IsInPower,
+            canTakeOppositionAction,
+            oppositionPowerBases,
+            oppositionStatus);
 
         var chancellor = country.GetOfficeHolder(Position.Chancellor);
         var chancellorObedience = chancellor is null
@@ -1693,6 +1791,7 @@ public sealed class GameSession
             OfferPeaceOrder => "Peace",
             RespondToDiplomaticProposalOrder => "Diplomacy",
             RequestReportOrder => "Report",
+            OppositionActionOrder => "Opposition",
             _ => "Order"
         };
     }
@@ -1752,6 +1851,18 @@ public sealed class GameSession
             RequestReportOrder typed =>
                 $"Request {InformationSystem.FormatTopic(typed.Topic).ToLowerInvariant()} " +
                 $"report on {typed.SubjectCountry.Name}.",
+
+            OppositionActionOrder typed =>
+                typed.ActionType switch
+                {
+                    OppositionActionType.OrganiseSupport =>
+                        $"Organise support among {FormatPowerBase(typed.TargetPowerBase).ToLowerInvariant()}.",
+                    OppositionActionType.BuildCoalition =>
+                        $"Build a coalition through {FormatPowerBase(typed.TargetPowerBase).ToLowerInvariant()} contacts.",
+                    OppositionActionType.PublicPressure =>
+                        $"Mobilise {FormatPowerBase(typed.TargetPowerBase).ToLowerInvariant()} pressure against the government.",
+                    _ => "Conduct opposition political activity."
+                },
 
             _ => order.GetType().Name
         };
