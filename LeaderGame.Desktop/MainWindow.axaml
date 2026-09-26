@@ -2054,6 +2054,13 @@
                         Margin="0,0,8,8"
                         Command="{Binding RequestForeignMilitaryReportCommand}"
                         Content="⚑  Request military intelligence" />
+                    <ComboBox
+                        Width="175"
+                        Margin="0,0,8,8"
+                        IsVisible="{Binding SelectedForeignState.CanDeclareWar}"
+                        ItemsSource="{Binding WarAimOptions}"
+                        SelectedItem="{Binding SelectedWarAim}"
+                        PlaceholderText="War aim" />
                     <Button
                         Classes="action military"
                         Margin="0,0,8,8"
@@ -2227,12 +2234,20 @@
                             Text="{Binding SelectedCampaign.MonthsActive}"
                             Classes="muted" />
                       </StackPanel>
-                      <Border Grid.Column="1" Classes="badge" Background="#211718">
-                        <TextBlock
-                            Text="{Binding SelectedCampaign.Stance, StringFormat='Stance: {0}'}"
-                            Foreground="#E99B9B"
-                            FontSize="11" />
-                      </Border>
+                      <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="5">
+                        <Border Classes="badge" Background="#211718">
+                          <TextBlock
+                              Text="{Binding SelectedCampaign.Stance, StringFormat='Stance: {0}'}"
+                              Foreground="#E99B9B"
+                              FontSize="11" />
+                        </Border>
+                        <Border Classes="badge" Background="#2A2115">
+                          <TextBlock
+                              Text="{Binding SelectedCampaign.WarAim}"
+                              Foreground="#E1B66F"
+                              FontSize="10" />
+                        </Border>
+                      </StackPanel>
                     </Grid>
 
                     <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
