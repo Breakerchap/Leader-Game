@@ -18,19 +18,14 @@ internal static class SuccessionSystem
 
             if (successor is null)
             {
-                if (ReferenceEquals(country, state.Player.Country) &&
-                    state.Player.Lineage.Contains(deadRuler))
-                {
-                    state.Player.HasLost = true;
-                    state.Player.LossReason =
-                        $"{deadRuler.FullName} died and no eligible living successor could take power.";
-                }
+                country.Government.Stability -= 8;
 
                 yield return new SimulationReport(
                     state.Date,
                     ReportCategory.Politics,
                     $"The throne of {country.Name} is vacant",
-                    $"{deadRuler.FullName} has died, but no eligible living successor is available.");
+                    $"{deadRuler.FullName} has died, and no politically active figure can yet " +
+                    "establish a recognised succession. The resulting vacuum sharply damages stability.");
 
                 continue;
             }
@@ -50,9 +45,12 @@ internal static class SuccessionSystem
                     2);
             }
 
-            var isPlayerCountry = ReferenceEquals(country, state.Player.Country);
+            var isPlayerCountry = ReferenceEquals(
+                country,
+                state.Player.Country);
             var successorContinuesPlayerLineage =
-                isPlayerCountry && state.Player.Lineage.Contains(successor);
+                isPlayerCountry &&
+                state.Player.Lineage.Contains(successor);
 
             if (successorContinuesPlayerLineage)
             {
@@ -74,14 +72,6 @@ internal static class SuccessionSystem
             }
             else
             {
-                if (isPlayerCountry)
-                {
-                    state.Player.HasLost = true;
-                    state.Player.LossReason =
-                        $"{successor.FullName} succeeded {deadRuler.FullName}, ending " +
-                        $"{state.Player.Lineage.Name}'s control of {country.Name}.";
-                }
-
                 yield return new SimulationReport(
                     state.Date,
                     ReportCategory.Politics,
@@ -89,8 +79,9 @@ internal static class SuccessionSystem
                         ? $"{successor.FullName} becomes interim ruler of {country.Name}"
                         : $"{successor.FullName} succeeds {deadRuler.FullName}",
                     isPlayerCountry
-                        ? $"{successor.FullName} becomes ruler of {country.Name}. " +
-                          $"{state.Player.Lineage.Name} has lost power."
+                        ? $"{successor.FullName} takes control of {country.Name}, forcing " +
+                          $"{state.Player.Lineage.Name} out of government. The lineage survives, " +
+                          "so the campaign continues from opposition unless its political position later collapses."
                         : isRepublicanInterim
                             ? $"{successor.FullName} assumes interim office after {deadRuler.FullName}'s death. " +
                               "A constitutional election will follow shortly."
@@ -99,10 +90,27 @@ internal static class SuccessionSystem
         }
     }
 
-    private static Character? FindSuccessor(Country country, Character deadRuler)
+    private static Character? FindSuccessor(
+        Country country,
+        Character deadRuler)
     {
-        return country.SuccessionOrder.FirstOrDefault(candidate =>
+        var designated = country.SuccessionOrder.FirstOrDefault(candidate =>
             candidate.IsPoliticallyActive &&
             !ReferenceEquals(candidate, deadRuler));
+
+        if (designated is not null)
+            return designated;
+
+        // A depleted formal succession list should create a legitimacy crisis,
+        // not leave the simulation permanently attached to a dead ruler.
+        return country.PoliticalFigures
+            .Where(candidate =>
+                candidate.IsPoliticallyActive &&
+                !ReferenceEquals(candidate, deadRuler))
+            .OrderByDescending(candidate =>
+                candidate.Legitimacy * 0.45 +
+                candidate.Influence * 0.35 +
+                candidate.Competence * 0.20)
+            .FirstOrDefault();
     }
 }
