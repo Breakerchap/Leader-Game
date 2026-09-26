@@ -30,6 +30,8 @@ public class GameState
 
     public List<CabinetProposal> CabinetProposals { get; } = [];
 
+    public List<PoliticalCrisis> PoliticalCrises { get; } = [];
+
     public List<ElectionPromise> ElectionPromises { get; } = [];
 
     public CampaignState? Campaign { get; set; }
