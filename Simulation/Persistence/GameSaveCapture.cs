@@ -297,6 +297,19 @@ public static partial class GameSaveService
                 .Select(entry => new PowerBaseValueSnapshot(
                     entry.Key,
                     entry.Value))
+                .ToList(),
+            AdministrativeOffices = country.AdministrativeOffices
+                .Select(office => new AdministrativeOfficeSnapshot
+                {
+                    Function = office.Function,
+                    Name = office.Name,
+                    ResponsiblePosition = office.ResponsiblePosition,
+                    Capacity = office.Capacity,
+                    Reach = office.Reach,
+                    Integrity = office.Integrity,
+                    Workload = office.Workload,
+                    PatronageDependence = office.PatronageDependence
+                })
                 .ToList()
         };
     }
