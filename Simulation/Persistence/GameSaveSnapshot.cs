@@ -49,6 +49,8 @@ public sealed class GameSaveSnapshot
 
     public List<CabinetProposalSnapshot> CabinetProposals { get; init; } = [];
 
+    public List<PoliticalCrisisSnapshot> PoliticalCrises { get; init; } = [];
+
     public List<ElectionPromiseSnapshot> ElectionPromises { get; init; } = [];
 
     public List<DiplomaticProposalSnapshot> DiplomaticProposals { get; init; } = [];
@@ -397,6 +399,35 @@ public sealed class PoliticalBlocSnapshot
     public double Cohesion { get; init; }
 
     public bool IsActive { get; init; }
+}
+
+public sealed class PoliticalCrisisSnapshot
+{
+    public Guid Id { get; init; }
+
+    public required string CountryId { get; init; }
+
+    public PoliticalCrisisType Type { get; init; }
+
+    public string? RegionId { get; init; }
+
+    public Guid? RelatedBlocId { get; init; }
+
+    public required DateSnapshot StartedOn { get; init; }
+
+    public int Stage { get; init; }
+
+    public int MonthsActive { get; init; }
+
+    public int MonthsAtCurrentStage { get; init; }
+
+    public bool AwaitingDecision { get; init; }
+
+    public PoliticalCrisisResponse? LastResponse { get; init; }
+
+    public PoliticalCrisisStatus Status { get; init; }
+
+    public DateSnapshot? ResolvedOn { get; init; }
 }
 
 public sealed class LegislativeProposalSnapshot
