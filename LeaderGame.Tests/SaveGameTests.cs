@@ -271,6 +271,9 @@ public class SaveGameTests
         Assert.Equal(
             6,
             loaded.Player.Country.Government.ElectionCampaignMonths);
+        Assert.Equal(
+            ElectionMethod.CouncilElection,
+            loaded.Player.Country.Government.ElectionMethod);
         Assert.Equal(2, loaded.Player.ElectionsWon);
         Assert.Equal(7, loaded.Player.MonthsOutOfPower);
         Assert.Equal(3, loaded.Player.ConsecutiveLowViabilityMonths);
