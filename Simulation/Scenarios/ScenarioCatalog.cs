@@ -158,7 +158,7 @@ public static class ScenarioCatalog
                         Id = "northern-commerce",
                         Title = "Open the Northern Markets",
                         Description =
-                            "Maintain at least one active trade agreement while keeping the treasury positive.",
+                            "Maintain at least one active trade agreement with a neighbouring state.",
                         Type = CampaignObjectiveType.TradeNetwork,
                         TargetValue = 1,
                         RequiredMonths = 1
