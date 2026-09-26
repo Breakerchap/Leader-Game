@@ -302,6 +302,174 @@ public static class DemoScenario
         nordmark.NeighborIds.UnionWith([falkenreich.Id, valeria.Id]);
         valeria.NeighborIds.UnionWith([falkenreich.Id, nordmark.Id]);
 
+        falkenreich.Regions.AddRange(
+        [
+            new Region
+            {
+                Id = "falken-crownlands",
+                Name = "Falken Crownlands",
+                EconomicShare = 0.30m,
+                PopulationShare = 0.27m,
+                CrownControl = 78,
+                LocalElitePower = 48,
+                Unrest = 14,
+                Privileges = 35,
+                Prosperity = 64
+            },
+            new Region
+            {
+                Id = "westmark",
+                Name = "Westmark",
+                EconomicShare = 0.27m,
+                PopulationShare = 0.24m,
+                CrownControl = 52,
+                LocalElitePower = 72,
+                Unrest = 22,
+                Privileges = 68,
+                Prosperity = 72
+            },
+            new Region
+            {
+                Id = "hochwald",
+                Name = "Hochwald",
+                EconomicShare = 0.18m,
+                PopulationShare = 0.22m,
+                CrownControl = 38,
+                LocalElitePower = 84,
+                Unrest = 18,
+                Privileges = 78,
+                Prosperity = 48
+            },
+            new Region
+            {
+                Id = "eastern-marches",
+                Name = "Eastern Marches",
+                EconomicShare = 0.15m,
+                PopulationShare = 0.15m,
+                CrownControl = 44,
+                LocalElitePower = 76,
+                Unrest = 28,
+                Privileges = 61,
+                Prosperity = 43
+            },
+            new Region
+            {
+                Id = "southvale",
+                Name = "Southvale",
+                EconomicShare = 0.10m,
+                PopulationShare = 0.12m,
+                CrownControl = 58,
+                LocalElitePower = 62,
+                Unrest = 20,
+                Privileges = 55,
+                Prosperity = 57
+            }
+        ]);
+
+        nordmark.Regions.AddRange(
+        [
+            new Region
+            {
+                Id = "skeld-coast",
+                Name = "Skeld Crown Coast",
+                EconomicShare = 0.32m,
+                PopulationShare = 0.28m,
+                CrownControl = 75,
+                LocalElitePower = 50,
+                Unrest = 12,
+                Privileges = 40,
+                Prosperity = 65
+            },
+            new Region
+            {
+                Id = "north-fjords",
+                Name = "North Fjords",
+                EconomicShare = 0.18m,
+                PopulationShare = 0.21m,
+                CrownControl = 48,
+                LocalElitePower = 74,
+                Unrest = 14,
+                Privileges = 66,
+                Prosperity = 45
+            },
+            new Region
+            {
+                Id = "inland-vale",
+                Name = "Inland Vale",
+                EconomicShare = 0.25m,
+                PopulationShare = 0.28m,
+                CrownControl = 60,
+                LocalElitePower = 63,
+                Unrest = 18,
+                Privileges = 55,
+                Prosperity = 58
+            },
+            new Region
+            {
+                Id = "border-march",
+                Name = "Border March",
+                EconomicShare = 0.25m,
+                PopulationShare = 0.23m,
+                CrownControl = 50,
+                LocalElitePower = 68,
+                Unrest = 20,
+                Privileges = 57,
+                Prosperity = 52
+            }
+        ]);
+
+        valeria.Regions.AddRange(
+        [
+            new Region
+            {
+                Id = "vieri-lagoon",
+                Name = "Vieri Lagoon",
+                EconomicShare = 0.38m,
+                PopulationShare = 0.28m,
+                CrownControl = 88,
+                LocalElitePower = 64,
+                Unrest = 20,
+                Privileges = 55,
+                Prosperity = 88
+            },
+            new Region
+            {
+                Id = "terraferma",
+                Name = "Terraferma",
+                EconomicShare = 0.30m,
+                PopulationShare = 0.36m,
+                CrownControl = 68,
+                LocalElitePower = 70,
+                Unrest = 29,
+                Privileges = 62,
+                Prosperity = 69
+            },
+            new Region
+            {
+                Id = "southern-ports",
+                Name = "Southern Ports",
+                EconomicShare = 0.20m,
+                PopulationShare = 0.21m,
+                CrownControl = 74,
+                LocalElitePower = 58,
+                Unrest = 24,
+                Privileges = 48,
+                Prosperity = 78
+            },
+            new Region
+            {
+                Id = "hill-communes",
+                Name = "Hill Communes",
+                EconomicShare = 0.12m,
+                PopulationShare = 0.15m,
+                CrownControl = 52,
+                LocalElitePower = 78,
+                Unrest = 34,
+                Privileges = 74,
+                Prosperity = 54
+            }
+        ]);
+
         var falkenLineage = new PoliticalLineage
         {
             Id = "house_von_falken",
