@@ -45,6 +45,8 @@ public sealed class GameSaveSnapshot
 
     public List<PoliticalBlocSnapshot> PoliticalBlocs { get; init; } = [];
 
+    public List<LegislativeProposalSnapshot> LegislativeProposals { get; init; } = [];
+
     public List<CabinetProposalSnapshot> CabinetProposals { get; init; } = [];
 
     public List<ElectionPromiseSnapshot> ElectionPromises { get; init; } = [];
@@ -218,6 +220,10 @@ public sealed class CountrySnapshot
 
     public int ElectionCampaignMonths { get; init; }
 
+    public LegislativeBodyType LegislativeBody { get; init; }
+
+    public int LegislativeIndependence { get; init; }
+
     public int RulerId { get; init; }
 
     public List<string> NeighborIds { get; init; } = [];
@@ -343,6 +349,33 @@ public sealed class PoliticalBlocSnapshot
     public double Cohesion { get; init; }
 
     public bool IsActive { get; init; }
+}
+
+public sealed class LegislativeProposalSnapshot
+{
+    public Guid Id { get; init; }
+
+    public required string CountryId { get; init; }
+
+    public int SponsorId { get; init; }
+
+    public int DrafterId { get; init; }
+
+    public LegislativeProposalType Type { get; init; }
+
+    public required DateSnapshot CreatedOn { get; init; }
+
+    public int MonthsOpen { get; init; }
+
+    public LegislativeProposalStatus Status { get; init; }
+
+    public decimal? TargetTaxRate { get; init; }
+
+    public decimal? TargetArmyFunding { get; init; }
+
+    public decimal? TargetAdministrationFunding { get; init; }
+
+    public decimal? TargetCourtFunding { get; init; }
 }
 
 public sealed class CabinetProposalSnapshot
