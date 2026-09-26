@@ -34,8 +34,12 @@ public class Government
 
     public int ElectionCampaignMonths { get; set; } = 6;
 
+    public ElectionMethod ElectionMethod { get; set; } =
+        ElectionMethod.None;
+
     public bool HoldsScheduledElections =>
         Type == GovernmentType.Republic &&
+        ElectionMethod != ElectionMethod.None &&
         ElectionIntervalMonths > 0;
 
     public double Stability
@@ -60,4 +64,12 @@ public enum LegislativeBodyType
     EstatesAssembly,
     GreatCouncil,
     Assembly
+}
+
+
+public enum ElectionMethod
+{
+    None,
+    PopularElection,
+    CouncilElection
 }
