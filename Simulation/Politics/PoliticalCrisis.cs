@@ -8,7 +8,8 @@ public enum PoliticalCrisisType
     FiscalEmergency,
     PoliticalStandoff,
     SuccessionDispute,
-    WarEmergency
+    WarEmergency,
+    CabinetRift
 }
 
 public enum PoliticalCrisisStatus
@@ -38,7 +39,11 @@ public enum PoliticalCrisisResponse
 
     EmergencyMobilisation,
     DismissMarshal,
-    SeekPeaceSettlement
+    SeekPeaceSettlement,
+
+    ReconcileMinister,
+    AcceptMinisterResignation,
+    EnforceMinisterLoyalty
 }
 
 /// <summary>
@@ -59,6 +64,8 @@ public sealed class PoliticalCrisis
     public Guid? RelatedBlocId { get; init; }
 
     public Guid? RelatedWarId { get; init; }
+
+    public int? RelatedCharacterId { get; init; }
 
     public required GameDate StartedOn { get; init; }
 
