@@ -27,7 +27,7 @@ public class SuccessionTests
     }
 
     [Fact]
-    public void OutsiderSuccessor_ContinuesCountryButEndsPlayerLineage()
+    public void OutsiderSuccessor_ForcesLineageIntoOppositionWithoutImmediateLoss()
     {
         var state = DemoScenario.Create();
         var simulation = new GameSimulation(state);
@@ -38,16 +38,45 @@ public class SuccessionTests
         var outsider = country.SuccessionOrder.First(candidate =>
             !state.Player.Lineage.Contains(candidate));
 
+        country.SuccessionOrder.Clear();
+        country.SuccessionOrder.Add(outsider);
+        country.SuccessionOrder.Add(heir);
         oldRuler.IsAlive = false;
-        heir.IsAlive = false;
 
         simulation.AdvanceMonth();
 
         Assert.Same(outsider, country.Ruler);
         Assert.True(outsider.IsAlive);
+        Assert.False(state.Player.HasLost);
+        Assert.Same(heir, state.Player.CurrentCharacter);
+        Assert.False(state.Player.IsInPower);
+        Assert.True(state.Player.MonthsOutOfPower >= 1);
+    }
+
+    [Fact]
+    public void ExtinctLineage_IsImmediateLossEvenIfCountryFindsSuccessor()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var oldRuler = country.Ruler;
+        var heir = state.Player.Lineage.Members.Single(member =>
+            !ReferenceEquals(member, oldRuler));
+        var outsider = country.SuccessionOrder.First(candidate =>
+            !state.Player.Lineage.Contains(candidate));
+
+        country.SuccessionOrder.Clear();
+        country.SuccessionOrder.Add(outsider);
+        oldRuler.IsAlive = false;
+        heir.IsAlive = false;
+
+        new GameSimulation(state).AdvanceMonth();
+
+        Assert.Same(outsider, country.Ruler);
         Assert.True(state.Player.HasLost);
-        Assert.NotNull(state.Player.LossReason);
-        Assert.Same(oldRuler, state.Player.CurrentCharacter);
+        Assert.Contains(
+            "no living member",
+            state.Player.LossReason!,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
