@@ -6,7 +6,8 @@ public enum PoliticalCrisisType
 {
     RegionalBreakdown,
     FiscalEmergency,
-    PoliticalStandoff
+    PoliticalStandoff,
+    SuccessionDispute
 }
 
 public enum PoliticalCrisisStatus
@@ -28,7 +29,11 @@ public enum PoliticalCrisisResponse
 
     CooptOpposition,
     ConstitutionalCompromise,
-    ConfrontOpposition
+    ConfrontOpposition,
+
+    PubliclyNameSuccessor,
+    BalanceSuccessionFactions,
+    ConveneSuccessionSettlement
 }
 
 /// <summary>
