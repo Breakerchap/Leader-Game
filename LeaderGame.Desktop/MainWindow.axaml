@@ -896,6 +896,147 @@
                 </Border>
 
                 <Border
+                    Background="#171412"
+                    BorderBrush="#4A3B2D"
+                    BorderThickness="1"
+                    CornerRadius="7"
+                    Padding="12">
+                  <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Spacing="3">
+                        <TextBlock Text="REALM &amp; REGIONS" Classes="eyebrow" Foreground="#D8A657" />
+                        <TextBlock
+                            Text="Local power is uneven"
+                            FontSize="16"
+                            FontWeight="SemiBold" />
+                      </StackPanel>
+                      <Border Grid.Column="1" Classes="badge" Background="#2A2115" VerticalAlignment="Top">
+                        <TextBlock
+                            Text="{Binding View.Government.Regions.Count, StringFormat='{}{0} regions'}"
+                            FontSize="10"
+                            Foreground="#E1B66F" />
+                      </Border>
+                    </Grid>
+
+                    <TextBlock
+                        Text="A region can be wealthy but difficult to govern, peaceful because of broad privileges, or tightly controlled but politically brittle. There is no single best arrangement."
+                        TextWrapping="Wrap"
+                        FontSize="11"
+                        Classes="muted" />
+
+                    <ItemsControl ItemsSource="{Binding View.Government.Regions}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Border
+                              Background="#1B1713"
+                              BorderBrush="#3D3228"
+                              BorderThickness="1"
+                              CornerRadius="6"
+                              Padding="10"
+                              Margin="0,3,0,0">
+                            <Grid ColumnDefinitions="1.25*,1.05*,1.05*,0.85*,0.95*,0.95*" ColumnSpacing="10">
+                              <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Importance}" FontSize="10" Classes="muted" />
+                              </StackPanel>
+                              <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock Text="Central reach" Classes="eyebrow" FontSize="9" />
+                                <TextBlock Text="{Binding CentralControl}" FontSize="10" TextWrapping="Wrap" />
+                              </StackPanel>
+                              <StackPanel Grid.Column="2" Spacing="2">
+                                <TextBlock Text="Local power" Classes="eyebrow" FontSize="9" />
+                                <TextBlock Text="{Binding LocalPower}" FontSize="10" TextWrapping="Wrap" />
+                              </StackPanel>
+                              <StackPanel Grid.Column="3" Spacing="2">
+                                <TextBlock Text="Order" Classes="eyebrow" FontSize="9" />
+                                <TextBlock Text="{Binding Unrest}" FontSize="10" />
+                              </StackPanel>
+                              <StackPanel Grid.Column="4" Spacing="2">
+                                <TextBlock Text="Privileges" Classes="eyebrow" FontSize="9" />
+                                <TextBlock Text="{Binding Privileges}" FontSize="10" TextWrapping="Wrap" />
+                              </StackPanel>
+                              <StackPanel Grid.Column="5" Spacing="2">
+                                <TextBlock Text="Prosperity" Classes="eyebrow" FontSize="9" />
+                                <TextBlock Text="{Binding Prosperity}" FontSize="10" />
+                              </StackPanel>
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border
+                        Background="#12100E"
+                        BorderBrush="#3A3027"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="10">
+                      <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="260,*" ColumnSpacing="10">
+                          <ComboBox
+                              ItemsSource="{Binding RegionOptions}"
+                              SelectedItem="{Binding SelectedRegion, Mode=TwoWay}"
+                              IsEnabled="{Binding View.Government.CanDirectRegions}">
+                            <ComboBox.ItemTemplate>
+                              <DataTemplate>
+                                <TextBlock Text="{Binding Name}" />
+                              </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                          </ComboBox>
+                          <TextBlock
+                              Grid.Column="1"
+                              Text="{Binding View.Government.RegionalActionStatus}"
+                              TextWrapping="Wrap"
+                              VerticalAlignment="Center"
+                              FontSize="11"
+                              Classes="muted" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                          <Button
+                              Classes="action politics"
+                              Command="{Binding StrengthenRegionalAdministrationCommand}"
+                              IsEnabled="{Binding View.Government.CanDirectRegions}"
+                              Content="Strengthen central reach" />
+                          <Button
+                              Grid.Column="1"
+                              Classes="action"
+                              Command="{Binding NegotiateRegionalCompactCommand}"
+                              IsEnabled="{Binding View.Government.CanDirectRegions}"
+                              Content="Negotiate local compact" />
+                          <Button
+                              Grid.Column="2"
+                              Classes="action economy"
+                              Command="{Binding InvestInRegionCommand}"
+                              IsEnabled="{Binding View.Government.CanDirectRegions}"
+                              Content="Invest in region" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                          <TextBlock
+                              Text="More direct control and better collection, but local interests resist and administrative workload rises."
+                              FontSize="10"
+                              TextWrapping="Wrap"
+                              Classes="muted" />
+                          <TextBlock
+                              Grid.Column="1"
+                              Text="Rapidly calms a region and wins elite cooperation, but grants privileges and makes local power harder to unwind."
+                              FontSize="10"
+                              TextWrapping="Wrap"
+                              Classes="muted" />
+                          <TextBlock
+                              Grid.Column="2"
+                              Text="Spend treasury resources for prosperity, goodwill and a modest long-run improvement in central presence."
+                              FontSize="10"
+                              TextWrapping="Wrap"
+                              Classes="muted" />
+                        </Grid>
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                </Border>
+
+                <Border
                     IsVisible="{Binding View.Government.HasElection}"
                     Background="#101821"
                     BorderBrush="#294052"
