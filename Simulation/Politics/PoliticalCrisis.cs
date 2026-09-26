@@ -7,7 +7,8 @@ public enum PoliticalCrisisType
     RegionalBreakdown,
     FiscalEmergency,
     PoliticalStandoff,
-    SuccessionDispute
+    SuccessionDispute,
+    WarEmergency
 }
 
 public enum PoliticalCrisisStatus
@@ -33,7 +34,11 @@ public enum PoliticalCrisisResponse
 
     PubliclyNameSuccessor,
     BalanceSuccessionFactions,
-    ConveneSuccessionSettlement
+    ConveneSuccessionSettlement,
+
+    EmergencyMobilisation,
+    DismissMarshal,
+    SeekPeaceSettlement
 }
 
 /// <summary>
@@ -52,6 +57,8 @@ public sealed class PoliticalCrisis
     public Region? Region { get; init; }
 
     public Guid? RelatedBlocId { get; init; }
+
+    public Guid? RelatedWarId { get; init; }
 
     public required GameDate StartedOn { get; init; }
 
