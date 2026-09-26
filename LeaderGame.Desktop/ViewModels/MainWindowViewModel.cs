@@ -29,6 +29,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private double _targetCourtFundingPercent;
 
     private readonly RelayCommand _advanceMonthCommand;
+    private readonly RelayCommand _advanceUntilDecisionCommand;
     private readonly RelayCommand _loadCommand;
     private readonly RelayCommand _recoverAutosaveCommand;
 
@@ -52,6 +53,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             _ =>
             {
                 _session.AdvanceMonth();
+                CurrentSection = "Briefing";
+                SyncPolicyTargets();
+                RefreshBindings();
+            },
+            _ => !View.HasLost &&
+                 !View.HasWon &&
+                 !IsCampaignSetupVisible);
+
+        _advanceUntilDecisionCommand = new RelayCommand(
+            _ =>
+            {
+                _session.AdvanceUntilDecision();
                 CurrentSection = "Briefing";
                 SyncPolicyTargets();
                 RefreshBindings();
@@ -462,6 +475,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ICommand AdvanceMonthCommand => _advanceMonthCommand;
 
+    public ICommand AdvanceUntilDecisionCommand =>
+        _advanceUntilDecisionCommand;
+
     public ICommand SaveCommand { get; }
 
     public ICommand StartScenarioCommand { get; }
@@ -491,6 +507,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsCampaignUiVisible));
             _advanceMonthCommand.RaiseCanExecuteChanged();
+            _advanceUntilDecisionCommand.RaiseCanExecuteChanged();
         }
     }
 
@@ -1090,6 +1107,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(ArchiveEntries));
         OnPropertyChanged(nameof(SaveLocation));
         _advanceMonthCommand.RaiseCanExecuteChanged();
+        _advanceUntilDecisionCommand.RaiseCanExecuteChanged();
         _loadCommand.RaiseCanExecuteChanged();
         _recoverAutosaveCommand.RaiseCanExecuteChanged();
     }
