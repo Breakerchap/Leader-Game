@@ -1277,6 +1277,62 @@ public sealed class GameSession
                 proposal.Status.ToString()))
             .ToList();
 
+        var administrativeOffices = country.AdministrativeOffices
+            .Select(office =>
+            {
+                var head = office.ResponsiblePosition is { } position
+                    ? country.GetOfficeHolder(position)
+                    : country.Ruler;
+
+                var performance =
+                    AdministrativeSystem.GetPerformance(
+                        country,
+                        office.Function);
+
+                var function = office.Function switch
+                {
+                    AdministrativeFunction.Chancery =>
+                        "Records & executive business",
+                    AdministrativeFunction.Revenue =>
+                        "Revenue & collection",
+                    AdministrativeFunction.LocalGovernment =>
+                        "Local execution",
+                    AdministrativeFunction.MilitaryLogistics =>
+                        "Military supply",
+                    AdministrativeFunction.ForeignAffairs =>
+                        "Diplomacy & correspondence",
+                    _ => office.Function.ToString()
+                };
+
+                var structure = office.PatronageDependence switch
+                {
+                    >= 75 => "Heavily dependent on local patrons",
+                    >= 55 => "Patronage-dependent",
+                    >= 35 => "Mixed professional and patronage staffing",
+                    _ => "Comparatively professional"
+                };
+
+                var workload = office.Workload switch
+                {
+                    >= 80 => "Overloaded",
+                    >= 60 => "Heavy",
+                    >= 40 => "Busy",
+                    >= 20 => "Manageable",
+                    _ => "Light"
+                };
+
+                return new AdministrativeOfficeView(
+                    office.Name,
+                    function,
+                    head?.FullName ?? "No effective head",
+                    AdministrativeSystem.DescribePerformance(performance),
+                    AdministrativeSystem.DescribeReach(office.Reach),
+                    AdministrativeSystem.DescribeIntegrity(office.Integrity),
+                    workload,
+                    structure);
+            })
+            .ToList();
+
         var government = new GovernmentPolicyView(
             (double)country.TaxRate * 100,
             (double)country.ArmyFunding * 100,
@@ -1293,6 +1349,8 @@ public sealed class GameSession
             InstitutionSystem.AuthorityDescription(country.Government),
             legislation.Count > 0,
             legislation,
+            $"{country.AdministrativeEfficiency:P0} effective central administration",
+            administrativeOffices,
             governmentType,
             politicalCycle,
             politicalCycleDetail,
