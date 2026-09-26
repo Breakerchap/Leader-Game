@@ -166,6 +166,26 @@ public static partial class GameSaveService
                     Status = proposal.Status
                 })
                 .ToList(),
+            PoliticalCrises = state.PoliticalCrises
+                .Select(crisis => new PoliticalCrisisSnapshot
+                {
+                    Id = crisis.Id,
+                    CountryId = crisis.Country.Id,
+                    Type = crisis.Type,
+                    RegionId = crisis.Region?.Id,
+                    RelatedBlocId = crisis.RelatedBlocId,
+                    StartedOn = Date(crisis.StartedOn),
+                    Stage = crisis.Stage,
+                    MonthsActive = crisis.MonthsActive,
+                    MonthsAtCurrentStage = crisis.MonthsAtCurrentStage,
+                    AwaitingDecision = crisis.AwaitingDecision,
+                    LastResponse = crisis.LastResponse,
+                    Status = crisis.Status,
+                    ResolvedOn = crisis.ResolvedOn is { } resolved
+                        ? Date(resolved)
+                        : null
+                })
+                .ToList(),
             ElectionPromises = state.ElectionPromises
                 .Select(promise => new ElectionPromiseSnapshot
                 {
