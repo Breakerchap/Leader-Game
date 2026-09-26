@@ -15,6 +15,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private WarCampaignView? _selectedCampaign;
     private string _selectedOffice = "Chancellor";
     private string _selectedWarStance = "Balanced";
+    private string _selectedWarAim = "Reparations";
     private string _selectedPeaceTerms = "WhitePeace";
     private string _selectedElectionPromise = "Tax relief";
     private string _selectedOppositionPowerBase = string.Empty;
@@ -301,7 +302,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 return;
 
             RunAndRefresh(() =>
-                _session.DeclareWar(SelectedForeignCountry.Id));
+                _session.DeclareWar(
+                    SelectedForeignCountry.Id,
+                    SelectedWarAim));
         });
 
         AcceptProposalCommand = new RelayCommand(parameter =>
@@ -779,6 +782,26 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public IReadOnlyList<string> WarStanceOptions { get; } =
         ["Defensive", "Balanced", "Aggressive"];
+
+    public IReadOnlyList<string> WarAimOptions { get; } =
+    [
+        "Reparations",
+        "HumiliateRival",
+        "CommercialAccess"
+    ];
+
+    public string SelectedWarAim
+    {
+        get => _selectedWarAim;
+        set
+        {
+            if (_selectedWarAim == value)
+                return;
+
+            _selectedWarAim = value;
+            OnPropertyChanged();
+        }
+    }
 
     public IReadOnlyList<string> PeaceTermOptions { get; } =
         ["WhitePeace", "DemandReparations", "OfferReparations"];
