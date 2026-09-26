@@ -46,8 +46,8 @@ internal static class AdministrativeSystem
                     reports.Add(new SimulationReport(
                         state.Date,
                         ReportCategory.Politics,
-                        $"{worst.Name} is struggling to carry the government's business",
-                        $"{worst.Name} is visibly overextended. Orders are moving slowly, " +
+                        $"{DisplayName(country, worst)} is struggling to carry the government's business",
+                        $"{DisplayName(country, worst)} is visibly overextended. Orders are moving slowly, " +
                         "local execution is uneven, and the centre is increasingly dependent " +
                         "on intermediaries to get business done."));
                 }
@@ -261,6 +261,77 @@ internal static class AdministrativeSystem
             country.PublicUnrest -= 0.06;
         }
     }
+
+    public static string DisplayName(
+        Country country,
+        AdministrativeOffice office)
+    {
+        return country.AdministrativeDevelopment switch
+        {
+            AdministrativeDevelopment.PatrimonialCourt or
+            AdministrativeDevelopment.CollegiateCivic =>
+                office.Name,
+
+            AdministrativeDevelopment.CentralisingBureaucracy =>
+                office.Function switch
+                {
+                    AdministrativeFunction.Chancery => "State Chancery",
+                    AdministrativeFunction.Revenue => "Central Revenue Office",
+                    AdministrativeFunction.LocalGovernment => "Provincial Administration",
+                    AdministrativeFunction.MilitaryLogistics => "War Secretariat",
+                    AdministrativeFunction.ForeignAffairs => "Foreign Secretariat",
+                    _ => office.Name
+                },
+
+            AdministrativeDevelopment.FiscalMilitaryState =>
+                office.Function switch
+                {
+                    AdministrativeFunction.Chancery => "Central Secretariat",
+                    AdministrativeFunction.Revenue => "Treasury and Revenue Board",
+                    AdministrativeFunction.LocalGovernment => "Provincial Administration",
+                    AdministrativeFunction.MilitaryLogistics => "War and Supply Office",
+                    AdministrativeFunction.ForeignAffairs => "Foreign Office",
+                    _ => office.Name
+                },
+
+            AdministrativeDevelopment.ProfessionalCivilService =>
+                office.Function switch
+                {
+                    AdministrativeFunction.Chancery => "Cabinet Secretariat",
+                    AdministrativeFunction.Revenue => "Treasury",
+                    AdministrativeFunction.LocalGovernment => "Interior Administration",
+                    AdministrativeFunction.MilitaryLogistics => "War Ministry",
+                    AdministrativeFunction.ForeignAffairs => "Foreign Ministry",
+                    _ => office.Name
+                },
+
+            AdministrativeDevelopment.MassAdministrativeState =>
+                office.Function switch
+                {
+                    AdministrativeFunction.Chancery => "Executive Secretariat",
+                    AdministrativeFunction.Revenue => "Treasury and Revenue Service",
+                    AdministrativeFunction.LocalGovernment => "Interior and Public Administration",
+                    AdministrativeFunction.MilitaryLogistics => "Defence Ministry",
+                    AdministrativeFunction.ForeignAffairs => "Foreign Ministry",
+                    _ => office.Name
+                },
+
+            _ => office.Name
+        };
+    }
+
+    public static decimal GetAdministrationCostMultiplier(
+        AdministrativeDevelopment development) =>
+        development switch
+        {
+            AdministrativeDevelopment.PatrimonialCourt => 0.80m,
+            AdministrativeDevelopment.CollegiateCivic => 0.95m,
+            AdministrativeDevelopment.CentralisingBureaucracy => 1.05m,
+            AdministrativeDevelopment.FiscalMilitaryState => 1.20m,
+            AdministrativeDevelopment.ProfessionalCivilService => 1.35m,
+            AdministrativeDevelopment.MassAdministrativeState => 1.60m,
+            _ => 1.00m
+        };
 
     public static string DescribeDevelopment(
         AdministrativeDevelopment development) =>
