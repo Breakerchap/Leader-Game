@@ -323,6 +323,8 @@ public sealed class WarSnapshot
 
     public required DateSnapshot StartedOn { get; init; }
 
+    public WarAim AttackerAim { get; init; }
+
     public double WarScore { get; init; }
 
     public int MonthsActive { get; init; }
@@ -681,6 +683,8 @@ public sealed record OrderSnapshot
     public WarStance? RequestedStance { get; init; }
 
     public PeaceOfferTerms? PeaceTerms { get; init; }
+
+    public WarAim? WarAim { get; init; }
 
     public Guid? DiplomaticProposalId { get; init; }
 
