@@ -280,6 +280,7 @@ public static class DemoScenario
                 Stability = 59,
                 LegislativeBody = LegislativeBodyType.GreatCouncil,
                 LegislativeIndependence = 75,
+                ElectionMethod = ElectionMethod.CouncilElection,
                 ElectionIntervalMonths = 48,
                 MonthsUntilElection = 12,
                 ElectionCampaignMonths = 6
