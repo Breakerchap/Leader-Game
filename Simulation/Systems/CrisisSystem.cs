@@ -1,5 +1,7 @@
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
+using LeaderGame.Simulation.Military;
+using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Reports;
 
@@ -118,6 +120,8 @@ internal static class CrisisSystem
                 ApplyPoliticalResponse(state, crisis, response),
             PoliticalCrisisType.SuccessionDispute =>
                 ApplySuccessionResponse(state, crisis, response),
+            PoliticalCrisisType.WarEmergency =>
+                ApplyWarResponse(state, crisis, response),
             _ => "No response was carried out."
         };
 
@@ -161,6 +165,8 @@ internal static class CrisisSystem
                 "Government and opposition in open standoff",
             PoliticalCrisisType.SuccessionDispute =>
                 "Succession factions are hardening",
+            PoliticalCrisisType.WarEmergency =>
+                "Military setbacks are becoming a government crisis",
             _ => "Political crisis"
         };
 
@@ -183,6 +189,9 @@ internal static class CrisisSystem
 
             PoliticalCrisisType.SuccessionDispute =>
                 SuccessionSummary(crisis.Country),
+
+            PoliticalCrisisType.WarEmergency =>
+                WarEmergencySummary(state, crisis),
 
             _ => "The government faces an unresolved political emergency."
         };
@@ -265,6 +274,22 @@ internal static class CrisisSystem
                     "Bring leading institutions and elites into a formal settlement. Builds legitimacy around the heir but gives those institutions a stronger precedent.")
             ],
 
+            PoliticalCrisisType.WarEmergency =>
+            [
+                new(
+                    PoliticalCrisisResponse.EmergencyMobilisation,
+                    "Emergency mobilisation",
+                    "Spend heavily, call up more forces and restore readiness. Can change the military trajectory, but raises debt, exhaustion and domestic resentment."),
+                new(
+                    PoliticalCrisisResponse.DismissMarshal,
+                    "Dismiss the Marshal",
+                    "Make the high command carry the blame. May restore political confidence, but disrupts the army and leaves you needing a new commander."),
+                new(
+                    PoliticalCrisisResponse.SeekPeaceSettlement,
+                    "Seek a negotiated peace",
+                    "Send the Chancellor with real peace terms. The enemy can still refuse if it believes continued war is better.")
+            ],
+
             _ => []
         };
 
@@ -308,6 +333,12 @@ internal static class CrisisSystem
 
             PoliticalCrisisType.SuccessionDispute =>
                 SuccessionAdvice(
+                    crisis,
+                    advisor),
+
+            PoliticalCrisisType.WarEmergency =>
+                WarAdvice(
+                    state,
                     crisis,
                     advisor),
 
@@ -508,6 +539,61 @@ internal static class CrisisSystem
         };
     }
 
+    private static PoliticalCrisisResponse? WarAdvice(
+        GameState state,
+        PoliticalCrisis crisis,
+        Character advisor)
+    {
+        var war = FindRelatedWar(
+            state,
+            crisis);
+
+        if (war is null)
+            return null;
+
+        var score =
+            CountryWarScore(
+                war,
+                crisis.Country);
+
+        if (advisor.GetPowerBaseStanding(
+                PowerBaseType.Military) >= 78)
+        {
+            return PoliticalCrisisResponse
+                .EmergencyMobilisation;
+        }
+
+        return advisor.Position switch
+        {
+            Position.Marshal =>
+                PoliticalCrisisResponse
+                    .EmergencyMobilisation,
+
+            Position.Chancellor
+                when score <= -30 ||
+                     crisis.Country.WarExhaustion >= 50 =>
+                PoliticalCrisisResponse
+                    .SeekPeaceSettlement,
+
+            Position.Chancellor =>
+                PoliticalCrisisResponse
+                    .DismissMarshal,
+
+            Position.Treasurer
+                when crisis.Country.LastMonthlyBalance < 0 ||
+                     DebtRatio(crisis.Country) >= 0.15m =>
+                PoliticalCrisisResponse
+                    .SeekPeaceSettlement,
+
+            Position.Treasurer =>
+                PoliticalCrisisResponse
+                    .DismissMarshal,
+
+            _ => PoliticalCrisisResponse
+                .SeekPeaceSettlement
+        };
+    }
+
     private static string AdviceReason(
         GameState state,
         PoliticalCrisis crisis,
@@ -577,6 +663,23 @@ internal static class CrisisSystem
             PoliticalCrisisResponse
                 .ConveneSuccessionSettlement =>
                 "argues that an heir will be safer if major institutions and magnates publicly bind themselves to the settlement before the throne becomes vacant.",
+
+            PoliticalCrisisResponse
+                .EmergencyMobilisation =>
+                advisor.GetPowerBaseStanding(
+                    PowerBaseType.Military) >= 78
+                    ? "is closely tied to the military establishment and argues that the state must prove it can still sustain the war before enemies and domestic rivals smell collapse."
+                    : "believes the military position is still recoverable if the government is willing to spend money and political capital immediately.",
+
+            PoliticalCrisisResponse
+                .DismissMarshal =>
+                "argues that confidence in the present command has become part of the problem and that changing the high command may restore political credibility even at the cost of short-term disruption.",
+
+            PoliticalCrisisResponse
+                .SeekPeaceSettlement =>
+                advisor.Position == Position.Treasurer
+                    ? "warns that continuing the war is becoming a fiscal decision as much as a military one and prefers a negotiated loss to an uncontrolled financial collapse."
+                    : "believes the military position no longer justifies the domestic cost and wants the Chancellor to test what settlement the enemy will actually accept.",
 
             _ => "offers no clear reasoning."
         };
@@ -774,6 +877,32 @@ internal static class CrisisSystem
                     StartedOn = state.Date
                 },
                 reports);
+
+            activeCount++;
+        }
+
+        if (activeCount >= MaxActiveCrises)
+            return;
+
+        var warEmergency =
+            FindWarEmergency(state, country);
+
+        if (warEmergency is not null &&
+            !HasRecentWarCrisis(
+                state,
+                country,
+                warEmergency))
+        {
+            AddCrisis(
+                state,
+                new PoliticalCrisis
+                {
+                    Country = country,
+                    Type = PoliticalCrisisType.WarEmergency,
+                    RelatedWarId = warEmergency.Id,
+                    StartedOn = state.Date
+                },
+                reports);
         }
     }
 
@@ -892,6 +1021,11 @@ internal static class CrisisSystem
             PoliticalCrisisType.SuccessionDispute =>
                 SuccessionIsSettled(crisis.Country),
 
+            PoliticalCrisisType.WarEmergency =>
+                WarEmergencyResolved(
+                    state,
+                    crisis),
+
             _ => true
         };
     }
@@ -945,6 +1079,16 @@ internal static class CrisisSystem
                             candidates[1].Influence +
                             stage);
                 }
+                break;
+
+            case PoliticalCrisisType.WarEmergency:
+                crisis.Country.Government.Stability -=
+                    0.22 * stage;
+                crisis.Country.PublicUnrest +=
+                    0.12 * stage;
+                crisis.Country.Ruler.ChangePowerBaseStanding(
+                    PowerBaseType.Military,
+                    -stage);
                 break;
         }
     }
@@ -1350,6 +1494,9 @@ internal static class CrisisSystem
 
             PoliticalCrisisType.SuccessionDispute =>
                 SuccessionBreak(state, crisis),
+
+            PoliticalCrisisType.WarEmergency =>
+                WarEmergencyBreak(state, crisis),
 
             _ => "The crisis breaks against the government."
         };
