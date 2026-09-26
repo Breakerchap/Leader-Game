@@ -303,6 +303,52 @@ public class CrisisSystemTests
     }
 
     [Fact]
+    public void LeavingGovernment_EndsPlayerControlOfGovernmentCrisis()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var region = country.FindRegion("hochwald")!;
+
+        region.Unrest = 82;
+        region.CrownControl = 28;
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.RegionalBreakdown,
+            Region = region,
+            StartedOn = state.Date
+        };
+        state.PoliticalCrises.Add(crisis);
+
+        country.Ruler = country.PoliticalFigures.First(character =>
+            character.Id == 6);
+
+        Assert.False(state.Player.IsInPower);
+
+        var reports = CrisisSystem.ProcessMonth(state).ToList();
+
+        Assert.Equal(
+            PoliticalCrisisStatus.Resolved,
+            crisis.Status);
+        Assert.Contains(
+            reports,
+            report => report.Title.Contains(
+                "passes to the new government",
+                StringComparison.OrdinalIgnoreCase));
+
+        var response = CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.FundRegionalRelief);
+
+        Assert.Contains(
+            "outside government",
+            response.Details,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void CrisisState_RoundTripsThroughSave()
     {
         var state = DemoScenario.Create();
