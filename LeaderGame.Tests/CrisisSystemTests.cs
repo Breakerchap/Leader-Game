@@ -687,6 +687,112 @@ public class CrisisSystemTests
     }
 
     [Fact]
+    public void WarEmergency_ProducesCompetingCabinetStrategies()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var opponent = state.FindCountry("nordmark")!;
+
+        var war = new War
+        {
+            Attacker = country,
+            Defender = opponent,
+            StartedOn = state.Date,
+            WarScore = -45
+        };
+        war.MonthsActive = 5;
+        state.Wars.Add(war);
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.WarEmergency,
+            RelatedWarId = war.Id,
+            StartedOn = state.Date
+        };
+
+        var advice =
+            CrisisSystem.GetAdvice(
+                state,
+                crisis);
+
+        Assert.Contains(
+            advice,
+            item =>
+                item.Advisor.Position ==
+                    Position.Marshal &&
+                item.Response ==
+                    PoliticalCrisisResponse.EmergencyMobilisation);
+
+        Assert.Contains(
+            advice,
+            item =>
+                item.Advisor.Position ==
+                    Position.Chancellor &&
+                item.Response ==
+                    PoliticalCrisisResponse.SeekPeaceSettlement);
+
+        Assert.Contains(
+            advice,
+            item =>
+                item.Advisor.Position ==
+                    Position.Treasurer &&
+                item.Response ==
+                    PoliticalCrisisResponse.DismissMarshal);
+    }
+
+    [Fact]
+    public void WarCrisisSummary_DoesNotLeakExactHiddenMilitaryValues()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var opponent = state.FindCountry("nordmark")!;
+
+        country.ArmyReadiness = 37;
+        country.WarExhaustion = 63;
+
+        var war = new War
+        {
+            Attacker = country,
+            Defender = opponent,
+            StartedOn = state.Date,
+            WarScore = -45
+        };
+        war.MonthsActive = 5;
+        state.Wars.Add(war);
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.WarEmergency,
+            RelatedWarId = war.Id,
+            StartedOn = state.Date
+        };
+
+        var summary =
+            CrisisSystem.Summary(
+                state,
+                crisis);
+
+        Assert.DoesNotContain(
+            "37",
+            summary,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            "63",
+            summary,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            "poor",
+            summary,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            "severe",
+            summary,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void MilitaryBreakingPoint_CreatesPressureToEndWar()
     {
         var state = DemoScenario.Create();
