@@ -253,6 +253,9 @@ public class SaveGameTests
 
         state.Player.Country.Government.MonthsUntilElection = 5;
         state.Player.ElectionsWon = 2;
+        state.Player.MonthsOutOfPower = 7;
+        state.Player.ConsecutiveLowViabilityMonths = 3;
+        state.Player.PoliticalViability = 41.5;
 
         var loaded = GameSaveService.Deserialize(
             GameSaveService.Serialize(state));
@@ -269,6 +272,9 @@ public class SaveGameTests
             6,
             loaded.Player.Country.Government.ElectionCampaignMonths);
         Assert.Equal(2, loaded.Player.ElectionsWon);
+        Assert.Equal(7, loaded.Player.MonthsOutOfPower);
+        Assert.Equal(3, loaded.Player.ConsecutiveLowViabilityMonths);
+        Assert.Equal(41.5, loaded.Player.PoliticalViability);
     }
 
     [Fact]
