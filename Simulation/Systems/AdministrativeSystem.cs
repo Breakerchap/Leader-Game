@@ -324,12 +324,12 @@ internal static class AdministrativeSystem
         AdministrativeDevelopment development) =>
         development switch
         {
-            AdministrativeDevelopment.PatrimonialCourt => 0.80m,
-            AdministrativeDevelopment.CollegiateCivic => 0.95m,
-            AdministrativeDevelopment.CentralisingBureaucracy => 1.05m,
-            AdministrativeDevelopment.FiscalMilitaryState => 1.20m,
-            AdministrativeDevelopment.ProfessionalCivilService => 1.35m,
-            AdministrativeDevelopment.MassAdministrativeState => 1.60m,
+            AdministrativeDevelopment.PatrimonialCourt => 1.00m,
+            AdministrativeDevelopment.CollegiateCivic => 1.05m,
+            AdministrativeDevelopment.CentralisingBureaucracy => 1.15m,
+            AdministrativeDevelopment.FiscalMilitaryState => 1.30m,
+            AdministrativeDevelopment.ProfessionalCivilService => 1.50m,
+            AdministrativeDevelopment.MassAdministrativeState => 1.80m,
             _ => 1.00m
         };
 
