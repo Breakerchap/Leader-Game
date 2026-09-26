@@ -1,5 +1,6 @@
 using LeaderGame.Presentation;
 using LeaderGame.Simulation;
+using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Persistence;
@@ -56,7 +57,7 @@ public class RegionalSystemTests
         var country = state.Player.Country;
         var region = country.FindRegion("hochwald")!;
         var chancellor = country.GetOfficeHolder(
-            Simulation.Characters.Position.Chancellor)!;
+            Position.Chancellor)!;
 
         var control = region.CrownControl;
         var unrest = region.Unrest;
@@ -87,7 +88,7 @@ public class RegionalSystemTests
         var country = state.Player.Country;
         var region = country.FindRegion("eastern-marches")!;
         var chancellor = country.GetOfficeHolder(
-            Simulation.Characters.Position.Chancellor)!;
+            Position.Chancellor)!;
 
         var control = region.CrownControl;
         var unrest = region.Unrest;
@@ -144,7 +145,7 @@ public class RegionalSystemTests
         var country = state.Player.Country;
         var region = country.FindRegion("westmark")!;
         var chancellor = country.GetOfficeHolder(
-            Simulation.Characters.Position.Chancellor)!;
+            Position.Chancellor)!;
 
         region.Unrest = 61;
         region.CrownControl = 47;
