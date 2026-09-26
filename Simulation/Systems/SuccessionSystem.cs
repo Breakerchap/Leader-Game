@@ -1,5 +1,6 @@
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
+using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Reports;
 
 namespace LeaderGame.Simulation.Systems;
@@ -32,6 +33,20 @@ internal static class SuccessionSystem
 
             successor.Position = null;
             country.Ruler = successor;
+
+            ResolveSuccessionCrisisThreads(
+                state,
+                country);
+
+            var accessionReport =
+                ApplyAccessionPolitics(
+                    state,
+                    country,
+                    deadRuler,
+                    successor);
+
+            if (accessionReport is not null)
+                yield return accessionReport;
 
             var isRepublicanInterim =
                 country.Government.HoldsScheduledElections;
@@ -88,6 +103,144 @@ internal static class SuccessionSystem
                             : $"{successor.FullName} becomes ruler of {country.Name}.");
             }
         }
+    }
+
+    private static void ResolveSuccessionCrisisThreads(
+        GameState state,
+        Country country)
+    {
+        foreach (var crisis in state.PoliticalCrises.Where(crisis =>
+                     crisis.Status ==
+                         PoliticalCrisisStatus.Active &&
+                     crisis.Type ==
+                         PoliticalCrisisType.SuccessionDispute &&
+                     ReferenceEquals(
+                         crisis.Country,
+                         country)))
+        {
+            crisis.Status =
+                PoliticalCrisisStatus.Resolved;
+            crisis.ResolvedOn = state.Date;
+            crisis.AwaitingDecision = false;
+        }
+    }
+
+    private static SimulationReport? ApplyAccessionPolitics(
+        GameState state,
+        Country country,
+        Character deadRuler,
+        Character successor)
+    {
+        if (country.Government.HoldsScheduledElections)
+            return null;
+
+        var stabilityChange =
+            successor.Legitimacy switch
+            {
+                >= 80 => 3.0,
+                >= 68 => 1.0,
+                >= 55 => -1.5,
+                >= 40 => -3.5,
+                _ => -6.0
+            };
+
+        country.Government.Stability +=
+            stabilityChange;
+
+        var rivalBloc = state.PoliticalBlocs
+            .Where(bloc =>
+                bloc.IsActive &&
+                ReferenceEquals(
+                    bloc.Country,
+                    country) &&
+                !ReferenceEquals(
+                    bloc.Leader,
+                    successor) &&
+                bloc.Leader.IsPoliticallyActive &&
+                country.SuccessionOrder.Contains(
+                    bloc.Leader))
+            .OrderByDescending(bloc =>
+                bloc.Cohesion)
+            .FirstOrDefault();
+
+        if (rivalBloc is null ||
+            rivalBloc.Cohesion < 50)
+        {
+            if (!ReferenceEquals(
+                    country,
+                    state.Player.Country))
+            {
+                return null;
+            }
+
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Politics,
+                $"{successor.FullName}'s accession begins",
+                stabilityChange >= 0
+                    ? $"{successor.FullName} inherits with enough recognised legitimacy that the first transfer of authority is comparatively orderly."
+                    : $"{successor.FullName} inherits the throne, but the new ruler's limited legitimacy immediately makes the regime less secure.");
+        }
+
+        var challenge =
+            Math.Clamp(
+                rivalBloc.Cohesion / 8.0 +
+                rivalBloc.Leader.Influence / 12.0 -
+                successor.Legitimacy / 15.0,
+                3.0,
+                14.0);
+
+        country.Government.Stability -=
+            challenge;
+        successor.Legitimacy -=
+            (int)Math.Round(
+                challenge / 3.0);
+        rivalBloc.Cohesion =
+            Math.Min(
+                100,
+                rivalBloc.Cohesion + 5);
+
+        if (ReferenceEquals(
+                country,
+                state.Player.Country) &&
+            state.Player.Lineage.Contains(
+                successor) &&
+            !state.PoliticalCrises.Any(crisis =>
+                crisis.Status ==
+                    PoliticalCrisisStatus.Active &&
+                crisis.Type ==
+                    PoliticalCrisisType.PoliticalStandoff &&
+                crisis.RelatedBlocId ==
+                    rivalBloc.Id))
+        {
+            state.PoliticalCrises.Add(
+                new PoliticalCrisis
+                {
+                    Country = country,
+                    Type =
+                        PoliticalCrisisType.PoliticalStandoff,
+                    RelatedBlocId = rivalBloc.Id,
+                    StartedOn = state.Date,
+                    Stage = rivalBloc.Cohesion >= 75
+                        ? 2
+                        : 1,
+                    AwaitingDecision = true
+                });
+        }
+
+        if (!ReferenceEquals(
+                country,
+                state.Player.Country))
+        {
+            return null;
+        }
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Politics,
+            $"{successor.FullName}'s accession is contested",
+            $"{successor.FullName} succeeds {deadRuler.FullName}, but {rivalBloc.Leader.FullName}'s succession faction refuses to disappear. " +
+            "The transfer itself succeeds; the danger is what happens next, as the new ruler must either divide, compromise with or defeat the rival coalition.");
     }
 
     private static Character? FindSuccessor(
