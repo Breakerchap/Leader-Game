@@ -38,7 +38,21 @@ internal static class EconomySystem
 
     public static decimal CalculateMonthlyTaxRevenue(Country country)
     {
-        return country.Gdp *
+        if (country.Regions.Count == 0)
+        {
+            return country.Gdp *
+                   country.TaxRate *
+                   country.AdministrativeEfficiency /
+                   12m;
+        }
+
+        var regionalCollection =
+            country.Regions.Sum(region =>
+                country.Gdp *
+                region.EconomicShare *
+                RegionalSystem.GetTaxCollectionFactor(region));
+
+        return regionalCollection *
                country.TaxRate *
                country.AdministrativeEfficiency /
                12m;
