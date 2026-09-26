@@ -777,6 +777,68 @@ public sealed class GameSession
             $"{AdministrativeReformSystem.Describe(reform)} queued for {office.Name}.");
     }
 
+    public void TakeRegionalAction(
+        string actionName,
+        string regionId)
+    {
+        var state = _simulation.State;
+        var country = state.Player.Country;
+
+        if (!state.Player.IsInPower)
+        {
+            Refresh("Your lineage cannot direct regional government while it is outside power.");
+            return;
+        }
+
+        if (state.PendingOrders.OfType<RegionalActionOrder>().Any())
+        {
+            Refresh("A major regional initiative is already being prepared this month.");
+            return;
+        }
+
+        var region = country.FindRegion(regionId);
+
+        if (region is null)
+        {
+            Refresh("Choose a valid region first.");
+            return;
+        }
+
+        var chancellor =
+            country.GetOfficeHolder(Position.Chancellor);
+
+        if (chancellor is null)
+        {
+            Refresh("The Chancellery is vacant. There is nobody to coordinate regional policy.");
+            return;
+        }
+
+        var normalisedAction = actionName
+            .Replace(" ", string.Empty, StringComparison.Ordinal);
+
+        if (!Enum.TryParse<RegionalActionType>(
+                normalisedAction,
+                ignoreCase: true,
+                out var action))
+        {
+            Refresh("That regional strategy is not recognised.");
+            return;
+        }
+
+        _simulation.SubmitOrder(new RegionalActionOrder
+        {
+            Issuer = country.Ruler,
+            Recipient = chancellor,
+            IssuedOn = state.Date,
+            Country = country,
+            Region = region,
+            ActionType = action
+        });
+
+        Refresh(
+            $"{RegionalSystem.ActionLabel(action)} queued in {region.Name}.");
+    }
+
     public void TakeOppositionAction(
         string actionName,
         string powerBaseName)
@@ -2139,6 +2201,9 @@ public sealed class GameSession
             AdministrativeReformOrder typed =>
                 $"{AdministrativeReformSystem.Describe(typed.ReformType)} in " +
                 $"{typed.Country.GetAdministrativeOffice(typed.Function)?.Name ?? "the administration"}.",
+
+            RegionalActionOrder typed =>
+                $"{RegionalSystem.ActionLabel(typed.ActionType)} in {typed.Region.Name}.",
 
             _ => order.GetType().Name
         };
