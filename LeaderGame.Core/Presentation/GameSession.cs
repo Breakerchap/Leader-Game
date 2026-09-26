@@ -736,21 +736,6 @@ public sealed class GameSession
         var target = state.FindCountry(countryId);
         var chancellor = country.GetOfficeHolder(Position.Chancellor);
 
-        var normalisedAim =
-            aimName.Replace(
-                " ",
-                string.Empty,
-                StringComparison.Ordinal);
-
-        if (!Enum.TryParse<WarAim>(
-                normalisedAim,
-                ignoreCase: true,
-                out var aim))
-        {
-            Refresh("That war aim is not recognised.");
-            return;
-        }
-
         if (target is null || ReferenceEquals(target, country))
         {
             Refresh("Choose another country for diplomatic outreach.");
@@ -831,6 +816,21 @@ public sealed class GameSession
         var country = state.Player.Country;
         var target = state.FindCountry(countryId);
         var chancellor = country.GetOfficeHolder(Position.Chancellor);
+
+        var normalisedAim =
+            aimName.Replace(
+                " ",
+                string.Empty,
+                StringComparison.Ordinal);
+
+        if (!Enum.TryParse<WarAim>(
+                normalisedAim,
+                ignoreCase: true,
+                out var aim))
+        {
+            Refresh("That war aim is not recognised.");
+            return;
+        }
 
         if (target is null || ReferenceEquals(target, country))
         {
