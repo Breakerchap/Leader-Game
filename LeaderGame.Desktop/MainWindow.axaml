@@ -455,6 +455,54 @@
                           </Grid>
 
                           <ItemsControl
+                              ItemsSource="{Binding Advice}"
+                              IsVisible="{Binding CanRespond}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical" Spacing="5" />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate>
+                                <Border
+                                    Background="#171B20"
+                                    BorderBrush="#333E49"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="8">
+                                  <Grid ColumnDefinitions="150,190,*" ColumnSpacing="10">
+                                    <StackPanel Spacing="2">
+                                      <TextBlock
+                                          Text="{Binding Advisor}"
+                                          FontWeight="SemiBold"
+                                          FontSize="11" />
+                                      <TextBlock
+                                          Text="{Binding Office}"
+                                          FontSize="9"
+                                          Classes="muted" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="2">
+                                      <TextBlock Text="RECOMMENDS" Classes="eyebrow" FontSize="8" />
+                                      <TextBlock
+                                          Text="{Binding Recommendation}"
+                                          FontSize="11"
+                                          Foreground="#D7E0E9"
+                                          TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        Text="{Binding Reason}"
+                                        FontSize="10"
+                                        Classes="muted"
+                                        TextWrapping="Wrap"
+                                        VerticalAlignment="Center" />
+                                  </Grid>
+                                </Border>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+
+                          <ItemsControl
                               ItemsSource="{Binding Choices}"
                               IsVisible="{Binding CanRespond}">
                             <ItemsControl.ItemsPanel>
