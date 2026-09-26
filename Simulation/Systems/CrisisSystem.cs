@@ -122,6 +122,8 @@ internal static class CrisisSystem
                 ApplySuccessionResponse(state, crisis, response),
             PoliticalCrisisType.WarEmergency =>
                 ApplyWarResponse(state, crisis, response),
+            PoliticalCrisisType.CabinetRift =>
+                ApplyCabinetRiftResponse(state, crisis, response),
             _ => "No response was carried out."
         };
 
@@ -167,6 +169,8 @@ internal static class CrisisSystem
                 "Succession factions are hardening",
             PoliticalCrisisType.WarEmergency =>
                 "Military setbacks are becoming a government crisis",
+            PoliticalCrisisType.CabinetRift =>
+                $"{FindRelatedMinister(crisis)?.FullName ?? "A senior minister"} is breaking with the government",
             _ => "Political crisis"
         };
 
@@ -192,6 +196,9 @@ internal static class CrisisSystem
 
             PoliticalCrisisType.WarEmergency =>
                 WarEmergencySummary(state, crisis),
+
+            PoliticalCrisisType.CabinetRift =>
+                CabinetRiftSummary(state, crisis),
 
             _ => "The government faces an unresolved political emergency."
         };
@@ -290,6 +297,22 @@ internal static class CrisisSystem
                     "Send the Chancellor with real peace terms. The enemy can still refuse if it believes continued war is better.")
             ],
 
+            PoliticalCrisisType.CabinetRift =>
+            [
+                new(
+                    PoliticalCrisisResponse.ReconcileMinister,
+                    "Reconcile with the minister",
+                    "Spend patronage and political capital to repair the relationship. Restores trust, but rewards the minister and makes them more important."),
+                new(
+                    PoliticalCrisisResponse.AcceptMinisterResignation,
+                    "Accept the resignation",
+                    "Let the minister leave rather than keep governing through open hostility. Creates a real vacancy and may strengthen opposition."),
+                new(
+                    PoliticalCrisisResponse.EnforceMinisterLoyalty,
+                    "Force compliance",
+                    "Use fear and royal authority to keep the minister in office. Can restore short-term obedience while making the personal relationship substantially worse.")
+            ],
+
             _ => []
         };
 
@@ -338,6 +361,12 @@ internal static class CrisisSystem
 
             PoliticalCrisisType.WarEmergency =>
                 WarAdvice(
+                    state,
+                    crisis,
+                    advisor),
+
+            PoliticalCrisisType.CabinetRift =>
+                CabinetRiftAdvice(
                     state,
                     crisis,
                     advisor),
