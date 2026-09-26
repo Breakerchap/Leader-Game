@@ -2,6 +2,7 @@ using LeaderGame.Simulation;
 using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Countries;
 using LeaderGame.Simulation.Persistence;
+using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
 using LeaderGame.Simulation.Systems;
 
@@ -58,7 +59,7 @@ public class LineageDevelopmentTests
         Assert.Contains(recruit, country.PoliticalFigures);
         Assert.True(
             recruit.GetPowerBaseStanding(
-                Politics.PowerBaseType.Party) >= 70);
+                PowerBaseType.Party) >= 70);
         Assert.Contains(
             reports,
             report => report.Title.Contains(
