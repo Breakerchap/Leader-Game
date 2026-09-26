@@ -936,6 +936,33 @@ internal static class CrisisSystem
             debtRatio >= 0.12m;
     }
 
+    private static War? FindWarEmergency(
+        GameState state,
+        Country country)
+    {
+        return state.Wars
+            .Where(war =>
+                war.Status == WarStatus.Active &&
+                war.IsParticipant(country) &&
+                war.MonthsActive >= 2)
+            .Where(war =>
+            {
+                var score =
+                    CountryWarScore(
+                        war,
+                        country);
+
+                return score <= -30 ||
+                       country.WarExhaustion >= 55 ||
+                       country.ArmyReadiness <= 38;
+            })
+            .OrderByDescending(war =>
+                -CountryWarScore(war, country) +
+                country.WarExhaustion * 0.7 +
+                (100 - country.ArmyReadiness) * 0.5)
+            .FirstOrDefault();
+    }
+
     private static bool ShouldTriggerSuccessionCrisis(
         Country country)
     {
@@ -1309,6 +1336,161 @@ internal static class CrisisSystem
         }
     }
 
+    private static string ApplyWarResponse(
+        GameState state,
+        PoliticalCrisis crisis,
+        PoliticalCrisisResponse response)
+    {
+        var country = crisis.Country;
+        var war =
+            FindRelatedWar(
+                state,
+                crisis);
+
+        if (war is null ||
+            war.Status != WarStatus.Active)
+        {
+            return
+                "The war has already ended, so the military emergency no longer requires a government response.";
+        }
+
+        switch (response)
+        {
+            case PoliticalCrisisResponse.EmergencyMobilisation:
+            {
+                var cost =
+                    country.Gdp * 0.004m;
+                var reinforcements =
+                    Math.Max(
+                        250,
+                        (int)Math.Round(
+                            country.ArmySize * 0.08));
+
+                PayFromTreasury(
+                    country,
+                    cost);
+
+                country.ArmySize +=
+                    reinforcements;
+                country.ArmyReadiness += 10;
+                country.WarExhaustion += 4;
+                country.PublicUnrest += 3;
+                country.ArmyFunding =
+                    Math.Max(
+                        country.ArmyFunding,
+                        1.15m);
+
+                country.Ruler.ChangePowerBaseStanding(
+                    PowerBaseType.Military,
+                    5);
+                country.Ruler.ChangePowerBaseStanding(
+                    PowerBaseType.Merchants,
+                    -3);
+                country.Ruler.ChangePowerBaseStanding(
+                    PowerBaseType.Peasantry,
+                    -3);
+
+                return
+                    $"The government spends roughly {cost:N0} on emergency mobilisation and calls up about {reinforcements:N0} additional troops. Readiness improves and the army feels supported, but debt or treasury pressure, public resentment and war exhaustion all rise.";
+            }
+
+            case PoliticalCrisisResponse.DismissMarshal:
+            {
+                var marshal =
+                    country.GetOfficeHolder(
+                        Position.Marshal);
+
+                if (marshal is null)
+                {
+                    return
+                        "There is no serving Marshal to dismiss. The absence of a recognised commander remains part of the military emergency.";
+                }
+
+                marshal.Position = null;
+                marshal.Influence =
+                    Math.Max(
+                        0,
+                        marshal.Influence - 12);
+
+                country.ArmyReadiness -= 6;
+                country.Government.Stability += 2;
+                country.Ruler.ChangePowerBaseStanding(
+                    PowerBaseType.Military,
+                    -4);
+
+                var relationship =
+                    state.Relationships.GetOrCreate(
+                        marshal,
+                        country.Ruler);
+                relationship.ChangeOpinion(-18);
+                relationship.ChangeTrust(-12);
+
+                return
+                    $"{marshal.FullName} is dismissed and made to carry much of the blame for the military situation. The government gains some immediate political distance from the failures, but command is disrupted and the Marshal's office is now vacant.";
+            }
+
+            case PoliticalCrisisResponse.SeekPeaceSettlement:
+            {
+                var chancellor =
+                    country.GetOfficeHolder(
+                        Position.Chancellor);
+
+                if (chancellor is null)
+                {
+                    return
+                        "The Chancellery is vacant, so the government cannot mount a credible formal peace negotiation.";
+                }
+
+                var score =
+                    CountryWarScore(
+                        war,
+                        country);
+
+                var terms =
+                    score <= -45
+                        ? PeaceOfferTerms.OfferReparations
+                        : PeaceOfferTerms.WhitePeace;
+
+                var order = new OfferPeaceOrder
+                {
+                    Issuer = country.Ruler,
+                    Recipient = chancellor,
+                    IssuedOn = state.Date,
+                    Country = country,
+                    War = war,
+                    Terms = terms
+                };
+
+                var result =
+                    OrderProcessor.Process(
+                        state,
+                        order);
+
+                if (order.Status ==
+                    OrderStatus.Completed)
+                {
+                    country.PublicUnrest -= 2;
+                    country.Government.Stability += 1;
+                    country.Ruler.ChangePowerBaseStanding(
+                        PowerBaseType.Military,
+                        -2);
+
+                    return
+                        $"The ruler authorises immediate peace talks through {chancellor.FullName}. {result.Details} Ending the war eases domestic pressure, although military interests resent accepting a settlement from a weak position.";
+                }
+
+                country.Government.Stability -= 1;
+
+                return
+                    $"The ruler authorises immediate peace talks through {chancellor.FullName}. {result.Details} The failed negotiation leaves the military emergency unresolved.";
+            }
+
+            default:
+                return
+                    "No military crisis response was carried out.";
+        }
+    }
+
     private static string ApplySuccessionResponse(
         GameState state,
         PoliticalCrisis crisis,
@@ -1592,6 +1774,65 @@ internal static class CrisisSystem
             "The confrontation badly damages the ruler's legitimacy and leaves the government politically fractured.";
     }
 
+    private static string WarEmergencyBreak(
+        GameState state,
+        PoliticalCrisis crisis)
+    {
+        var country =
+            crisis.Country;
+        var war =
+            FindRelatedWar(
+                state,
+                crisis);
+
+        country.Government.Stability -= 7;
+        country.Ruler.Legitimacy -= 4;
+        country.ArmyReadiness -= 7;
+
+        var marshal =
+            country.GetOfficeHolder(
+                Position.Marshal);
+
+        if (marshal is not null)
+        {
+            marshal.Influence =
+                Math.Max(
+                    0,
+                    marshal.Influence - 8);
+        }
+
+        if (war is not null &&
+            war.Status == WarStatus.Active)
+        {
+            war.SetStance(
+                country,
+                WarStance.Defensive);
+        }
+
+        if (!state.PowerBaseDemands.Any(demand =>
+                !demand.IsResolved &&
+                ReferenceEquals(
+                    demand.Country,
+                    country) &&
+                demand.Type ==
+                    PowerBaseDemandType.EndWar))
+        {
+            state.PowerBaseDemands.Add(
+                new PowerBaseDemand
+                {
+                    Country = country,
+                    PowerBase =
+                        PowerBaseType.Merchants,
+                    Type =
+                        PowerBaseDemandType.EndWar,
+                    TargetValue = 0m
+                });
+        }
+
+        return
+            "The government can no longer contain the domestic consequences of the failing war. Command confidence collapses, the army is forced onto the defensive, the ruler loses legitimacy and organised interests begin openly demanding an end to the conflict.";
+    }
+
     private static string SuccessionBreak(
         GameState state,
         PoliticalCrisis crisis)
@@ -1698,6 +1939,105 @@ internal static class CrisisSystem
 
         return
             $"{candidates[0].FullName} stands first in the succession, while {candidates[1].FullName} remains a plausible focus for rival factions. The problem is not the legal order alone: elites are deciding which future ruler they can live with.";
+    }
+
+    private static War? FindRelatedWar(
+        GameState state,
+        PoliticalCrisis crisis)
+    {
+        if (!crisis.RelatedWarId.HasValue)
+            return null;
+
+        return state.Wars.FirstOrDefault(war =>
+            war.Id ==
+                crisis.RelatedWarId.Value);
+    }
+
+    private static double CountryWarScore(
+        War war,
+        Country country) =>
+        ReferenceEquals(
+            war.Attacker,
+            country)
+            ? war.WarScore
+            : -war.WarScore;
+
+    private static bool WarEmergencyResolved(
+        GameState state,
+        PoliticalCrisis crisis)
+    {
+        var war =
+            FindRelatedWar(
+                state,
+                crisis);
+
+        if (war is null ||
+            war.Status != WarStatus.Active)
+        {
+            return true;
+        }
+
+        return
+            CountryWarScore(
+                war,
+                crisis.Country) > -15 &&
+            crisis.Country.WarExhaustion < 48 &&
+            crisis.Country.ArmyReadiness > 42;
+    }
+
+    private static string WarEmergencySummary(
+        GameState state,
+        PoliticalCrisis crisis)
+    {
+        var war =
+            FindRelatedWar(
+                state,
+                crisis);
+
+        if (war is null ||
+            war.Status != WarStatus.Active)
+        {
+            return
+                "The military emergency is losing relevance because the associated war is no longer active.";
+        }
+
+        var opponent =
+            war.OpponentOf(
+                crisis.Country);
+        var score =
+            CountryWarScore(
+                war,
+                crisis.Country);
+
+        var position = score switch
+        {
+            <= -65 => "close to military collapse",
+            <= -40 => "badly losing",
+            <= -20 => "losing",
+            < 20 => "contested",
+            _ => "militarily favourable"
+        };
+
+        return
+            $"{crisis.Country.Name} is {position} against {opponent.Name}. Army readiness is {crisis.Country.ArmyReadiness:F0}/100 and war exhaustion is {crisis.Country.WarExhaustion:F0}/100. The military problem is now damaging the government's domestic authority.";
+    }
+
+    private static bool HasRecentWarCrisis(
+        GameState state,
+        Country country,
+        War war)
+    {
+        return state.PoliticalCrises.Any(crisis =>
+            ReferenceEquals(
+                crisis.Country,
+                country) &&
+            crisis.Type ==
+                PoliticalCrisisType.WarEmergency &&
+            crisis.RelatedWarId ==
+                war.Id &&
+            MonthsSinceEndOrStart(
+                crisis,
+                state.Date) < 6);
     }
 
     private static PoliticalBloc? FindRelatedBloc(
