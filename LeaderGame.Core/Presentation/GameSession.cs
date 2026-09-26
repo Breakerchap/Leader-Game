@@ -1245,12 +1245,22 @@ public sealed class GameSession
         };
 
         var hasElection = country.Government.HoldsScheduledElections;
+        var isCouncilElection =
+            country.Government.ElectionMethod ==
+            ElectionMethod.CouncilElection;
+
         var politicalCycle = hasElection
-            ? country.Government.MonthsUntilElection switch
-            {
-                <= 1 => "Election next month",
-                var months => $"Election in {months} months"
-            }
+            ? isCouncilElection
+                ? country.Government.MonthsUntilElection switch
+                {
+                    <= 1 => "Council election next month",
+                    var months => $"Council election in {months} months"
+                }
+                : country.Government.MonthsUntilElection switch
+                {
+                    <= 1 => "Election next month",
+                    var months => $"Election in {months} months"
+                }
             : "Hereditary succession";
 
         var electionNominee = hasElection
@@ -1260,7 +1270,10 @@ public sealed class GameSession
         var politicalCycleDetail = hasElection
             ? country.Government.MonthsUntilElection <=
               country.Government.ElectionCampaignMonths
-                ? "Campaign underway. Visible field: " +
+                ? (isCouncilElection
+                    ? "Factional canvassing is underway inside the " +
+                      $"{InstitutionSystem.BodyName(country.Government.LegislativeBody)}. Visible field: "
+                    : "Campaign underway. Visible field: ") +
                   string.Join(
                       ", ",
                       ElectionSystem
@@ -1269,8 +1282,11 @@ public sealed class GameSession
                   (electionNominee is null
                       ? string.Empty
                       : $". {state.Player.Lineage.Name} nominee: {electionNominee.FullName}.")
-                : $"Campaign season begins in " +
-                  $"{Math.Max(0, country.Government.MonthsUntilElection - country.Government.ElectionCampaignMonths)} months."
+                : isCouncilElection
+                    ? $"Council manoeuvring begins in " +
+                      $"{Math.Max(0, country.Government.MonthsUntilElection - country.Government.ElectionCampaignMonths)} months."
+                    : $"Campaign season begins in " +
+                      $"{Math.Max(0, country.Government.MonthsUntilElection - country.Government.ElectionCampaignMonths)} months."
             : country.SuccessionOrder.FirstOrDefault(candidate =>
                   candidate.IsPoliticallyActive) is { } successor
                 ? $"Current first successor: {successor.FullName}."
@@ -1293,13 +1309,17 @@ public sealed class GameSession
             ElectionSystem.GetActivePromise(state, country);
 
         var electionPromiseText = latestElectionPromise is null
-            ? "No public campaign promise."
+            ? isCouncilElection
+                ? "No electoral pledge."
+                : "No public campaign promise."
             : ElectionSystem.DescribePromise(latestElectionPromise);
 
         var electionPromiseStatus = latestElectionPromise?.Status switch
         {
             ElectionPromiseStatus.Campaigning =>
-                "Campaign commitment",
+                isCouncilElection
+                    ? "Council-election pledge"
+                    : "Campaign commitment",
             ElectionPromiseStatus.AwaitingFulfilment =>
                 $"{Math.Max(0, 6 - latestElectionPromise.MonthsSinceElection)} months left to deliver",
             ElectionPromiseStatus.Fulfilled =>
