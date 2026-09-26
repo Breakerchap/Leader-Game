@@ -175,6 +175,13 @@ public sealed record EconomyView(
     IReadOnlyList<MetricCardView> Summary,
     IReadOnlyList<EconomyReportSnapshotView> History);
 
+public sealed record LegislativeProposalView(
+    Guid Id,
+    string Title,
+    string Detail,
+    string Age,
+    string Status);
+
 public sealed record GovernmentPolicyView(
     double TaxPercent,
     double ArmyFundingPercent,
@@ -183,6 +190,10 @@ public sealed record GovernmentPolicyView(
     string TreasurerName,
     string TreasurerObedience,
     string PolicyNote,
+    string LegislativeBody,
+    string LegislativeAuthority,
+    bool HasLegislation,
+    IReadOnlyList<LegislativeProposalView> Legislation,
     string Regime,
     string PoliticalCycle,
     string PoliticalCycleDetail,
