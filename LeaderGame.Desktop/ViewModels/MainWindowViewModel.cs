@@ -19,6 +19,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _selectedElectionPromise = "Tax relief";
     private string _selectedOppositionPowerBase = string.Empty;
     private string _selectedAdministrativeOffice = string.Empty;
+    private RegionView? _selectedRegion;
     private string _archiveSearchText = string.Empty;
     private string _selectedArchiveCategory = "All";
     private double _targetTaxPercent;
@@ -41,6 +42,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         _selectedAdministrativeOffice =
             View.Government.AdministrativeOffices.FirstOrDefault()?.Name ??
             string.Empty;
+        _selectedRegion =
+            View.Government.Regions.FirstOrDefault();
 
         SyncPolicyTargets();
 
@@ -191,6 +194,51 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 _session.TakeAdministrativeAction(
                     "DelegateToNotables",
                     SelectedAdministrativeOffice)));
+
+        StrengthenRegionalAdministrationCommand = new RelayCommand(_ =>
+        {
+            if (SelectedRegion is null)
+            {
+                RunAndRefresh(() =>
+                    _session.Refresh("Choose a region first."));
+                return;
+            }
+
+            RunAndRefresh(() =>
+                _session.TakeRegionalAction(
+                    "AssertCentralAuthority",
+                    SelectedRegion.Id));
+        });
+
+        NegotiateRegionalCompactCommand = new RelayCommand(_ =>
+        {
+            if (SelectedRegion is null)
+            {
+                RunAndRefresh(() =>
+                    _session.Refresh("Choose a region first."));
+                return;
+            }
+
+            RunAndRefresh(() =>
+                _session.TakeRegionalAction(
+                    "BargainWithLocalElites",
+                    SelectedRegion.Id));
+        });
+
+        InvestInRegionCommand = new RelayCommand(_ =>
+        {
+            if (SelectedRegion is null)
+            {
+                RunAndRefresh(() =>
+                    _session.Refresh("Choose a region first."));
+                return;
+            }
+
+            RunAndRefresh(() =>
+                _session.TakeRegionalAction(
+                    "InvestInRegion",
+                    SelectedRegion.Id));
+        });
 
         OrganiseOppositionSupportCommand = new RelayCommand(_ =>
             RunAndRefresh(() =>
@@ -427,6 +475,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ICommand DelegateAdministrationCommand { get; }
 
+    public ICommand StrengthenRegionalAdministrationCommand { get; }
+
+    public ICommand NegotiateRegionalCompactCommand { get; }
+
+    public ICommand InvestInRegionCommand { get; }
+
     public ICommand OrganiseOppositionSupportCommand { get; }
 
     public ICommand BuildOppositionCoalitionCommand { get; }
@@ -595,6 +649,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 return;
 
             _selectedAdministrativeOffice = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public IReadOnlyList<RegionView> RegionOptions =>
+        View.Government.Regions;
+
+    public RegionView? SelectedRegion
+    {
+        get => _selectedRegion;
+        set
+        {
+            if (Equals(_selectedRegion, value))
+                return;
+
+            _selectedRegion = value;
             OnPropertyChanged();
         }
     }
@@ -896,6 +966,20 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 string.Empty;
         }
 
+        if (SelectedRegion is null ||
+            !View.Government.Regions.Any(region =>
+                region.Id == SelectedRegion.Id))
+        {
+            SelectedRegion =
+                View.Government.Regions.FirstOrDefault();
+        }
+        else
+        {
+            SelectedRegion =
+                View.Government.Regions.First(region =>
+                    region.Id == SelectedRegion.Id);
+        }
+
         if (SelectedCampaign is null ||
             !View.Military.Campaigns.Any(campaign =>
                 campaign.Id == SelectedCampaign.Id))
@@ -917,6 +1001,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(SelectedOppositionPowerBase));
         OnPropertyChanged(nameof(AdministrativeOfficeOptions));
         OnPropertyChanged(nameof(SelectedAdministrativeOffice));
+        OnPropertyChanged(nameof(RegionOptions));
+        OnPropertyChanged(nameof(SelectedRegion));
         OnPropertyChanged(nameof(SelectedCampaign));
         OnPropertyChanged(nameof(SelectedForeignCountry));
         OnPropertyChanged(nameof(SelectedCourtFigure));
@@ -941,6 +1027,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         SelectedAdministrativeOffice =
             View.Government.AdministrativeOffices.FirstOrDefault()?.Name ??
             string.Empty;
+        SelectedRegion =
+            View.Government.Regions.FirstOrDefault();
         SelectedCampaign = View.Military.Campaigns.FirstOrDefault();
     }
 
