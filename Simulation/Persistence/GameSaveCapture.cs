@@ -377,6 +377,7 @@ public static partial class GameSaveService
             AttackerId = war.Attacker.Id,
             DefenderId = war.Defender.Id,
             StartedOn = Date(war.StartedOn),
+            AttackerAim = war.AttackerAim,
             WarScore = war.WarScore,
             MonthsActive = war.MonthsActive,
             AttackerStance = war.AttackerStance,
@@ -526,7 +527,8 @@ public static partial class GameSaveService
             DeclareWarOrder typed => snapshot with
             {
                 SourceCountryId = typed.SourceCountry.Id,
-                TargetCountryId = typed.TargetCountry.Id
+                TargetCountryId = typed.TargetCountry.Id,
+                WarAim = typed.Aim
             },
             SetWarStanceOrder typed => snapshot with
             {
