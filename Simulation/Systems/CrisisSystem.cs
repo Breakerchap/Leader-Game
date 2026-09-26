@@ -2306,6 +2306,157 @@ internal static class CrisisSystem
             $"{candidates[0].FullName} stands first in the succession, while {candidates[1].FullName} remains a plausible focus for rival factions. The problem is not the legal order alone: elites are deciding which future ruler they can live with.";
     }
 
+    private static Character? FindRelatedMinister(
+        PoliticalCrisis crisis)
+    {
+        if (!crisis.RelatedCharacterId.HasValue)
+            return null;
+
+        return crisis.Country.PoliticalFigures
+            .FirstOrDefault(character =>
+                character.Id ==
+                    crisis.RelatedCharacterId.Value);
+    }
+
+    private static bool CabinetRiftResolved(
+        GameState state,
+        PoliticalCrisis crisis)
+    {
+        var minister =
+            FindRelatedMinister(crisis);
+
+        if (minister is null ||
+            !minister.IsPoliticallyActive ||
+            !minister.Position.HasValue)
+        {
+            return true;
+        }
+
+        var relationship =
+            state.Relationships.GetOrCreate(
+                minister,
+                crisis.Country.Ruler);
+
+        var willingness =
+            PoliticalCalculations.GetOrderWillingness(
+                state,
+                crisis.Country,
+                minister,
+                crisis.Country.Ruler);
+
+        return
+            relationship.Trust >= 30 &&
+            relationship.Opinion >= -15 ||
+            relationship.Fear >= 55 &&
+            willingness >= 28;
+    }
+
+    private static string CabinetRiftSummary(
+        GameState state,
+        PoliticalCrisis crisis)
+    {
+        var minister =
+            FindRelatedMinister(crisis);
+
+        if (minister is null ||
+            !minister.Position.HasValue)
+        {
+            return
+                "The ministerial dispute is losing relevance because the office-holder has already left government.";
+        }
+
+        var relationship =
+            state.Relationships.GetOrCreate(
+                minister,
+                crisis.Country.Ruler);
+
+        var trust = relationship.Trust switch
+        {
+            >= 60 => "still substantial",
+            >= 35 => "strained",
+            >= 18 => "weak",
+            _ => "close to broken"
+        };
+
+        var personal = relationship.Opinion switch
+        {
+            >= 25 => "personally warm",
+            >= -10 => "cool",
+            >= -35 => "hostile",
+            _ => "openly hostile"
+        };
+
+        var coercion = relationship.Fear switch
+        {
+            >= 65 => " Fear is currently doing much of the work that trust no longer can.",
+            >= 35 => " The minister is also increasingly conscious of the cost of open defiance.",
+            _ => string.Empty
+        };
+
+        return
+            $"{minister.FullName}, serving as {minister.Position.Value}, now has {trust} trust in the ruler and the relationship is {personal}. " +
+            $"The issue is no longer merely personal: orders, cabinet solidarity and the minister's political network are all at risk.{coercion}";
+    }
+
+    private static void MoveMinisterTowardOpposition(
+        GameState state,
+        Country country,
+        Character minister,
+        bool forceBloc = false)
+    {
+        var existing =
+            state.PoliticalBlocs.FirstOrDefault(bloc =>
+                bloc.IsActive &&
+                ReferenceEquals(
+                    bloc.Country,
+                    country));
+
+        if (existing is not null)
+        {
+            if (!ReferenceEquals(
+                    existing.Leader,
+                    minister))
+            {
+                existing.MemberIds.Add(
+                    minister.Id);
+                existing.Cohesion =
+                    Math.Min(
+                        100,
+                        existing.Cohesion + 4);
+            }
+
+            return;
+        }
+
+        if (!forceBloc &&
+            (minister.Ambition < 75 ||
+             minister.Influence < 60))
+        {
+            return;
+        }
+
+        var bloc = new PoliticalBloc
+        {
+            Country = country,
+            Leader = minister,
+            Cohesion = forceBloc
+                ? 65
+                : 55
+        };
+
+        foreach (var powerBase in
+                 Enum.GetValues<PowerBaseType>()
+                     .OrderByDescending(type =>
+                         minister.GetPowerBaseStanding(type))
+                     .Take(2))
+        {
+            bloc.PowerBases.Add(
+                powerBase);
+        }
+
+        state.PoliticalBlocs.Add(bloc);
+    }
+
     private static War? FindRelatedWar(
         GameState state,
         PoliticalCrisis crisis)
@@ -2387,6 +2538,24 @@ internal static class CrisisSystem
             $"{crisis.Country.Name} is {position} against {opponent.Name}. " +
             $"Field readiness appears {DescribeReadiness(crisis.Country.ArmyReadiness).ToLowerInvariant()}, while war exhaustion is {DescribeWarExhaustion(crisis.Country.WarExhaustion).ToLowerInvariant()}. " +
             "The military problem is now damaging the government's domestic authority.";
+    }
+
+    private static bool HasRecentCabinetRift(
+        GameState state,
+        Country country,
+        Character minister)
+    {
+        return state.PoliticalCrises.Any(crisis =>
+            ReferenceEquals(
+                crisis.Country,
+                country) &&
+            crisis.Type ==
+                PoliticalCrisisType.CabinetRift &&
+            crisis.RelatedCharacterId ==
+                minister.Id &&
+            MonthsSinceEndOrStart(
+                crisis,
+                state.Date) < 12);
     }
 
     private static bool HasRecentWarCrisis(
