@@ -180,6 +180,239 @@ public sealed class GameSession
         Refresh();
     }
 
+    public void AdvanceUntilDecision(
+        int maxMonths = 12)
+    {
+        var state = _simulation.State;
+
+        if (state.Player.HasLost ||
+            state.Player.HasWon)
+        {
+            return;
+        }
+
+        if (HasImmediateDecision(state))
+        {
+            Refresh(
+                "A decision already needs your attention before time can safely fast-forward.");
+            return;
+        }
+
+        var monthsAdvanced = 0;
+        var stopReason = string.Empty;
+
+        while (monthsAdvanced <
+               Math.Clamp(maxMonths, 1, 24))
+        {
+            var country = state.Player.Country;
+            var electionMonthsBefore =
+                country.Government.MonthsUntilElection;
+            var campaignThreshold =
+                country.Government.ElectionCampaignMonths;
+
+            var existingCrisisIds =
+                state.PoliticalCrises
+                    .Where(crisis =>
+                        crisis.Status ==
+                            PoliticalCrisisStatus.Active &&
+                        crisis.AwaitingDecision &&
+                        ReferenceEquals(
+                            crisis.Country,
+                            country))
+                    .Select(crisis => crisis.Id)
+                    .ToHashSet();
+
+            var existingDemandIds =
+                state.PowerBaseDemands
+                    .Where(demand =>
+                        !demand.IsResolved &&
+                        !demand.AcknowledgedByRuler &&
+                        ReferenceEquals(
+                            demand.Country,
+                            country))
+                    .Select(demand => demand.Id)
+                    .ToHashSet();
+
+            var existingCabinetIds =
+                state.CabinetProposals
+                    .Where(proposal =>
+                        proposal.Status ==
+                            CabinetProposalStatus.Pending &&
+                        ReferenceEquals(
+                            proposal.Country,
+                            country))
+                    .Select(proposal => proposal.Id)
+                    .ToHashSet();
+
+            var existingDiplomaticIds =
+                state.DiplomaticProposals
+                    .Where(proposal =>
+                        proposal.Status ==
+                            DiplomaticProposalStatus.Pending &&
+                        ReferenceEquals(
+                            proposal.TargetCountry,
+                            country))
+                    .Select(proposal => proposal.Id)
+                    .ToHashSet();
+
+            _simulation.AdvanceMonth();
+            monthsAdvanced++;
+
+            if (state.Player.HasLost)
+            {
+                stopReason =
+                    "the lineage suffered political defeat";
+                break;
+            }
+
+            if (state.Player.HasWon)
+            {
+                stopReason =
+                    "the campaign objectives were completed";
+                break;
+            }
+
+            var newCrisis =
+                state.PoliticalCrises.Any(crisis =>
+                    crisis.Status ==
+                        PoliticalCrisisStatus.Active &&
+                    crisis.AwaitingDecision &&
+                    ReferenceEquals(
+                        crisis.Country,
+                        country) &&
+                    !existingCrisisIds.Contains(
+                        crisis.Id));
+
+            if (newCrisis)
+            {
+                stopReason =
+                    "a new crisis requires a decision";
+                break;
+            }
+
+            var newDemand =
+                state.PowerBaseDemands.Any(demand =>
+                    !demand.IsResolved &&
+                    !demand.AcknowledgedByRuler &&
+                    ReferenceEquals(
+                        demand.Country,
+                        country) &&
+                    !existingDemandIds.Contains(
+                        demand.Id));
+
+            if (newDemand)
+            {
+                stopReason =
+                    "an organised political demand requires a response";
+                break;
+            }
+
+            var newCabinetProposal =
+                state.CabinetProposals.Any(proposal =>
+                    proposal.Status ==
+                        CabinetProposalStatus.Pending &&
+                    ReferenceEquals(
+                        proposal.Country,
+                        country) &&
+                    !existingCabinetIds.Contains(
+                        proposal.Id));
+
+            if (newCabinetProposal)
+            {
+                stopReason =
+                    "the cabinet has put a decision before you";
+                break;
+            }
+
+            var newDiplomaticProposal =
+                state.DiplomaticProposals.Any(proposal =>
+                    proposal.Status ==
+                        DiplomaticProposalStatus.Pending &&
+                    ReferenceEquals(
+                        proposal.TargetCountry,
+                        country) &&
+                    !existingDiplomaticIds.Contains(
+                        proposal.Id));
+
+            if (newDiplomaticProposal)
+            {
+                stopReason =
+                    "a foreign government has sent a proposal";
+                break;
+            }
+
+            var electionMonthsAfter =
+                country.Government.MonthsUntilElection;
+
+            if (country.Government.HoldsScheduledElections &&
+                electionMonthsBefore >
+                    campaignThreshold &&
+                electionMonthsAfter <=
+                    campaignThreshold)
+            {
+                stopReason =
+                    country.Government.ElectionMethod ==
+                        ElectionMethod.CouncilElection
+                        ? "council-election manoeuvring has begun"
+                        : "an election campaign has begun";
+                break;
+            }
+        }
+
+        try
+        {
+            GameSaveService.SaveToFile(
+                state,
+                AutosavePath);
+
+            _statusMessage =
+                stopReason.Length > 0
+                    ? $"Advanced {monthsAdvanced} month(s) to {state.Date}; stopped because {stopReason}. Autosaved."
+                    : $"Advanced {monthsAdvanced} month(s) to {state.Date} without a new decision. Autosaved.";
+        }
+        catch (Exception exception)
+        {
+            _statusMessage =
+                $"Advanced {monthsAdvanced} month(s) to {state.Date}. Autosave failed: {exception.Message}";
+        }
+
+        Refresh();
+    }
+
+    private static bool HasImmediateDecision(
+        GameState state)
+    {
+        var country =
+            state.Player.Country;
+
+        return
+            state.PoliticalCrises.Any(crisis =>
+                crisis.Status ==
+                    PoliticalCrisisStatus.Active &&
+                crisis.AwaitingDecision &&
+                ReferenceEquals(
+                    crisis.Country,
+                    country)) ||
+            state.PowerBaseDemands.Any(demand =>
+                !demand.IsResolved &&
+                !demand.AcknowledgedByRuler &&
+                ReferenceEquals(
+                    demand.Country,
+                    country)) ||
+            state.CabinetProposals.Any(proposal =>
+                proposal.Status ==
+                    CabinetProposalStatus.Pending &&
+                ReferenceEquals(
+                    proposal.Country,
+                    country)) ||
+            state.DiplomaticProposals.Any(proposal =>
+                proposal.Status ==
+                    DiplomaticProposalStatus.Pending &&
+                ReferenceEquals(
+                    proposal.TargetCountry,
+                    country));
+    }
+
     public void RequestEconomyReport() =>
         QueueReport(InformationTopic.Economy, _simulation.State.Player.Country.Id);
 
