@@ -345,6 +345,180 @@ public static class DemoScenario
 
         state.Countries.AddRange([falkenreich, nordmark, valeria]);
 
+        ConfigureAdministration(
+            falkenreich,
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.Chancery,
+                Name = "Royal Chancery",
+                ResponsiblePosition = Position.Chancellor,
+                Capacity = 58,
+                Reach = 47,
+                Integrity = 63,
+                Workload = 38,
+                PatronageDependence = 54
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.Revenue,
+                Name = "Royal Exchequer",
+                ResponsiblePosition = Position.Treasurer,
+                Capacity = 55,
+                Reach = 42,
+                Integrity = 55,
+                Workload = 43,
+                PatronageDependence = 61
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.LocalGovernment,
+                Name = "Bailiffs and Seignorial Officers",
+                ResponsiblePosition = Position.Chancellor,
+                Capacity = 43,
+                Reach = 38,
+                Integrity = 44,
+                Workload = 48,
+                PatronageDependence = 79
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.MilitaryLogistics,
+                Name = "Marshal's Household",
+                ResponsiblePosition = Position.Marshal,
+                Capacity = 49,
+                Reach = 36,
+                Integrity = 58,
+                Workload = 33,
+                PatronageDependence = 69
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.ForeignAffairs,
+                Name = "Chancery Correspondence Office",
+                ResponsiblePosition = Position.Chancellor,
+                Capacity = 46,
+                Reach = 34,
+                Integrity = 64,
+                Workload = 30,
+                PatronageDependence = 48
+            });
+
+        ConfigureAdministration(
+            nordmark,
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.Chancery,
+                Name = "Crown Chancery",
+                ResponsiblePosition = Position.Chancellor,
+                Capacity = 61,
+                Reach = 50,
+                Integrity = 66,
+                Workload = 35,
+                PatronageDependence = 49
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.Revenue,
+                Name = "Crown Treasury",
+                ResponsiblePosition = Position.Treasurer,
+                Capacity = 58,
+                Reach = 46,
+                Integrity = 61,
+                Workload = 39,
+                PatronageDependence = 55
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.LocalGovernment,
+                Name = "Royal Stewards and District Courts",
+                ResponsiblePosition = Position.Chancellor,
+                Capacity = 50,
+                Reach = 44,
+                Integrity = 53,
+                Workload = 42,
+                PatronageDependence = 68
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.MilitaryLogistics,
+                Name = "Marshal's Secretariat",
+                ResponsiblePosition = Position.Marshal,
+                Capacity = 54,
+                Reach = 40,
+                Integrity = 62,
+                Workload = 31,
+                PatronageDependence = 61
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.ForeignAffairs,
+                Name = "Royal Correspondence Office",
+                ResponsiblePosition = Position.Chancellor,
+                Capacity = 49,
+                Reach = 38,
+                Integrity = 67,
+                Workload = 28,
+                PatronageDependence = 43
+            });
+
+        ConfigureAdministration(
+            valeria,
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.Chancery,
+                Name = "State Chancery",
+                ResponsiblePosition = Position.Chancellor,
+                Capacity = 80,
+                Reach = 72,
+                Integrity = 73,
+                Workload = 44,
+                PatronageDependence = 31
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.Revenue,
+                Name = "Fiscal Chamber",
+                ResponsiblePosition = Position.Treasurer,
+                Capacity = 84,
+                Reach = 78,
+                Integrity = 69,
+                Workload = 48,
+                PatronageDependence = 29
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.LocalGovernment,
+                Name = "Rectors and Civic Officers",
+                ResponsiblePosition = Position.Chancellor,
+                Capacity = 72,
+                Reach = 74,
+                Integrity = 58,
+                Workload = 51,
+                PatronageDependence = 44
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.MilitaryLogistics,
+                Name = "War and Arsenal Boards",
+                ResponsiblePosition = Position.Marshal,
+                Capacity = 77,
+                Reach = 64,
+                Integrity = 66,
+                Workload = 40,
+                PatronageDependence = 34
+            },
+            new AdministrativeOffice
+            {
+                Function = AdministrativeFunction.ForeignAffairs,
+                Name = "Diplomatic Secretariat",
+                ResponsiblePosition = Position.Chancellor,
+                Capacity = 85,
+                Reach = 83,
+                Integrity = 74,
+                Workload = 45,
+                PatronageDependence = 24
+            });
+
         ConfigurePowerBaseStrengths(falkenreich,
             (PowerBaseType.Aristocracy, 90),
             (PowerBaseType.Military, 75),
@@ -555,6 +729,13 @@ public static class DemoScenario
         InformationSystem.SeedInitialBriefings(state);
 
         return state;
+    }
+
+    private static void ConfigureAdministration(
+        Country country,
+        params AdministrativeOffice[] offices)
+    {
+        country.AdministrativeOffices.AddRange(offices);
     }
 
     private static void ConfigurePowerBaseStrengths(
