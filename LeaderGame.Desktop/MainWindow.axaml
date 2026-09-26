@@ -813,6 +813,81 @@
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <Border
+                        Background="#101612"
+                        BorderBrush="#30443A"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="10">
+                      <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="260,*" ColumnSpacing="10">
+                          <ComboBox
+                              ItemsSource="{Binding AdministrativeOfficeOptions}"
+                              SelectedItem="{Binding SelectedAdministrativeOffice, Mode=TwoWay}"
+                              IsEnabled="{Binding View.Government.CanDirectAdministration}" />
+                          <TextBlock
+                              Grid.Column="1"
+                              Text="{Binding View.Government.AdministrativeActionStatus}"
+                              TextWrapping="Wrap"
+                              VerticalAlignment="Center"
+                              FontSize="11"
+                              Classes="muted" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                          <Button
+                              Classes="action"
+                              Command="{Binding AuditAdministrativeOfficeCommand}"
+                              IsEnabled="{Binding View.Government.CanDirectAdministration}"
+                              Content="Audit accounts" />
+                          <Button
+                              Grid.Column="1"
+                              Classes="action"
+                              Command="{Binding StrengthenAdministrativeClerksCommand}"
+                              IsEnabled="{Binding View.Government.CanDirectAdministration}"
+                              Content="Strengthen clerks" />
+                          <Button
+                              Grid.Column="2"
+                              Classes="action politics"
+                              Command="{Binding ExtendAdministrativeCommissionsCommand}"
+                              IsEnabled="{Binding View.Government.CanDirectAdministration}"
+                              Content="Extend commissions" />
+                          <Button
+                              Grid.Column="3"
+                              Classes="action politics"
+                              Command="{Binding DelegateAdministrationCommand}"
+                              IsEnabled="{Binding View.Government.CanDirectAdministration}"
+                              Content="Delegate locally" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+                          <TextBlock
+                              Text="Tighten accounts and reduce leakage; creates work and can anger entrenched interests."
+                              FontSize="10"
+                              TextWrapping="Wrap"
+                              Classes="muted" />
+                          <TextBlock
+                              Grid.Column="1"
+                              Text="Improve routine records and clerical capacity; slowly weakens purely personal administration."
+                              FontSize="10"
+                              TextWrapping="Wrap"
+                              Classes="muted" />
+                          <TextBlock
+                              Grid.Column="2"
+                              Text="Push more officers and instructions into the localities; improves reach but provokes local elites."
+                              FontSize="10"
+                              TextWrapping="Wrap"
+                              Classes="muted" />
+                          <TextBlock
+                              Grid.Column="3"
+                              Text="Use established local notables to get business done quickly; relieves the centre but deepens patronage dependence."
+                              FontSize="10"
+                              TextWrapping="Wrap"
+                              Classes="muted" />
+                        </Grid>
+                      </StackPanel>
+                    </Border>
                   </StackPanel>
                 </Border>
 
