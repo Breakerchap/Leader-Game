@@ -362,6 +362,7 @@ public static partial class GameSaveService
                     : null,
                 RelatedBlocId = saved.RelatedBlocId,
                 RelatedWarId = saved.RelatedWarId,
+                RelatedCharacterId = saved.RelatedCharacterId,
                 StartedOn = GameDate(saved.StartedOn),
                 Stage = saved.Stage <= 0
                     ? 1
