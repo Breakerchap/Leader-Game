@@ -53,6 +53,22 @@ public sealed record CabinetProposalView(
     string Description,
     string Age);
 
+public sealed record CrisisChoiceView(
+    Guid CrisisId,
+    string Response,
+    string Label,
+    string Description);
+
+public sealed record CrisisView(
+    Guid Id,
+    string Title,
+    string Summary,
+    string Severity,
+    string Age,
+    string ResponseStatus,
+    bool CanRespond,
+    IReadOnlyList<CrisisChoiceView> Choices);
+
 public sealed record PendingOrderView(
     Guid Id,
     string Type,
@@ -293,6 +309,7 @@ public sealed record PlayerViewState(
     IReadOnlyList<PendingOrderView> PendingOrderDetails,
     IReadOnlyList<OrderOutcomeView> RecentOrderOutcomes,
     IReadOnlyList<CabinetProposalView> CabinetProposals,
+    IReadOnlyList<CrisisView> Crises,
     IReadOnlyList<MetricCardView> Metrics,
     IReadOnlyList<AdvisorCardView> Advisors,
     IReadOnlyList<BriefingItemView> Briefings,
