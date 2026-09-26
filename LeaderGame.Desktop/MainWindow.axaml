@@ -649,35 +649,87 @@
             </StackPanel>
 
             <Border Classes="panel" Background="#151922" BorderBrush="#3A4656">
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
-                <StackPanel Spacing="5">
-                  <TextBlock Text="CONSTITUTIONAL ORDER" Classes="eyebrow" Foreground="#8CBCE8" />
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock
-                        Text="{Binding View.Government.Regime}"
-                        FontSize="18"
-                        FontWeight="SemiBold" />
-                    <Border Classes="badge" Background="#13202B">
+              <StackPanel Spacing="14">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                  <StackPanel Spacing="5">
+                    <TextBlock Text="CONSTITUTIONAL ORDER" Classes="eyebrow" Foreground="#8CBCE8" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
                       <TextBlock
-                          Text="{Binding View.Government.PoliticalCycle}"
-                          FontSize="10"
-                          Foreground="#8CBCE8" />
-                    </Border>
+                          Text="{Binding View.Government.Regime}"
+                          FontSize="18"
+                          FontWeight="SemiBold" />
+                      <Border Classes="badge" Background="#13202B">
+                        <TextBlock
+                            Text="{Binding View.Government.PoliticalCycle}"
+                            FontSize="10"
+                            Foreground="#8CBCE8" />
+                      </Border>
+                    </StackPanel>
+                    <TextBlock
+                        Text="{Binding View.Government.PoliticalCycleDetail}"
+                        MaxWidth="760"
+                        TextWrapping="Wrap"
+                        Classes="muted" />
                   </StackPanel>
                   <TextBlock
-                      Text="{Binding View.Government.PoliticalCycleDetail}"
-                      MaxWidth="760"
-                      TextWrapping="Wrap"
-                      Classes="muted" />
-                </StackPanel>
-                <TextBlock
-                    Grid.Column="1"
-                    Text="◇"
+                      Grid.Column="1"
+                      Text="◇"
+                      IsVisible="{Binding View.Government.HasElection}"
+                      FontSize="30"
+                      Foreground="#70C4D0"
+                      VerticalAlignment="Center" />
+                </Grid>
+
+                <Border
                     IsVisible="{Binding View.Government.HasElection}"
-                    FontSize="30"
-                    Foreground="#70C4D0"
-                    VerticalAlignment="Center" />
-              </Grid>
+                    Background="#101821"
+                    BorderBrush="#294052"
+                    BorderThickness="1"
+                    CornerRadius="7"
+                    Padding="12">
+                  <StackPanel Spacing="9">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Spacing="3">
+                        <TextBlock Text="PUBLIC ELECTION COMMITMENT" Classes="eyebrow" Foreground="#70C4D0" />
+                        <TextBlock
+                            Text="{Binding View.Government.ElectionPromise}"
+                            FontWeight="SemiBold"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                      <Border Grid.Column="1" Classes="badge" Background="#13202B" VerticalAlignment="Top">
+                        <TextBlock
+                            Text="{Binding View.Government.ElectionPromiseStatus}"
+                            FontSize="10"
+                            Foreground="#8CBCE8" />
+                      </Border>
+                    </Grid>
+
+                    <Grid
+                        IsVisible="{Binding View.Government.IsElectionCampaignActive}"
+                        ColumnDefinitions="*,Auto"
+                        ColumnSpacing="9">
+                      <ComboBox
+                          ItemsSource="{Binding ElectionPromiseOptions}"
+                          SelectedItem="{Binding SelectedElectionPromise, Mode=TwoWay}"
+                          IsEnabled="{Binding View.Government.CanMakeElectionPromise}"
+                          MinWidth="240" />
+                      <Button
+                          Grid.Column="1"
+                          Classes="action politics"
+                          Command="{Binding MakeElectionPromiseCommand}"
+                          IsEnabled="{Binding View.Government.CanMakeElectionPromise}"
+                          Content="Make public promise" />
+                    </Grid>
+
+                    <TextBlock
+                        IsVisible="{Binding View.Government.IsElectionCampaignActive}"
+                        Text="One principal promise may be made per election. It helps the constituencies it targets now, but if your nominee wins you have six months to actually deliver it."
+                        TextWrapping="Wrap"
+                        FontSize="11"
+                        Classes="muted" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
             </Border>
 
             <Border Classes="panel">
