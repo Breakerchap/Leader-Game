@@ -909,6 +909,29 @@ public sealed class GameSession
         Refresh($"{actionLabel} queued among {FormatPowerBase(powerBase).ToLowerInvariant()}.");
     }
 
+    public void RespondToCrisis(
+        Guid crisisId,
+        string responseName)
+    {
+        if (!Enum.TryParse<PoliticalCrisisResponse>(
+                responseName,
+                ignoreCase: true,
+                out var response))
+        {
+            Refresh("That crisis response is not recognised.");
+            return;
+        }
+
+        var report = CrisisSystem.Respond(
+            _simulation.State,
+            crisisId,
+            response);
+
+        _simulation.State.Reports.Add(report);
+        _statusMessage = report.Title;
+        Refresh();
+    }
+
     public void RespondToPowerBaseDemand(Guid demandId, bool concede)
     {
         var response = DomesticPoliticsSystem.RespondToDemand(
@@ -1189,6 +1212,47 @@ public sealed class GameSession
                     : proposal.MonthsOpen == 1
                         ? "1 month awaiting decision"
                         : $"{proposal.MonthsOpen} months awaiting decision"))
+            .ToList();
+
+        var crises = state.PoliticalCrises
+            .Where(crisis =>
+                crisis.Status == PoliticalCrisisStatus.Active &&
+                ReferenceEquals(crisis.Country, country))
+            .OrderByDescending(crisis => crisis.Stage)
+            .ThenByDescending(crisis => crisis.MonthsActive)
+            .Select(crisis =>
+            {
+                var choices = CrisisSystem.GetChoices(crisis)
+                    .Select(choice => new CrisisChoiceView(
+                        crisis.Id,
+                        choice.Response.ToString(),
+                        choice.Label,
+                        choice.Description))
+                    .ToList();
+
+                var responseStatus = crisis.AwaitingDecision
+                    ? "Decision required"
+                    : crisis.LastResponse is { } lastResponse
+                        ? $"Response underway: " +
+                          $"{CrisisSystem.GetChoices(crisis)
+                              .First(choice => choice.Response == lastResponse)
+                              .Label}"
+                        : "Government response underway";
+
+                return new CrisisView(
+                    crisis.Id,
+                    CrisisSystem.Title(crisis),
+                    CrisisSystem.Summary(state, crisis),
+                    CrisisSystem.SeverityLabel(crisis),
+                    crisis.MonthsActive == 0
+                        ? "New"
+                        : crisis.MonthsActive == 1
+                            ? "1 month active"
+                            : $"{crisis.MonthsActive} months active",
+                    responseStatus,
+                    crisis.AwaitingDecision,
+                    choices);
+            })
             .ToList();
 
         var intelligenceReports = state.AdvisorReports
@@ -2090,6 +2154,7 @@ public sealed class GameSession
             pendingOrderDetails,
             recentOrderOutcomes,
             cabinetProposals,
+            crises,
             metrics,
             advisors,
             briefings,
