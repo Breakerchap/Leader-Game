@@ -66,20 +66,30 @@ public static partial class GameSaveService
                     LegislativeBody =
                         saved.LegislativeBody != LegislativeBodyType.None
                             ? saved.LegislativeBody
-                            : saved.GovernmentType switch
+                            : saved.Id switch
                             {
-                                GovernmentType.Republic => LegislativeBodyType.Assembly,
-                                GovernmentType.FeudalMonarchy => LegislativeBodyType.RoyalCouncil,
-                                _ => LegislativeBodyType.None
+                                "valeria" => LegislativeBodyType.GreatCouncil,
+                                "falkenreich" => LegislativeBodyType.EstatesAssembly,
+                                _ => saved.GovernmentType switch
+                                {
+                                    GovernmentType.Republic => LegislativeBodyType.Assembly,
+                                    GovernmentType.FeudalMonarchy => LegislativeBodyType.RoyalCouncil,
+                                    _ => LegislativeBodyType.None
+                                }
                             },
                     LegislativeIndependence =
                         saved.LegislativeIndependence > 0
                             ? saved.LegislativeIndependence
-                            : saved.GovernmentType switch
+                            : saved.Id switch
                             {
-                                GovernmentType.Republic => 75,
-                                GovernmentType.FeudalMonarchy => 45,
-                                _ => 0
+                                "valeria" => 75,
+                                "falkenreich" => 55,
+                                _ => saved.GovernmentType switch
+                                {
+                                    GovernmentType.Republic => 70,
+                                    GovernmentType.FeudalMonarchy => 40,
+                                    _ => 0
+                                }
                             }
                 },
                 Ruler = RequireCharacter(characters, saved.RulerId)
