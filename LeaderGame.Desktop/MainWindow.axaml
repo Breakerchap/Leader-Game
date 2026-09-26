@@ -2219,7 +2219,7 @@
             <Border Classes="panel">
               <Grid ColumnDefinitions="*,220,Auto" ColumnSpacing="9">
                 <TextBox
-                    Watermark="Search reports, people, countries or dates…"
+                    PlaceholderText="Search reports, people, countries or dates…"
                     Text="{Binding ArchiveSearchText, Mode=TwoWay}" />
                 <ComboBox
                     Grid.Column="1"
