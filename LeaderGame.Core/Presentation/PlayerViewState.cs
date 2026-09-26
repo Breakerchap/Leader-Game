@@ -287,7 +287,8 @@ public sealed record CourtFigureView(
     bool IsAvailableForOffice,
     bool CanInvestigate,
     bool CanArrest,
-    bool CanRelease);
+    bool CanRelease,
+    bool CanReceiveCourtAction);
 
 public sealed record CourtPoliticsView(
     IReadOnlyList<OfficeView> Offices,
@@ -298,7 +299,9 @@ public sealed record CourtPoliticsView(
     bool IsPlayerInOpposition,
     bool CanTakeOppositionAction,
     IReadOnlyList<string> OppositionPowerBases,
-    string OppositionStatus);
+    string OppositionStatus,
+    bool CanTakeCourtAction,
+    string CourtActionStatus);
 
 public sealed record PlayerViewState(
     string CountryName,
