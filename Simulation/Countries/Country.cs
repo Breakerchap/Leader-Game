@@ -98,6 +98,16 @@ public class Country
 
     public List<AdministrativeOffice> AdministrativeOffices { get; } = [];
 
+    /// <summary>
+    /// Politically meaningful territorial divisions. These are deliberately
+    /// coarse: the player governs through regions, not individual map tiles.
+    /// </summary>
+    public List<Region> Regions { get; } = [];
+
+    public Region? FindRegion(string id) =>
+        Regions.FirstOrDefault(region =>
+            string.Equals(region.Id, id, StringComparison.Ordinal));
+
     public AdministrativeOffice? GetAdministrativeOffice(
         AdministrativeFunction function) =>
         AdministrativeOffices.FirstOrDefault(office =>
