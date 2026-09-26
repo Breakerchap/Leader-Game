@@ -108,8 +108,8 @@ public static class DemoScenario
             {
                 Type = GovernmentType.FeudalMonarchy,
                 Stability = 67,
-                LegislativeBody = LegislativeBodyType.RoyalCouncil,
-                LegislativeIndependence = 45
+                LegislativeBody = LegislativeBodyType.EstatesAssembly,
+                LegislativeIndependence = 55
             },
             Ruler = king
         };
@@ -278,7 +278,7 @@ public static class DemoScenario
             {
                 Type = GovernmentType.Republic,
                 Stability = 59,
-                LegislativeBody = LegislativeBodyType.Assembly,
+                LegislativeBody = LegislativeBodyType.GreatCouncil,
                 LegislativeIndependence = 75,
                 ElectionIntervalMonths = 48,
                 MonthsUntilElection = 12,
