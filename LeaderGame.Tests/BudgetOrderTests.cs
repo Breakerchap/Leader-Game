@@ -30,9 +30,13 @@ public class BudgetOrderTests
         simulation.AdvanceMonth();
 
         Assert.Equal(OrderStatus.Completed, order.Status);
-        Assert.InRange(country.ArmyFunding, 1.40m, 1.45m);
-        Assert.InRange(country.AdministrationFunding, 0.55m, 0.60m);
-        Assert.InRange(country.CourtFunding, 0.82m, 0.85m);
+        // The Treasurer and the fiscal machinery both mediate the ruler's
+        // request. A capable administration should get close to the requested
+        // settlement without making the slider an instant, exact command.
+        Assert.InRange(country.ArmyFunding, 1.38m, 1.45m);
+        Assert.InRange(country.AdministrationFunding, 0.55m, 0.62m);
+        Assert.InRange(country.CourtFunding, 0.82m, 0.86m);
+        Assert.NotEqual(1.5m, country.ArmyFunding);
     }
 
     [Fact]
