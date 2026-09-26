@@ -1,0 +1,289 @@
+using LeaderGame.Presentation;
+using LeaderGame.Simulation;
+using LeaderGame.Simulation.Characters;
+using LeaderGame.Simulation.Persistence;
+using LeaderGame.Simulation.Politics;
+using LeaderGame.Simulation.Scenarios;
+using LeaderGame.Simulation.Systems;
+
+namespace LeaderGame.Tests;
+
+public class CrisisSystemTests
+{
+    [Fact]
+    public void SevereRegionalPressure_CreatesDecisionCrisis()
+    {
+        var state = DemoScenario.Create();
+        var region = state.Player.Country.FindRegion("hochwald")!;
+
+        region.Unrest = 82;
+        region.CrownControl = 28;
+        region.LocalElitePower = 86;
+
+        var reports = CrisisSystem.ProcessMonth(state).ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis =>
+                crisis.Status == PoliticalCrisisStatus.Active);
+
+        Assert.Equal(
+            PoliticalCrisisType.RegionalBreakdown,
+            crisis.Type);
+        Assert.Same(region, crisis.Region);
+        Assert.True(crisis.AwaitingDecision);
+        Assert.Contains(
+            reports,
+            report => report.Title.Contains(
+                "Hochwald",
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void RegionalConcessions_BuyCalmByEntrenchingLocalPower()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var region = country.FindRegion("hochwald")!;
+
+        region.Unrest = 82;
+        region.CrownControl = 30;
+        region.LocalElitePower = 85;
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis => crisis.Status ==
+                PoliticalCrisisStatus.Active);
+
+        var unrest = region.Unrest;
+        var privileges = region.Privileges;
+        var localPower = region.LocalElitePower;
+        var control = region.CrownControl;
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.OfferRegionalConcessions);
+
+        Assert.True(region.Unrest < unrest);
+        Assert.True(region.Privileges > privileges);
+        Assert.True(region.LocalElitePower > localPower);
+        Assert.True(region.CrownControl < control);
+    }
+
+    [Fact]
+    public void ResponseThatDoesNotSolveProblem_ReturnsAtHigherStage()
+    {
+        var state = DemoScenario.Create();
+        var region = state.Player.Country.FindRegion("hochwald")!;
+
+        region.Unrest = 85;
+        region.CrownControl = 25;
+        region.LocalElitePower = 88;
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis => crisis.Status ==
+                PoliticalCrisisStatus.Active);
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.StrengthenRegionalControl);
+
+        Assert.False(crisis.AwaitingDecision);
+
+        CrisisSystem.ProcessMonth(state).ToList();
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        Assert.Equal(2, crisis.Stage);
+        Assert.True(crisis.AwaitingDecision);
+    }
+
+    [Fact]
+    public void IgnoredBreakingPoint_ProducesCostlyButRecoverableOutcome()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var region = country.FindRegion("eastern-marches")!;
+
+        region.Unrest = 90;
+        region.CrownControl = 25;
+        region.LocalElitePower = 90;
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.RegionalBreakdown,
+            Region = region,
+            StartedOn = state.Date,
+            Stage = 3,
+            MonthsAtCurrentStage = 1,
+            AwaitingDecision = true
+        };
+
+        state.PoliticalCrises.Add(crisis);
+
+        var stability = country.Government.Stability;
+        var control = region.CrownControl;
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        Assert.Equal(
+            PoliticalCrisisStatus.BrokeAgainstGovernment,
+            crisis.Status);
+        Assert.True(country.Government.Stability < stability);
+        Assert.True(region.CrownControl < control);
+        Assert.False(state.Player.HasLost);
+    }
+
+    [Fact]
+    public void BorrowingDuringFiscalCrisis_BuysCashButDeepensDebt()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+
+        country.Debt = country.Gdp * 0.25m;
+        country.Treasury = 0;
+        country.LastMonthlyBalance = -100_000m;
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis => crisis.Type ==
+                PoliticalCrisisType.FiscalEmergency &&
+                crisis.Status ==
+                PoliticalCrisisStatus.Active);
+
+        var debt = country.Debt;
+        var treasury = country.Treasury;
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.BorrowForTime);
+
+        Assert.True(country.Debt > debt);
+        Assert.True(country.Treasury > treasury);
+        Assert.Equal(
+            PoliticalCrisisStatus.Active,
+            crisis.Status);
+    }
+
+    [Fact]
+    public void ConstitutionalCompromise_CoolsStandoffBySharingPower()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var leader = country.PoliticalFigures.First(character =>
+            character.Id == 6);
+
+        country.Government.Stability = 40;
+
+        var bloc = new PoliticalBloc
+        {
+            Country = country,
+            Leader = leader,
+            Cohesion = 80
+        };
+        bloc.PowerBases.Add(
+            PowerBaseType.RegionalElites);
+        state.PoliticalBlocs.Add(bloc);
+
+        var crisis = new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.PoliticalStandoff,
+            RelatedBlocId = bloc.Id,
+            StartedOn = state.Date
+        };
+        state.PoliticalCrises.Add(crisis);
+
+        var independence =
+            country.Government.LegislativeIndependence;
+        var cohesion = bloc.Cohesion;
+
+        CrisisSystem.Respond(
+            state,
+            crisis.Id,
+            PoliticalCrisisResponse.ConstitutionalCompromise);
+
+        Assert.Equal(
+            independence + 7,
+            country.Government.LegislativeIndependence);
+        Assert.True(bloc.Cohesion < cohesion);
+        Assert.True(country.Government.Stability > 40);
+    }
+
+    [Fact]
+    public void CrisisState_RoundTripsThroughSave()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var region = country.FindRegion("westmark")!;
+
+        state.PoliticalCrises.Add(new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.RegionalBreakdown,
+            Region = region,
+            StartedOn = state.Date,
+            Stage = 2,
+            MonthsActive = 4,
+            MonthsAtCurrentStage = 1,
+            AwaitingDecision = false,
+            LastResponse =
+                PoliticalCrisisResponse.FundRegionalRelief
+        });
+
+        var loaded = GameSaveService.Deserialize(
+            GameSaveService.Serialize(state));
+
+        var restored = Assert.Single(
+            loaded.PoliticalCrises);
+
+        Assert.Equal(2, restored.Stage);
+        Assert.Equal(4, restored.MonthsActive);
+        Assert.False(restored.AwaitingDecision);
+        Assert.Equal(
+            PoliticalCrisisResponse.FundRegionalRelief,
+            restored.LastResponse);
+        Assert.Same(
+            loaded.Player.Country.FindRegion("westmark"),
+            restored.Region);
+    }
+
+    [Fact]
+    public void GameSession_ExposesCrisisChoicesAndAcceptsResponse()
+    {
+        var state = DemoScenario.Create();
+        var region = state.Player.Country.FindRegion("hochwald")!;
+
+        region.Unrest = 82;
+        region.CrownControl = 28;
+        region.LocalElitePower = 86;
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        var session = new GameSession(
+            new GameSimulation(state));
+
+        var view = Assert.Single(session.View.Crises);
+
+        Assert.True(view.CanRespond);
+        Assert.Equal(3, view.Choices.Count);
+
+        session.RespondToCrisis(
+            view.Id,
+            view.Choices[1].Response);
+
+        Assert.False(
+            Assert.Single(
+                session.View.Crises).CanRespond);
+    }
+}
