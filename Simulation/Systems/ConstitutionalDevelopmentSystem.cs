@@ -124,8 +124,8 @@ internal static class ConstitutionalDevelopmentSystem
             return false;
         }
 
-        if (country.AdministrativeDevelopment <
-            AdministrativeDevelopment.CentralisingBureaucracy)
+        if ((int)country.AdministrativeDevelopment <
+            (int)AdministrativeDevelopment.CentralisingBureaucracy)
         {
             return false;
         }
