@@ -233,6 +233,27 @@ public sealed class CountrySnapshot
     public List<int> PoliticalFigureIds { get; init; } = [];
 
     public List<PowerBaseValueSnapshot> PowerBaseStrengths { get; init; } = [];
+
+    public List<AdministrativeOfficeSnapshot> AdministrativeOffices { get; init; } = [];
+}
+
+public sealed class AdministrativeOfficeSnapshot
+{
+    public AdministrativeFunction Function { get; init; }
+
+    public required string Name { get; init; }
+
+    public Position? ResponsiblePosition { get; init; }
+
+    public int Capacity { get; init; }
+
+    public int Reach { get; init; }
+
+    public int Integrity { get; init; }
+
+    public int Workload { get; init; }
+
+    public int PatronageDependence { get; init; }
 }
 
 public sealed record PowerBaseValueSnapshot(
