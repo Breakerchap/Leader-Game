@@ -1452,6 +1452,8 @@ public sealed class GameSession
             legislation.Count > 0,
             legislation,
             $"{country.AdministrativeEfficiency:P0} effective central administration",
+            AdministrativeSystem.DescribeDevelopment(
+                country.AdministrativeDevelopment),
             administrativeOffices,
             canDirectAdministration,
             administrativeActionStatus,
