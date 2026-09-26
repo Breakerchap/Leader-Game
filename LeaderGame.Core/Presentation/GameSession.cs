@@ -1819,7 +1819,7 @@ public sealed class GameSession
                 state,
                 InformationMetric.Gdp,
                 country.Id,
-                "GDP"),
+                "Estimated economic output"),
             PlayerInformationFormatter.Metric(
                 state,
                 InformationMetric.Treasury,
