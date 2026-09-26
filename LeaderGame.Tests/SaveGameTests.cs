@@ -272,6 +272,42 @@ public class SaveGameTests
     }
 
     [Fact]
+    public void SaveRoundTrip_PreservesOutstandingElectionPromise()
+    {
+        var state = DemoScenario.Create(
+            ScenarioCatalog.ValeriaId);
+        var country = state.Player.Country;
+
+        var promise = new ElectionPromise
+        {
+            Country = country,
+            Candidate = country.Ruler,
+            Type = ElectionPromiseType.AdministrativeInvestment,
+            TargetValue = 1.25m,
+            MadeOn = state.Date,
+            Status = ElectionPromiseStatus.AwaitingFulfilment,
+            MonthsSinceElection = 3
+        };
+
+        state.ElectionPromises.Add(promise);
+
+        var loaded = GameSaveService.Deserialize(
+            GameSaveService.Serialize(state));
+
+        var restored = Assert.Single(loaded.ElectionPromises);
+
+        Assert.Equal(promise.Id, restored.Id);
+        Assert.Equal(country.Id, restored.Country.Id);
+        Assert.Equal(country.Ruler.Id, restored.Candidate.Id);
+        Assert.Equal(promise.Type, restored.Type);
+        Assert.Equal(1.25m, restored.TargetValue);
+        Assert.Equal(
+            ElectionPromiseStatus.AwaitingFulfilment,
+            restored.Status);
+        Assert.Equal(3, restored.MonthsSinceElection);
+    }
+
+    [Fact]
     public void SaveToFile_WritesAndReloadsAtomicSlot()
     {
         var state = DemoScenario.Create();
