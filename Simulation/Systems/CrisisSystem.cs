@@ -182,7 +182,7 @@ internal static class CrisisSystem
 
             PoliticalCrisisType.FiscalEmergency =>
                 $"Debt and recurring deficits are constraining the government. " +
-                $"The current debt burden is roughly {DebtRatio(crisis.Country):P0} of annual economic output.",
+                $"The debt burden is now {DescribeDebtPressure(crisis.Country).ToLowerInvariant()}, while recurring cash flow is failing to give the government enough room to manoeuvre.",
 
             PoliticalCrisisType.PoliticalStandoff =>
                 PoliticalStandoffSummary(state, crisis),
@@ -2019,7 +2019,9 @@ internal static class CrisisSystem
         };
 
         return
-            $"{crisis.Country.Name} is {position} against {opponent.Name}. Army readiness is {crisis.Country.ArmyReadiness:F0}/100 and war exhaustion is {crisis.Country.WarExhaustion:F0}/100. The military problem is now damaging the government's domestic authority.";
+            $"{crisis.Country.Name} is {position} against {opponent.Name}. " +
+            $"Field readiness appears {DescribeReadiness(crisis.Country.ArmyReadiness).ToLowerInvariant()}, while war exhaustion is {DescribeWarExhaustion(crisis.Country.WarExhaustion).ToLowerInvariant()}. " +
+            "The military problem is now damaging the government's domestic authority.";
     }
 
     private static bool HasRecentWarCrisis(
@@ -2094,6 +2096,44 @@ internal static class CrisisSystem
             now.Month -
             date.Month;
     }
+
+    private static string DescribeDebtPressure(
+        Country country)
+    {
+        var ratio =
+            DebtRatio(country);
+
+        return ratio switch
+        {
+            >= 0.50m => "Crushing",
+            >= 0.30m => "Severe",
+            >= 0.18m => "Heavy",
+            >= 0.10m => "Noticeable",
+            _ => "Manageable"
+        };
+    }
+
+    private static string DescribeReadiness(
+        double readiness) =>
+        readiness switch
+        {
+            >= 80 => "Excellent",
+            >= 65 => "Strong",
+            >= 50 => "Mixed",
+            >= 35 => "Poor",
+            _ => "Critical"
+        };
+
+    private static string DescribeWarExhaustion(
+        double exhaustion) =>
+        exhaustion switch
+        {
+            >= 75 => "Extreme",
+            >= 55 => "Severe",
+            >= 35 => "Growing",
+            >= 18 => "Noticeable",
+            _ => "Limited"
+        };
 
     private static decimal DebtRatio(
         Country country) =>
