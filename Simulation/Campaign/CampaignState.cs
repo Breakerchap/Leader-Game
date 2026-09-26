@@ -8,6 +8,8 @@ public enum CampaignObjectiveType
     DiplomaticStanding,
     PeacefulRealm,
     ElectoralMandate,
+    RegionalAuthority,
+    MilitaryPreparedness,
     RestorePoliticalControl,
     ConsolidateRestoration
 }
