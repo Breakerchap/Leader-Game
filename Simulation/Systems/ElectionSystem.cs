@@ -16,6 +16,8 @@ internal static class ElectionSystem
     {
         var reports = new List<SimulationReport>();
 
+        reports.AddRange(ProcessGoverningPromises(state));
+
         foreach (var country in state.Countries.Where(country =>
                      country.Government.HoldsScheduledElections &&
                      country.Ruler.IsAlive))
@@ -33,6 +35,7 @@ internal static class ElectionSystem
             if (government.MonthsUntilElection <=
                 government.ElectionCampaignMonths)
             {
+                EnsureAiCampaignPromise(state, country);
                 ApplyCampaignMomentum(state, country);
             }
 
@@ -55,6 +58,92 @@ internal static class ElectionSystem
         }
 
         return reports;
+    }
+
+    public static ElectionPromise? GetActivePromise(
+        GameState state,
+        Country country)
+    {
+        return state.ElectionPromises
+            .Where(promise =>
+                ReferenceEquals(promise.Country, country) &&
+                promise.Status is
+                    ElectionPromiseStatus.Campaigning or
+                    ElectionPromiseStatus.AwaitingFulfilment)
+            .OrderByDescending(promise => promise.MadeOn.Year)
+            .ThenByDescending(promise => promise.MadeOn.Month)
+            .FirstOrDefault();
+    }
+
+    public static SimulationReport MakePlayerCampaignPromise(
+        GameState state,
+        ElectionPromiseType type)
+    {
+        var country = state.Player.Country;
+
+        if (!country.Government.HoldsScheduledElections ||
+            country.Government.MonthsUntilElection >
+                country.Government.ElectionCampaignMonths ||
+            country.Government.MonthsUntilElection <= 0)
+        {
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Politics,
+                "No active election campaign",
+                "A public campaign promise can only be made during the official campaign period.");
+        }
+
+        if (GetActivePromise(state, country) is not null)
+        {
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Politics,
+                "Campaign promise already made",
+                "The party has already made its principal public commitment for this election.");
+        }
+
+        var nominee = GetPlayerLineageNominee(state, country);
+
+        if (nominee is null)
+        {
+            return new SimulationReport(
+                state.Date,
+                ReportCategory.Politics,
+                "No party nominee available",
+                "The political lineage has no active candidate able to make an electoral commitment.");
+        }
+
+        var promise = CreatePromise(
+            state,
+            country,
+            nominee,
+            type);
+
+        state.ElectionPromises.Add(promise);
+        ApplyCampaignPromiseSupport(promise);
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Politics,
+            $"{nominee.FullName} makes an election promise",
+            DescribePromise(promise) +
+            " The commitment immediately reshapes which constituencies see the candidate as representing their interests.");
+    }
+
+    public static string DescribePromise(ElectionPromise promise)
+    {
+        return promise.Type switch
+        {
+            ElectionPromiseType.TaxRelief =>
+                $"Promise to reduce the tax rate to {promise.TargetValue:P0} or lower.",
+            ElectionPromiseType.AdministrativeInvestment =>
+                $"Promise to raise administration funding to at least {promise.TargetValue:P0}.",
+            ElectionPromiseType.MilitaryInvestment =>
+                $"Promise to raise army funding to at least {promise.TargetValue:P0}.",
+            ElectionPromiseType.CoalitionPatronage =>
+                $"Promise to raise court and patronage funding to at least {promise.TargetValue:P0}.",
+            _ => "Public campaign commitment."
+        };
     }
 
     public static Character? GetPlayerLineageNominee(
@@ -227,6 +316,11 @@ internal static class ElectionSystem
             runnerUp?.Candidate,
             margin);
 
+        ResolveCampaignPromiseAfterElection(
+            state,
+            country,
+            winner);
+
         var continuityText = BuildPlayerContinuityText(
             state,
             country,
@@ -340,6 +434,247 @@ internal static class ElectionSystem
         state.Player.LossReason =
             $"{winner.FullName} won the election in {country.Name}, ending " +
             $"{state.Player.Lineage.Name}'s control of the government.";
+    }
+
+    private static ElectionPromise CreatePromise(
+        GameState state,
+        Country country,
+        Character candidate,
+        ElectionPromiseType type)
+    {
+        var target = type switch
+        {
+            ElectionPromiseType.TaxRelief =>
+                Math.Max(0.02m, country.TaxRate - 0.02m),
+            ElectionPromiseType.AdministrativeInvestment =>
+                Math.Max(1.15m, country.AdministrationFunding + 0.10m),
+            ElectionPromiseType.MilitaryInvestment =>
+                Math.Max(1.20m, country.ArmyFunding + 0.10m),
+            ElectionPromiseType.CoalitionPatronage =>
+                Math.Max(1.15m, country.CourtFunding + 0.10m),
+            _ => 1m
+        };
+
+        return new ElectionPromise
+        {
+            Country = country,
+            Candidate = candidate,
+            Type = type,
+            TargetValue = Math.Min(1.5m, target),
+            MadeOn = state.Date
+        };
+    }
+
+    private static void ApplyCampaignPromiseSupport(
+        ElectionPromise promise)
+    {
+        var candidate = promise.Candidate;
+
+        switch (promise.Type)
+        {
+            case ElectionPromiseType.TaxRelief:
+                candidate.ChangePowerBaseStanding(PowerBaseType.Merchants, 4);
+                candidate.ChangePowerBaseStanding(PowerBaseType.Workers, 3);
+                candidate.ChangePowerBaseStanding(PowerBaseType.Peasantry, 3);
+                break;
+
+            case ElectionPromiseType.AdministrativeInvestment:
+                candidate.ChangePowerBaseStanding(PowerBaseType.Bureaucracy, 5);
+                candidate.ChangePowerBaseStanding(PowerBaseType.Party, 2);
+                candidate.ChangePowerBaseStanding(PowerBaseType.Merchants, 1);
+                break;
+
+            case ElectionPromiseType.MilitaryInvestment:
+                candidate.ChangePowerBaseStanding(PowerBaseType.Military, 6);
+                candidate.ChangePowerBaseStanding(PowerBaseType.RegionalElites, 2);
+                break;
+
+            case ElectionPromiseType.CoalitionPatronage:
+                candidate.ChangePowerBaseStanding(PowerBaseType.Party, 4);
+                candidate.ChangePowerBaseStanding(PowerBaseType.Aristocracy, 3);
+                candidate.ChangePowerBaseStanding(PowerBaseType.RegionalElites, 3);
+                break;
+        }
+    }
+
+    private static void EnsureAiCampaignPromise(
+        GameState state,
+        Country country)
+    {
+        if (ReferenceEquals(country, state.Player.Country) ||
+            GetActivePromise(state, country) is not null)
+        {
+            return;
+        }
+
+        var candidate = GetCandidateField(state, country)
+            .FirstOrDefault();
+
+        if (candidate is null)
+            return;
+
+        var type =
+            country.PublicUnrest >= 45 && country.TaxRate > 0.07m
+                ? ElectionPromiseType.TaxRelief
+                : country.AdministrativeEfficiency < 0.70m
+                    ? ElectionPromiseType.AdministrativeInvestment
+                    : country.ArmyReadiness < 55
+                        ? ElectionPromiseType.MilitaryInvestment
+                        : ElectionPromiseType.CoalitionPatronage;
+
+        var promise = CreatePromise(
+            state,
+            country,
+            candidate,
+            type);
+
+        state.ElectionPromises.Add(promise);
+        ApplyCampaignPromiseSupport(promise);
+    }
+
+    private static void ResolveCampaignPromiseAfterElection(
+        GameState state,
+        Country country,
+        Character winner)
+    {
+        var promise = state.ElectionPromises
+            .Where(candidate =>
+                ReferenceEquals(candidate.Country, country) &&
+                candidate.Status == ElectionPromiseStatus.Campaigning)
+            .OrderByDescending(candidate => candidate.MadeOn.Year)
+            .ThenByDescending(candidate => candidate.MadeOn.Month)
+            .FirstOrDefault();
+
+        if (promise is null)
+            return;
+
+        if (ReferenceEquals(promise.Candidate, winner))
+        {
+            promise.Status = ElectionPromiseStatus.AwaitingFulfilment;
+            promise.MonthsSinceElection = 0;
+        }
+        else
+        {
+            promise.Status = ElectionPromiseStatus.Lapsed;
+        }
+    }
+
+    private static IEnumerable<SimulationReport> ProcessGoverningPromises(
+        GameState state)
+    {
+        var reports = new List<SimulationReport>();
+
+        foreach (var promise in state.ElectionPromises.Where(promise =>
+                     promise.Status == ElectionPromiseStatus.AwaitingFulfilment))
+        {
+            if (!promise.Candidate.IsPoliticallyActive ||
+                !ReferenceEquals(promise.Country.Ruler, promise.Candidate))
+            {
+                promise.Status = ElectionPromiseStatus.Lapsed;
+                continue;
+            }
+
+            if (IsPromiseFulfilled(promise))
+            {
+                promise.Status = ElectionPromiseStatus.Fulfilled;
+                ApplyFulfilledPromiseEffects(promise);
+
+                if (ReferenceEquals(promise.Country, state.Player.Country))
+                {
+                    reports.Add(new SimulationReport(
+                        state.Date,
+                        ReportCategory.Politics,
+                        $"{promise.Candidate.FullName} fulfils an election promise",
+                        DescribePromise(promise) +
+                        " Delivering the commitment strengthens the government's credibility with the constituencies that backed it."));
+                }
+
+                continue;
+            }
+
+            promise.MonthsSinceElection++;
+
+            if (promise.MonthsSinceElection < 6)
+                continue;
+
+            promise.Status = ElectionPromiseStatus.Broken;
+            ApplyBrokenPromiseEffects(promise);
+
+            if (ReferenceEquals(promise.Country, state.Player.Country))
+            {
+                reports.Add(new SimulationReport(
+                    state.Date,
+                    ReportCategory.Politics,
+                    $"{promise.Candidate.FullName} breaks an election promise",
+                    DescribePromise(promise) +
+                    " Six months have passed without delivery. The broken commitment damages political credibility and creates fresh unrest."));
+            }
+        }
+
+        return reports;
+    }
+
+    private static bool IsPromiseFulfilled(
+        ElectionPromise promise)
+    {
+        return promise.Type switch
+        {
+            ElectionPromiseType.TaxRelief =>
+                promise.Country.TaxRate <= promise.TargetValue,
+            ElectionPromiseType.AdministrativeInvestment =>
+                promise.Country.AdministrationFunding >= promise.TargetValue,
+            ElectionPromiseType.MilitaryInvestment =>
+                promise.Country.ArmyFunding >= promise.TargetValue,
+            ElectionPromiseType.CoalitionPatronage =>
+                promise.Country.CourtFunding >= promise.TargetValue,
+            _ => false
+        };
+    }
+
+    private static void ApplyFulfilledPromiseEffects(
+        ElectionPromise promise)
+    {
+        var candidate = promise.Candidate;
+
+        foreach (var powerBase in PromiseConstituencies(promise.Type))
+            candidate.ChangePowerBaseStanding(powerBase, 4);
+
+        candidate.Legitimacy = Math.Min(
+            100,
+            candidate.Legitimacy + 3);
+        promise.Country.Government.Stability += 1.5;
+    }
+
+    private static void ApplyBrokenPromiseEffects(
+        ElectionPromise promise)
+    {
+        var candidate = promise.Candidate;
+
+        foreach (var powerBase in PromiseConstituencies(promise.Type))
+            candidate.ChangePowerBaseStanding(powerBase, -8);
+
+        candidate.Legitimacy = Math.Max(
+            0,
+            candidate.Legitimacy - 6);
+        promise.Country.Government.Stability -= 3;
+        promise.Country.PublicUnrest += 3;
+    }
+
+    private static IEnumerable<PowerBaseType> PromiseConstituencies(
+        ElectionPromiseType type)
+    {
+        return type switch
+        {
+            ElectionPromiseType.TaxRelief =>
+                [PowerBaseType.Merchants, PowerBaseType.Workers, PowerBaseType.Peasantry],
+            ElectionPromiseType.AdministrativeInvestment =>
+                [PowerBaseType.Bureaucracy, PowerBaseType.Party],
+            ElectionPromiseType.MilitaryInvestment =>
+                [PowerBaseType.Military, PowerBaseType.RegionalElites],
+            ElectionPromiseType.CoalitionPatronage =>
+                [PowerBaseType.Party, PowerBaseType.Aristocracy, PowerBaseType.RegionalElites],
+            _ => []
+        };
     }
 
     private static string BuildPlayerContinuityText(
