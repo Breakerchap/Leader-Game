@@ -16,6 +16,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _selectedOffice = "Chancellor";
     private string _selectedWarStance = "Balanced";
     private string _selectedPeaceTerms = "WhitePeace";
+    private string _selectedElectionPromise = "Tax relief";
     private string _archiveSearchText = string.Empty;
     private string _selectedArchiveCategory = "All";
     private double _targetTaxPercent;
@@ -154,6 +155,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                     TargetArmyFundingPercent,
                     TargetAdministrationFundingPercent,
                     TargetCourtFundingPercent)));
+
+        MakeElectionPromiseCommand = new RelayCommand(_ =>
+            RunAndRefresh(() =>
+                _session.MakeElectionPromise(
+                    SelectedElectionPromise)));
 
         AppointAdvisorCommand = new RelayCommand(_ =>
         {
@@ -362,6 +368,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ICommand ApplyBudgetCommand { get; }
 
+    public ICommand MakeElectionPromiseCommand { get; }
+
     public ICommand AppointAdvisorCommand { get; }
 
     public ICommand DismissAdvisorCommand { get; }
@@ -553,6 +561,27 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public IReadOnlyList<string> PeaceTermOptions { get; } =
         ["WhitePeace", "DemandReparations", "OfferReparations"];
+
+    public IReadOnlyList<string> ElectionPromiseOptions { get; } =
+    [
+        "Tax relief",
+        "Administrative investment",
+        "Military investment",
+        "Coalition patronage"
+    ];
+
+    public string SelectedElectionPromise
+    {
+        get => _selectedElectionPromise;
+        set
+        {
+            if (_selectedElectionPromise == value)
+                return;
+
+            _selectedElectionPromise = value;
+            OnPropertyChanged();
+        }
+    }
 
     public WarCampaignView? SelectedCampaign
     {
