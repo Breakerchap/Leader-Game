@@ -111,7 +111,9 @@ public static class DemoScenario
                 LegislativeBody = LegislativeBodyType.EstatesAssembly,
                 LegislativeIndependence = 55
             },
-            Ruler = king
+            Ruler = king,
+            AdministrativeDevelopment =
+                AdministrativeDevelopment.PatrimonialCourt
         };
 
         falkenreich.PoliticalFigures.AddRange(
@@ -196,7 +198,9 @@ public static class DemoScenario
                 LegislativeBody = LegislativeBodyType.RoyalCouncil,
                 LegislativeIndependence = 40
             },
-            Ruler = nordmarkQueen
+            Ruler = nordmarkQueen,
+            AdministrativeDevelopment =
+                AdministrativeDevelopment.PatrimonialCourt
         };
 
         nordmark.PoliticalFigures.AddRange(
@@ -285,7 +289,9 @@ public static class DemoScenario
                 MonthsUntilElection = 12,
                 ElectionCampaignMonths = 6
             },
-            Ruler = valerianDoge
+            Ruler = valerianDoge,
+            AdministrativeDevelopment =
+                AdministrativeDevelopment.CollegiateCivic
         };
 
         valeria.PoliticalFigures.AddRange(
