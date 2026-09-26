@@ -844,6 +844,15 @@ public sealed class GameSession
         var state = _simulation.State;
         var country = state.Player.Country;
         var ruler = country.Ruler;
+        var playerCharacter = state.Player.CurrentCharacter;
+        var playerPoliticalRole = state.Player.IsInPower
+            ? "Ruler"
+            : playerCharacter.Status switch
+            {
+                PoliticalStatus.Imprisoned => "Imprisoned opposition leader",
+                PoliticalStatus.Exiled => "Exiled opposition leader",
+                _ => "Opposition leader"
+            };
 
         var campaignState = state.Campaign ??
             ScenarioCatalog.CreateCampaign(
@@ -1172,8 +1181,11 @@ public sealed class GameSession
             (double)country.CourtFunding * 100,
             treasurer?.FullName ?? "Vacant",
             treasurerObedience,
-            "These are formal government settings, so the ruler knows what was officially enacted. " +
-            "Their real effects still have to be learned through reports.",
+            state.Player.IsInPower
+                ? "These are formal government settings, so the ruler knows what was officially enacted. " +
+                  "Their real effects still have to be learned through reports."
+                : $"These settings belong to {ruler.FullName}'s government. " +
+                  $"{state.Player.Lineage.Name} is in opposition and can observe them, but cannot issue government directives.",
             governmentType,
             politicalCycle,
             politicalCycleDetail,
@@ -1632,8 +1644,11 @@ public sealed class GameSession
             country.Name,
             state.Date.ToString(),
             state.Player.Lineage.Name,
-            ruler.FullName,
-            $"Age {ruler.Age} · health {PlayerInformationFormatter.Health(ruler.Health)}",
+            playerCharacter.FullName,
+            state.Player.IsInPower
+                ? $"{playerPoliticalRole} · Age {playerCharacter.Age} · health {PlayerInformationFormatter.Health(playerCharacter.Health)}"
+                : $"{playerPoliticalRole} · Age {playerCharacter.Age} · health {PlayerInformationFormatter.Health(playerCharacter.Health)} · " +
+                  $"{state.Player.MonthsOutOfPower} month(s) out of power",
             state.Player.HasLost,
             state.Player.LossReason,
             state.Player.HasWon,
