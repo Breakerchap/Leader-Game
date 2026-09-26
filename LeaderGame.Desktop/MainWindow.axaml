@@ -901,7 +901,7 @@
                   <StackPanel Spacing="9">
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel Spacing="3">
-                        <TextBlock Text="PUBLIC ELECTION COMMITMENT" Classes="eyebrow" Foreground="#70C4D0" />
+                        <TextBlock Text="ELECTORAL COMMITMENT" Classes="eyebrow" Foreground="#70C4D0" />
                         <TextBlock
                             Text="{Binding View.Government.ElectionPromise}"
                             FontWeight="SemiBold"
@@ -934,7 +934,7 @@
 
                     <TextBlock
                         IsVisible="{Binding View.Government.IsElectionCampaignActive}"
-                        Text="One principal promise may be made per election. It helps the constituencies it targets now, but if your nominee wins you have six months to actually deliver it."
+                        Text="One principal electoral pledge may be made per contest. It shifts support among the interests that choose the ruler; if your nominee wins you have six months to deliver it."
                         TextWrapping="Wrap"
                         FontSize="11"
                         Classes="muted" />
