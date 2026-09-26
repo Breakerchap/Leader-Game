@@ -17,6 +17,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _selectedWarStance = "Balanced";
     private string _selectedPeaceTerms = "WhitePeace";
     private string _selectedElectionPromise = "Tax relief";
+    private string _selectedOppositionPowerBase = string.Empty;
     private string _archiveSearchText = string.Empty;
     private string _selectedArchiveCategory = "All";
     private double _targetTaxPercent;
@@ -34,6 +35,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         _selectedCourtFigure = View.Court.Figures.FirstOrDefault(figure =>
             figure.IsAvailableForOffice);
         _selectedCampaign = View.Military.Campaigns.FirstOrDefault();
+        _selectedOppositionPowerBase =
+            View.Court.OppositionPowerBases.FirstOrDefault() ?? string.Empty;
 
         SyncPolicyTargets();
 
@@ -160,6 +163,24 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             RunAndRefresh(() =>
                 _session.MakeElectionPromise(
                     SelectedElectionPromise)));
+
+        OrganiseOppositionSupportCommand = new RelayCommand(_ =>
+            RunAndRefresh(() =>
+                _session.TakeOppositionAction(
+                    "OrganiseSupport",
+                    SelectedOppositionPowerBase)));
+
+        BuildOppositionCoalitionCommand = new RelayCommand(_ =>
+            RunAndRefresh(() =>
+                _session.TakeOppositionAction(
+                    "BuildCoalition",
+                    SelectedOppositionPowerBase)));
+
+        ApplyOppositionPressureCommand = new RelayCommand(_ =>
+            RunAndRefresh(() =>
+                _session.TakeOppositionAction(
+                    "PublicPressure",
+                    SelectedOppositionPowerBase)));
 
         AppointAdvisorCommand = new RelayCommand(_ =>
         {
@@ -370,6 +391,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ICommand MakeElectionPromiseCommand { get; }
 
+    public ICommand OrganiseOppositionSupportCommand { get; }
+
+    public ICommand BuildOppositionCoalitionCommand { get; }
+
+    public ICommand ApplyOppositionPressureCommand { get; }
+
     public ICommand AppointAdvisorCommand { get; }
 
     public ICommand DismissAdvisorCommand { get; }
@@ -514,6 +541,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public IReadOnlyList<string> OfficeOptions { get; } =
         ["Chancellor", "Treasurer", "Marshal"];
+
+    public IReadOnlyList<string> OppositionPowerBaseOptions =>
+        View.Court.OppositionPowerBases;
+
+    public string SelectedOppositionPowerBase
+    {
+        get => _selectedOppositionPowerBase;
+        set
+        {
+            if (_selectedOppositionPowerBase == value)
+                return;
+
+            _selectedOppositionPowerBase = value;
+            OnPropertyChanged();
+        }
+    }
 
     public ForeignCountryOptionView? SelectedForeignCountry
     {
@@ -781,6 +824,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 figure.Id == SelectedCourtFigure.Id);
         }
 
+        if (string.IsNullOrWhiteSpace(SelectedOppositionPowerBase) ||
+            !View.Court.OppositionPowerBases.Contains(
+                SelectedOppositionPowerBase))
+        {
+            SelectedOppositionPowerBase =
+                View.Court.OppositionPowerBases.FirstOrDefault() ??
+                string.Empty;
+        }
+
         if (SelectedCampaign is null ||
             !View.Military.Campaigns.Any(campaign =>
                 campaign.Id == SelectedCampaign.Id))
@@ -798,6 +850,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(SelectedForeignState));
         OnPropertyChanged(nameof(TradeActionLabel));
         OnPropertyChanged(nameof(AppointmentCandidates));
+        OnPropertyChanged(nameof(OppositionPowerBaseOptions));
+        OnPropertyChanged(nameof(SelectedOppositionPowerBase));
         OnPropertyChanged(nameof(SelectedCampaign));
         OnPropertyChanged(nameof(SelectedForeignCountry));
         OnPropertyChanged(nameof(SelectedCourtFigure));
@@ -816,6 +870,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         SelectedForeignCountry = View.ForeignCountries.FirstOrDefault();
         SelectedCourtFigure = View.Court.Figures.FirstOrDefault(figure =>
             figure.IsAvailableForOffice);
+        SelectedOppositionPowerBase =
+            View.Court.OppositionPowerBases.FirstOrDefault() ??
+            string.Empty;
         SelectedCampaign = View.Military.Campaigns.FirstOrDefault();
     }
 
