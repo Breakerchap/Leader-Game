@@ -1321,7 +1321,7 @@ public sealed class GameSession
                 proposal.Type switch
                 {
                     LegislativeProposalType.TaxRate =>
-                        $"Tax proposal · {proposal.TargetTaxRate:P0}",
+                        $"Fiscal levy proposal · {proposal.TargetTaxRate:P0}",
                     LegislativeProposalType.Budget =>
                         "Budget proposal",
                     _ => "Government proposal"
@@ -1329,7 +1329,7 @@ public sealed class GameSession
                 proposal.Type switch
                 {
                     LegislativeProposalType.TaxRate =>
-                        $"Proposed tax rate {proposal.TargetTaxRate:P1}.",
+                        $"Proposed effective fiscal burden {proposal.TargetTaxRate:P1}.",
                     LegislativeProposalType.Budget =>
                         $"Army {proposal.TargetArmyFunding:P0}, administration " +
                         $"{proposal.TargetAdministrationFunding:P0}, court " +
