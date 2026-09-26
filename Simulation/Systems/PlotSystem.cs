@@ -199,13 +199,13 @@ internal static class PlotSystem
             instigator.Position = null;
             country.Ruler = instigator;
 
-            if (ReferenceEquals(country, state.Player.Country))
+            if (ReferenceEquals(country, state.Player.Country) &&
+                state.Player.Lineage.Contains(instigator))
             {
-                state.Player.HasLost = true;
-                state.Player.LossReason =
-                    $"{instigator.FullName} overthrew {oldRuler.FullName}. " +
-                    "Usurpation ends the player's political continuity even if the " +
-                    "new ruler belongs to the same dynasty, party or faction.";
+                // An intra-lineage seizure or a restoration by an opposition
+                // member changes who the player controls; it does not destroy
+                // the lineage itself.
+                state.Player.CurrentCharacter = instigator;
             }
 
             var supporters = GetSupporterNames(plot);
