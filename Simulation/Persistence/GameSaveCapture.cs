@@ -133,6 +133,23 @@ public static partial class GameSaveService
                     IsActive = bloc.IsActive
                 })
                 .ToList(),
+            LegislativeProposals = state.LegislativeProposals
+                .Select(proposal => new LegislativeProposalSnapshot
+                {
+                    Id = proposal.Id,
+                    CountryId = proposal.Country.Id,
+                    SponsorId = proposal.Sponsor.Id,
+                    DrafterId = proposal.Drafter.Id,
+                    Type = proposal.Type,
+                    CreatedOn = Date(proposal.CreatedOn),
+                    MonthsOpen = proposal.MonthsOpen,
+                    Status = proposal.Status,
+                    TargetTaxRate = proposal.TargetTaxRate,
+                    TargetArmyFunding = proposal.TargetArmyFunding,
+                    TargetAdministrationFunding = proposal.TargetAdministrationFunding,
+                    TargetCourtFunding = proposal.TargetCourtFunding
+                })
+                .ToList(),
             CabinetProposals = state.CabinetProposals
                 .Select(proposal => new CabinetProposalSnapshot
                 {
@@ -266,6 +283,8 @@ public static partial class GameSaveService
             ElectionIntervalMonths = country.Government.ElectionIntervalMonths,
             MonthsUntilElection = country.Government.MonthsUntilElection,
             ElectionCampaignMonths = country.Government.ElectionCampaignMonths,
+            LegislativeBody = country.Government.LegislativeBody,
+            LegislativeIndependence = country.Government.LegislativeIndependence,
             RulerId = country.Ruler.Id,
             NeighborIds = country.NeighborIds.ToList(),
             SuccessionOrderIds = country.SuccessionOrder
