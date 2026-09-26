@@ -576,7 +576,8 @@ public enum SaveOrderKind
     OfferPeace,
     RespondToDiplomaticProposal,
     RequestReport,
-    OppositionAction
+    OppositionAction,
+    AdministrativeReform
 }
 
 public sealed record OrderSnapshot
@@ -630,4 +631,8 @@ public sealed record OrderSnapshot
     public OppositionActionType? OppositionAction { get; init; }
 
     public PowerBaseType? TargetPowerBase { get; init; }
+
+    public AdministrativeFunction? AdministrativeFunction { get; init; }
+
+    public AdministrativeReformType? AdministrativeReform { get; init; }
 }
