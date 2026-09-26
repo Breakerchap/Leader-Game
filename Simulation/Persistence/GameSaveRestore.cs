@@ -63,6 +63,14 @@ public static partial class GameSaveService
                         saved.ElectionCampaignMonths > 0
                             ? saved.ElectionCampaignMonths
                             : 6,
+                    ElectionMethod =
+                        saved.ElectionMethod != ElectionMethod.None
+                            ? saved.ElectionMethod
+                            : saved.Id == "valeria"
+                                ? ElectionMethod.CouncilElection
+                                : saved.GovernmentType == GovernmentType.Republic
+                                    ? ElectionMethod.PopularElection
+                                    : ElectionMethod.None,
                     LegislativeBody =
                         saved.LegislativeBody != LegislativeBodyType.None
                             ? saved.LegislativeBody
