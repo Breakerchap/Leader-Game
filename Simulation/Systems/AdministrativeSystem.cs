@@ -22,6 +22,17 @@ internal static class AdministrativeSystem
             UpdateAdministrativeEfficiency(country);
             ApplyLocalAdministrationConsequences(country);
 
+            var developmentReport =
+                TryAdvanceAdministrativeDevelopment(
+                    state,
+                    country);
+
+            if (developmentReport is not null &&
+                ReferenceEquals(country, state.Player.Country))
+            {
+                reports.Add(developmentReport);
+            }
+
             if (ReferenceEquals(country, state.Player.Country) &&
                 state.Date.Month % 3 == 0)
             {
@@ -250,6 +261,126 @@ internal static class AdministrativeSystem
             country.PublicUnrest -= 0.06;
         }
     }
+
+    public static string DescribeDevelopment(
+        AdministrativeDevelopment development) =>
+        development switch
+        {
+            AdministrativeDevelopment.PatrimonialCourt =>
+                "Patrimonial court administration",
+            AdministrativeDevelopment.CollegiateCivic =>
+                "Collegiate civic administration",
+            AdministrativeDevelopment.CentralisingBureaucracy =>
+                "Centralising bureaucracy",
+            AdministrativeDevelopment.FiscalMilitaryState =>
+                "Fiscal-military administration",
+            AdministrativeDevelopment.ProfessionalCivilService =>
+                "Professional civil service",
+            AdministrativeDevelopment.MassAdministrativeState =>
+                "Mass administrative state",
+            _ => development.ToString()
+        };
+
+    private static SimulationReport? TryAdvanceAdministrativeDevelopment(
+        GameState state,
+        Country country)
+    {
+        var current = country.AdministrativeDevelopment;
+        var next = current switch
+        {
+            AdministrativeDevelopment.PatrimonialCourt
+                when state.Date.Year >= 1500 &&
+                     CorePerformance(country) >= 58 &&
+                     CoreReach(country) >= 48 &&
+                     AveragePatronage(country) <= 68 =>
+                AdministrativeDevelopment.CentralisingBureaucracy,
+
+            AdministrativeDevelopment.CollegiateCivic
+                when state.Date.Year >= 1500 &&
+                     CorePerformance(country) >= 62 &&
+                     CoreReach(country) >= 55 &&
+                     AveragePatronage(country) <= 55 =>
+                AdministrativeDevelopment.CentralisingBureaucracy,
+
+            AdministrativeDevelopment.CentralisingBureaucracy
+                when state.Date.Year >= 1600 &&
+                     GetPerformance(
+                         country,
+                         AdministrativeFunction.Revenue) >= 64 &&
+                     GetPerformance(
+                         country,
+                         AdministrativeFunction.MilitaryLogistics) >= 60 &&
+                     CoreReach(country) >= 58 =>
+                AdministrativeDevelopment.FiscalMilitaryState,
+
+            AdministrativeDevelopment.FiscalMilitaryState
+                when state.Date.Year >= 1800 &&
+                     CorePerformance(country) >= 70 &&
+                     AverageIntegrity(country) >= 64 &&
+                     AveragePatronage(country) <= 48 &&
+                     CoreReach(country) >= 66 =>
+                AdministrativeDevelopment.ProfessionalCivilService,
+
+            AdministrativeDevelopment.ProfessionalCivilService
+                when state.Date.Year >= 1900 &&
+                     CorePerformance(country) >= 78 &&
+                     AverageIntegrity(country) >= 72 &&
+                     AveragePatronage(country) <= 38 &&
+                     CoreReach(country) >= 76 =>
+                AdministrativeDevelopment.MassAdministrativeState,
+
+            _ => current
+        };
+
+        if (next == current)
+            return null;
+
+        country.AdministrativeDevelopment = next;
+
+        return new SimulationReport(
+            state.Date,
+            ReportCategory.Politics,
+            $"{country.Name}'s state administration changes character",
+            $"{DescribeDevelopment(current)} has developed into " +
+            $"{DescribeDevelopment(next).ToLowerInvariant()}. " +
+            "This reflects accumulated administrative capacity rather than a reform granted automatically by the calendar.");
+    }
+
+    private static double CorePerformance(Country country) =>
+        new[]
+        {
+            AdministrativeFunction.Chancery,
+            AdministrativeFunction.Revenue,
+            AdministrativeFunction.LocalGovernment
+        }
+        .Average(function => GetPerformance(country, function));
+
+    private static double CoreReach(Country country)
+    {
+        var offices = country.AdministrativeOffices
+            .Where(office =>
+                office.Function is
+                    AdministrativeFunction.Chancery or
+                    AdministrativeFunction.Revenue or
+                    AdministrativeFunction.LocalGovernment)
+            .ToList();
+
+        return offices.Count == 0
+            ? (double)country.AdministrativeEfficiency * 100.0
+            : offices.Average(office => office.Reach);
+    }
+
+    private static double AverageIntegrity(Country country) =>
+        country.AdministrativeOffices.Count == 0
+            ? 50
+            : country.AdministrativeOffices.Average(office =>
+                office.Integrity);
+
+    private static double AveragePatronage(Country country) =>
+        country.AdministrativeOffices.Count == 0
+            ? 100
+            : country.AdministrativeOffices.Average(office =>
+                office.PatronageDependence);
 
     private static void UpdateAdministrativeEfficiency(Country country)
     {
