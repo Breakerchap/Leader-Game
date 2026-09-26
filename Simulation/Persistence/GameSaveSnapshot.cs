@@ -415,6 +415,8 @@ public sealed class PoliticalCrisisSnapshot
 
     public Guid? RelatedWarId { get; init; }
 
+    public int? RelatedCharacterId { get; init; }
+
     public required DateSnapshot StartedOn { get; init; }
 
     public int Stage { get; init; }
