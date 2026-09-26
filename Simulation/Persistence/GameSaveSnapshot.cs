@@ -220,6 +220,8 @@ public sealed class CountrySnapshot
 
     public int ElectionCampaignMonths { get; init; }
 
+    public ElectionMethod ElectionMethod { get; init; }
+
     public LegislativeBodyType LegislativeBody { get; init; }
 
     public int LegislativeIndependence { get; init; }
