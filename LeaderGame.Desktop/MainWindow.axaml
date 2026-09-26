@@ -886,6 +886,68 @@
               </Border>
             </Grid>
 
+            <Border
+                IsVisible="{Binding View.Court.IsPlayerInOpposition}"
+                Classes="panel"
+                Background="#17131C"
+                BorderBrush="#513A62">
+              <StackPanel Spacing="12">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="OPPOSITION STRATEGY" Classes="eyebrow" Foreground="#C096E2" />
+                  <TextBlock
+                      Text="{Binding View.Court.OppositionStatus}"
+                      TextWrapping="Wrap"
+                      Foreground="#D8C9E4" />
+                </StackPanel>
+
+                <Grid ColumnDefinitions="220,*,*,*" ColumnSpacing="8">
+                  <ComboBox
+                      ItemsSource="{Binding OppositionPowerBaseOptions}"
+                      SelectedItem="{Binding SelectedOppositionPowerBase, Mode=TwoWay}"
+                      IsEnabled="{Binding View.Court.CanTakeOppositionAction}"
+                      VerticalAlignment="Center" />
+                  <Button
+                      Grid.Column="1"
+                      Classes="action politics"
+                      Command="{Binding OrganiseOppositionSupportCommand}"
+                      IsEnabled="{Binding View.Court.CanTakeOppositionAction}"
+                      Content="Organise supporters" />
+                  <Button
+                      Grid.Column="2"
+                      Classes="action politics"
+                      Command="{Binding BuildOppositionCoalitionCommand}"
+                      IsEnabled="{Binding View.Court.CanTakeOppositionAction}"
+                      Content="Build coalition" />
+                  <Button
+                      Grid.Column="3"
+                      Classes="action"
+                      Command="{Binding ApplyOppositionPressureCommand}"
+                      IsEnabled="{Binding View.Court.CanTakeOppositionAction}"
+                      Content="Apply public pressure" />
+                </Grid>
+
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                  <TextBlock
+                      Text="Low risk: deepen your own network and standing with the selected constituency."
+                      TextWrapping="Wrap"
+                      FontSize="11"
+                      Classes="muted" />
+                  <TextBlock
+                      Grid.Column="1"
+                      Text="Court political figures and turn shared interests into a broader opposition network."
+                      TextWrapping="Wrap"
+                      FontSize="11"
+                      Classes="muted" />
+                  <TextBlock
+                      Grid.Column="2"
+                      Text="Higher risk: mobilise supporters openly against the government. Weak backing can make the campaign backfire."
+                      TextWrapping="Wrap"
+                      FontSize="11"
+                      Classes="muted" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
             <StackPanel Spacing="8">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel>
