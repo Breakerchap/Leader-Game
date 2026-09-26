@@ -1549,6 +1549,112 @@ internal static class CrisisSystem
         }
     }
 
+    private static string ApplyCabinetRiftResponse(
+        GameState state,
+        PoliticalCrisis crisis,
+        PoliticalCrisisResponse response)
+    {
+        var country =
+            crisis.Country;
+        var minister =
+            FindRelatedMinister(crisis);
+
+        if (minister is null ||
+            !minister.IsPoliticallyActive ||
+            !minister.Position.HasValue)
+        {
+            return
+                "The minister is no longer serving in government, so the cabinet rift has already lost its immediate cause.";
+        }
+
+        var relationship =
+            state.Relationships.GetOrCreate(
+                minister,
+                country.Ruler);
+
+        switch (response)
+        {
+            case PoliticalCrisisResponse.ReconcileMinister:
+            {
+                var cost =
+                    country.Gdp * 0.0005m;
+                PayFromTreasury(
+                    country,
+                    cost);
+
+                relationship.ChangeOpinion(35);
+                relationship.ChangeTrust(25);
+                relationship.ChangeFear(-10);
+
+                minister.Influence =
+                    Math.Min(
+                        100,
+                        minister.Influence + 3);
+                country.Government.Stability += 2;
+
+                return
+                    $"The ruler spends roughly {cost:N0} in patronage, access and political concessions to repair the relationship with {minister.FullName}. Trust improves substantially, but the settlement also confirms the minister's importance.";
+            }
+
+            case PoliticalCrisisResponse.AcceptMinisterResignation:
+            {
+                var office =
+                    minister.Position.Value;
+                minister.Position = null;
+                minister.Influence =
+                    Math.Min(
+                        100,
+                        minister.Influence + 4);
+
+                relationship.ChangeOpinion(-5);
+                relationship.ChangeTrust(-5);
+                country.Government.Stability -= 1;
+
+                MoveMinisterTowardOpposition(
+                    state,
+                    country,
+                    minister);
+
+                return
+                    $"{minister.FullName}'s resignation as {office} is accepted. The government loses an experienced office-holder and must fill a real vacancy, while the departing minister is now free to organise politically outside the cabinet.";
+            }
+
+            case PoliticalCrisisResponse.EnforceMinisterLoyalty:
+                relationship.ChangeFear(45);
+                relationship.ChangeOpinion(-12);
+                relationship.ChangeTrust(-8);
+
+                minister.Influence =
+                    Math.Min(
+                        100,
+                        minister.Influence + 2);
+                country.Government.Stability += 1;
+                country.Ruler.Legitimacy -= 2;
+
+                var affectedBase =
+                    minister.Position switch
+                    {
+                        Position.Marshal =>
+                            PowerBaseType.Military,
+                        Position.Treasurer =>
+                            PowerBaseType.Merchants,
+                        _ =>
+                            PowerBaseType.Bureaucracy
+                    };
+
+                country.Ruler.ChangePowerBaseStanding(
+                    affectedBase,
+                    -3);
+
+                return
+                    $"The ruler makes clear that {minister.FullName} is expected to remain in office and obey. Fear rises sharply and short-term authority improves, but trust and personal loyalty deteriorate further.";
+
+            default:
+                return
+                    "No cabinet response was carried out.";
+        }
+    }
+
     private static string ApplyWarResponse(
         GameState state,
         PoliticalCrisis crisis,
@@ -1893,6 +1999,9 @@ internal static class CrisisSystem
             PoliticalCrisisType.WarEmergency =>
                 WarEmergencyBreak(state, crisis),
 
+            PoliticalCrisisType.CabinetRift =>
+                CabinetRiftBreak(state, crisis),
+
             _ => "The crisis breaks against the government."
         };
 
@@ -1985,6 +2094,49 @@ internal static class CrisisSystem
 
         return
             "The confrontation badly damages the ruler's legitimacy and leaves the government politically fractured.";
+    }
+
+    private static string CabinetRiftBreak(
+        GameState state,
+        PoliticalCrisis crisis)
+    {
+        var country =
+            crisis.Country;
+        var minister =
+            FindRelatedMinister(crisis);
+
+        if (minister is null ||
+            !minister.Position.HasValue)
+        {
+            return
+                "The cabinet dispute burns itself out because the minister is no longer serving in government.";
+        }
+
+        var office =
+            minister.Position.Value;
+        minister.Position = null;
+        minister.Influence =
+            Math.Min(
+                100,
+                minister.Influence + 8);
+
+        country.Government.Stability -= 4;
+
+        var relationship =
+            state.Relationships.GetOrCreate(
+                minister,
+                country.Ruler);
+        relationship.Trust = 0;
+        relationship.ChangeOpinion(-15);
+
+        MoveMinisterTowardOpposition(
+            state,
+            country,
+            minister,
+            forceBloc: true);
+
+        return
+            $"{minister.FullName} finally breaks with the ruler and resigns as {office} on hostile terms. The public split damages the government's authority and turns a cabinet disagreement into an opposition problem.";
     }
 
     private static string WarEmergencyBreak(
