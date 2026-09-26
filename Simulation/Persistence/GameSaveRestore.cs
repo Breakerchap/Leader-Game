@@ -263,6 +263,23 @@ public static partial class GameSaveService
             });
         }
 
+        foreach (var saved in snapshot.ElectionPromises)
+        {
+            state.ElectionPromises.Add(new ElectionPromise
+            {
+                Id = saved.Id == Guid.Empty
+                    ? Guid.NewGuid()
+                    : saved.Id,
+                Country = RequireCountry(countries, saved.CountryId),
+                Candidate = RequireCharacter(characters, saved.CandidateId),
+                Type = saved.Type,
+                TargetValue = saved.TargetValue,
+                MadeOn = GameDate(saved.MadeOn),
+                Status = saved.Status,
+                MonthsSinceElection = saved.MonthsSinceElection
+            });
+        }
+
         var proposals = new Dictionary<Guid, DiplomaticProposal>();
 
         foreach (var saved in snapshot.DiplomaticProposals)
