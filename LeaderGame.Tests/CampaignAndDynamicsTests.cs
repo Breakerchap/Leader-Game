@@ -83,6 +83,76 @@ public class CampaignAndDynamicsTests
     }
 
     [Fact]
+    public void LosingPower_AddsRestorationObjectiveAndBlocksVictory()
+    {
+        var state = DemoScenario.Create(
+            ScenarioCatalog.FalkenreichId);
+        var country = state.Player.Country;
+        var outsider = country.PoliticalFigures.First(character =>
+            !state.Player.Lineage.Contains(character) &&
+            character.IsPoliticallyActive);
+
+        state.Campaign!.Objectives.Clear();
+        state.Campaign.Objectives.Add(new CampaignObjective
+        {
+            Id = "test-victory",
+            Title = "Test victory",
+            Description = "A deliberately immediate test objective.",
+            Type = CampaignObjectiveType.TradeNetwork,
+            TargetValue = 0,
+            RequiredMonths = 1
+        });
+
+        country.Ruler = outsider;
+        new GameSimulation(state).AdvanceMonth();
+
+        Assert.False(state.Player.HasWon);
+        Assert.False(state.Player.HasLost);
+        Assert.Contains(
+            state.Campaign.Objectives,
+            objective =>
+                objective.Type ==
+                CampaignObjectiveType.RestorePoliticalControl &&
+                !objective.IsCompleted);
+    }
+
+    [Fact]
+    public void RegainingPower_AddsConsolidationObjective()
+    {
+        var state = DemoScenario.Create(
+            ScenarioCatalog.FalkenreichId);
+        var country = state.Player.Country;
+        var originalRuler = state.Player.CurrentCharacter;
+        var outsider = country.PoliticalFigures.First(character =>
+            !state.Player.Lineage.Contains(character) &&
+            character.IsPoliticallyActive);
+
+        state.Campaign!.Objectives.Clear();
+        country.Ruler = outsider;
+
+        var simulation = new GameSimulation(state);
+        simulation.AdvanceMonth();
+
+        country.Ruler = originalRuler;
+        simulation.AdvanceMonth();
+
+        Assert.True(state.Player.IsInPower);
+        Assert.Contains(
+            state.Campaign.Objectives,
+            objective =>
+                objective.Type ==
+                    CampaignObjectiveType.RestorePoliticalControl &&
+                objective.IsCompleted);
+        Assert.Contains(
+            state.Campaign.Objectives,
+            objective =>
+                objective.Type ==
+                    CampaignObjectiveType.ConsolidateRestoration &&
+                !objective.IsCompleted);
+        Assert.False(state.Player.HasWon);
+    }
+
+    [Fact]
     public void WorldDynamics_ChangesEconomyAndPopulationOverTime()
     {
         var state = DemoScenario.Create();
