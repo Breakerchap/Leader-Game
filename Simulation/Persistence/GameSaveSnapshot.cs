@@ -212,6 +212,8 @@ public sealed class CountrySnapshot
 
     public GovernmentType GovernmentType { get; init; }
 
+    public AdministrativeDevelopment AdministrativeDevelopment { get; init; }
+
     public double GovernmentStability { get; init; }
 
     public int ElectionIntervalMonths { get; init; }
