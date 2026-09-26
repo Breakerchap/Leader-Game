@@ -4,6 +4,7 @@ using LeaderGame.Simulation.Characters;
 using LeaderGame.Simulation.Orders;
 using LeaderGame.Simulation.Politics;
 using LeaderGame.Simulation.Scenarios;
+using LeaderGame.Simulation.Systems;
 
 namespace LeaderGame.Tests;
 
@@ -114,6 +115,36 @@ public class CabinetProposalTests
         var pending = Assert.Single(session.View.PendingOrderDetails);
         Assert.Equal("Budget", pending.Type);
         Assert.Contains("administration", pending.Description, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void UrgentCrisis_SuppressesNewRoutineCabinetProposal()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var region = country.FindRegion("hochwald")!;
+
+        region.Unrest = 82;
+        region.CrownControl = 28;
+
+        state.PoliticalCrises.Add(new PoliticalCrisis
+        {
+            Country = country,
+            Type = PoliticalCrisisType.RegionalBreakdown,
+            Region = region,
+            StartedOn = state.Date,
+            AwaitingDecision = true
+        });
+
+        var reports =
+            CabinetProposalSystem.ProcessMonth(state)
+                .ToList();
+
+        Assert.Empty(
+            state.CabinetProposals.Where(proposal =>
+                proposal.Status ==
+                    CabinetProposalStatus.Pending));
+        Assert.Empty(reports);
     }
 
     [Fact]
