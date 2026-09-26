@@ -1022,6 +1022,40 @@ public class CrisisSystemTests
     }
 
     [Fact]
+    public void MultipleEligibleProblems_SurfaceOneHighestPressureNewCrisis()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var opponent = state.FindCountry("nordmark")!;
+        var region = country.FindRegion("hochwald")!;
+
+        region.Unrest = 82;
+        region.CrownControl = 28;
+        region.LocalElitePower = 86;
+
+        var war = new War
+        {
+            Attacker = country,
+            Defender = opponent,
+            StartedOn = state.Date,
+            WarScore = -75
+        };
+        war.MonthsActive = 6;
+        state.Wars.Add(war);
+
+        CrisisSystem.ProcessMonth(state).ToList();
+
+        var crisis = Assert.Single(
+            state.PoliticalCrises,
+            crisis => crisis.Status ==
+                PoliticalCrisisStatus.Active);
+
+        Assert.Equal(
+            PoliticalCrisisType.WarEmergency,
+            crisis.Type);
+    }
+
+    [Fact]
     public void CrisisState_RoundTripsThroughSave()
     {
         var state = DemoScenario.Create();
