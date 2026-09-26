@@ -145,6 +145,19 @@ public static partial class GameSaveService
                     Status = proposal.Status
                 })
                 .ToList(),
+            ElectionPromises = state.ElectionPromises
+                .Select(promise => new ElectionPromiseSnapshot
+                {
+                    Id = promise.Id,
+                    CountryId = promise.Country.Id,
+                    CandidateId = promise.Candidate.Id,
+                    Type = promise.Type,
+                    TargetValue = promise.TargetValue,
+                    MadeOn = Date(promise.MadeOn),
+                    Status = promise.Status,
+                    MonthsSinceElection = promise.MonthsSinceElection
+                })
+                .ToList(),
             DiplomaticProposals = state.DiplomaticProposals
                 .Select(CaptureProposal)
                 .ToList(),
