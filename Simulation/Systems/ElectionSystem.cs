@@ -125,9 +125,13 @@ internal static class ElectionSystem
         return new SimulationReport(
             state.Date,
             ReportCategory.Politics,
-            $"{nominee.FullName} makes an election promise",
+            IsCouncilElection(country)
+                ? $"{nominee.FullName} makes an electoral pledge"
+                : $"{nominee.FullName} makes an election promise",
             DescribePromise(promise) +
-            " The commitment immediately reshapes which constituencies see the candidate as representing their interests.");
+            (IsCouncilElection(country)
+                ? " The pledge reshapes support among the factions and interests represented inside the council."
+                : " The commitment immediately reshapes which constituencies see the candidate as representing their interests."));
     }
 
     public static string DescribePromise(ElectionPromise promise)
@@ -245,13 +249,21 @@ internal static class ElectionSystem
         var candidates = GetCandidateField(state, country);
         var names = FormatNames(candidates);
 
-        var title = monthsRemaining switch
-        {
-            6 => $"{country.Name}'s election campaign begins",
-            3 => $"{country.Name}'s election enters its final quarter",
-            1 => $"{country.Name} votes next month",
-            _ => $"{country.Name}'s election approaches"
-        };
+        var title = IsCouncilElection(country)
+            ? monthsRemaining switch
+            {
+                6 => $"{country.Name}'s council election manoeuvring begins",
+                3 => $"{country.Name}'s council election enters its final quarter",
+                1 => $"{InstitutionSystem.BodyName(country.Government.LegislativeBody)} elects next month",
+                _ => $"{country.Name}'s council election approaches"
+            }
+            : monthsRemaining switch
+            {
+                6 => $"{country.Name}'s election campaign begins",
+                3 => $"{country.Name}'s election enters its final quarter",
+                1 => $"{country.Name} votes next month",
+                _ => $"{country.Name}'s election approaches"
+            };
 
         var nominee = GetPlayerLineageNominee(
             state,
@@ -265,7 +277,7 @@ internal static class ElectionSystem
             state.Date,
             ReportCategory.Politics,
             title,
-            $"The constitutional election is {monthsRemaining} " +
+            $"{(IsCouncilElection(country) ? "The council election" : "The constitutional election")} is {monthsRemaining} " +
             $"{(monthsRemaining == 1 ? "month" : "months")} away. " +
             $"The visible candidate field is {names}." +
             lineageText +
@@ -341,7 +353,9 @@ internal static class ElectionSystem
         return new SimulationReport(
             state.Date,
             ReportCategory.Politics,
-            $"{winner.FullName} wins the {country.Name} election",
+            IsCouncilElection(country)
+                ? $"{winner.FullName} is elected by the {InstitutionSystem.BodyName(country.Government.LegislativeBody)}"
+                : $"{winner.FullName} wins the {country.Name} election",
             $"{transferText} after {resultDescription}. " +
             $"{continuityText}");
     }
@@ -472,6 +486,15 @@ internal static class ElectionSystem
         ElectionPromise promise)
     {
         var candidate = promise.Candidate;
+
+        if (IsCouncilElection(promise.Country) &&
+            promise.Type == ElectionPromiseType.TaxRelief)
+        {
+            candidate.ChangePowerBaseStanding(PowerBaseType.Merchants, 5);
+            candidate.ChangePowerBaseStanding(PowerBaseType.Party, 3);
+            candidate.ChangePowerBaseStanding(PowerBaseType.Bureaucracy, 1);
+            return;
+        }
 
         switch (promise.Type)
         {
@@ -639,7 +662,7 @@ internal static class ElectionSystem
     {
         var candidate = promise.Candidate;
 
-        foreach (var powerBase in PromiseConstituencies(promise.Type))
+        foreach (var powerBase in PromiseConstituencies(promise))
             candidate.ChangePowerBaseStanding(powerBase, 4);
 
         candidate.Legitimacy = Math.Min(
@@ -653,7 +676,7 @@ internal static class ElectionSystem
     {
         var candidate = promise.Candidate;
 
-        foreach (var powerBase in PromiseConstituencies(promise.Type))
+        foreach (var powerBase in PromiseConstituencies(promise))
             candidate.ChangePowerBaseStanding(powerBase, -8);
 
         candidate.Legitimacy = Math.Max(
@@ -664,9 +687,20 @@ internal static class ElectionSystem
     }
 
     private static IEnumerable<PowerBaseType> PromiseConstituencies(
-        ElectionPromiseType type)
+        ElectionPromise promise)
     {
-        return type switch
+        if (IsCouncilElection(promise.Country) &&
+            promise.Type == ElectionPromiseType.TaxRelief)
+        {
+            return
+            [
+                PowerBaseType.Merchants,
+                PowerBaseType.Party,
+                PowerBaseType.Bureaucracy
+            ];
+        }
+
+        return promise.Type switch
         {
             ElectionPromiseType.TaxRelief =>
                 [PowerBaseType.Merchants, PowerBaseType.Workers, PowerBaseType.Peasantry],
@@ -701,8 +735,9 @@ internal static class ElectionSystem
         Country country,
         Character candidate)
     {
-        var constituency =
-            PoliticalCalculations.GetPowerBaseInfluence(
+        var constituency = IsCouncilElection(country)
+            ? GetCouncilElectionBacking(country, candidate)
+            : PoliticalCalculations.GetPowerBaseInfluence(
                 country,
                 candidate);
 
@@ -728,6 +763,45 @@ internal static class ElectionSystem
             score -= 1.5;
 
         return score;
+    }
+
+    private static bool IsCouncilElection(Country country) =>
+        country.Government.ElectionMethod ==
+        ElectionMethod.CouncilElection;
+
+    private static double GetCouncilElectionBacking(
+        Country country,
+        Character candidate)
+    {
+        var bases = new (PowerBaseType Type, double Weight)[]
+        {
+            (PowerBaseType.Merchants, 2.0),
+            (PowerBaseType.Party, 1.7),
+            (PowerBaseType.Bureaucracy, 1.3),
+            (PowerBaseType.Aristocracy, 0.9),
+            (PowerBaseType.RegionalElites, 0.8)
+        };
+
+        var weighted = 0.0;
+        var totalWeight = 0.0;
+
+        foreach (var (powerBase, weight) in bases)
+        {
+            var structural =
+                Math.Max(
+                    0.05,
+                    country.GetPowerBaseStrength(powerBase) / 100.0);
+            var effectiveWeight = weight * structural;
+
+            weighted +=
+                candidate.GetPowerBaseStanding(powerBase) *
+                effectiveWeight;
+            totalWeight += effectiveWeight;
+        }
+
+        return totalWeight > 0
+            ? weighted / totalWeight
+            : 50;
     }
 
     private static string FormatNames(
