@@ -121,6 +121,7 @@ public sealed record WarCampaignView(
     string OpponentName,
     string MonthsActive,
     string Stance,
+    string WarAim,
     string CampaignPosition,
     string OwnArmy,
     string OwnReadiness,
