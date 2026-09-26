@@ -239,6 +239,29 @@ public sealed class CountrySnapshot
     public List<PowerBaseValueSnapshot> PowerBaseStrengths { get; init; } = [];
 
     public List<AdministrativeOfficeSnapshot> AdministrativeOffices { get; init; } = [];
+
+    public List<RegionSnapshot> Regions { get; init; } = [];
+}
+
+public sealed class RegionSnapshot
+{
+    public required string Id { get; init; }
+
+    public required string Name { get; init; }
+
+    public decimal EconomicShare { get; init; }
+
+    public decimal PopulationShare { get; init; }
+
+    public double CrownControl { get; init; }
+
+    public double LocalElitePower { get; init; }
+
+    public double Unrest { get; init; }
+
+    public double Privileges { get; init; }
+
+    public double Prosperity { get; init; }
 }
 
 public sealed class AdministrativeOfficeSnapshot
@@ -581,7 +604,8 @@ public enum SaveOrderKind
     RespondToDiplomaticProposal,
     RequestReport,
     OppositionAction,
-    AdministrativeReform
+    AdministrativeReform,
+    RegionalAction
 }
 
 public sealed record OrderSnapshot
@@ -639,4 +663,8 @@ public sealed record OrderSnapshot
     public AdministrativeFunction? AdministrativeFunction { get; init; }
 
     public AdministrativeReformType? AdministrativeReform { get; init; }
+
+    public RegionalActionType? RegionalAction { get; init; }
+
+    public string? RegionId { get; init; }
 }
