@@ -344,6 +344,40 @@ public static partial class GameSaveService
             });
         }
 
+        foreach (var saved in snapshot.PoliticalCrises)
+        {
+            var country = RequireCountry(
+                countries,
+                saved.CountryId);
+
+            state.PoliticalCrises.Add(new PoliticalCrisis
+            {
+                Id = saved.Id == Guid.Empty
+                    ? Guid.NewGuid()
+                    : saved.Id,
+                Country = country,
+                Type = saved.Type,
+                Region = saved.RegionId is { } regionId
+                    ? RequireRegion(country, regionId)
+                    : null,
+                RelatedBlocId = saved.RelatedBlocId,
+                StartedOn = GameDate(saved.StartedOn),
+                Stage = saved.Stage <= 0
+                    ? 1
+                    : saved.Stage,
+                MonthsActive = saved.MonthsActive,
+                MonthsAtCurrentStage =
+                    saved.MonthsAtCurrentStage,
+                AwaitingDecision =
+                    saved.AwaitingDecision,
+                LastResponse = saved.LastResponse,
+                Status = saved.Status,
+                ResolvedOn = saved.ResolvedOn is { } resolved
+                    ? GameDate(resolved)
+                    : null
+            });
+        }
+
         foreach (var saved in snapshot.ElectionPromises)
         {
             state.ElectionPromises.Add(new ElectionPromise
