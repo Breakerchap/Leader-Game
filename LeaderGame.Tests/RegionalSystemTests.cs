@@ -113,6 +113,36 @@ public class RegionalSystemTests
     }
 
     [Fact]
+    public void WeakEliteDominatedRegion_StrengthensRegionalElitePolitics()
+    {
+        var state = DemoScenario.Create();
+        var country = state.Player.Country;
+        var region = country.FindRegion("hochwald")!;
+
+        state.Date = new GameDate(1450, 3);
+        region.CrownControl = 30;
+        region.LocalElitePower = 85;
+
+        var oldStrength =
+            country.GetPowerBaseStrength(
+                Politics.PowerBaseType.RegionalElites);
+        var oldStanding =
+            country.Ruler.GetPowerBaseStanding(
+                Politics.PowerBaseType.RegionalElites);
+
+        RegionalSystem.ProcessMonth(state).ToList();
+
+        Assert.Equal(
+            oldStrength + 1,
+            country.GetPowerBaseStrength(
+                Politics.PowerBaseType.RegionalElites));
+        Assert.Equal(
+            oldStanding - 1,
+            country.Ruler.GetPowerBaseStanding(
+                Politics.PowerBaseType.RegionalElites));
+    }
+
+    [Fact]
     public void GameSession_AllowsOnlyOneRegionalInterventionPerMonth()
     {
         var state = DemoScenario.Create();
