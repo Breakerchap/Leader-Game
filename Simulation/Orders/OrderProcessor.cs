@@ -99,7 +99,11 @@ internal static class OrderProcessor
         var oldRate = order.Country.TaxRate;
         var requestedChange = order.TargetTaxRate - oldRate;
         var implementationFactor =
-            PoliticalCalculations.GetImplementationFactor(treasurer, willingness);
+            PoliticalCalculations.GetImplementationFactor(treasurer, willingness) *
+            AdministrativeSystem.GetImplementationModifier(
+                order.Country,
+                AdministrativeFunction.Revenue);
+        implementationFactor = Math.Min(1m, implementationFactor);
 
         var enactedChange = requestedChange * implementationFactor;
         order.Country.TaxRate = oldRate + enactedChange;
@@ -197,7 +201,11 @@ internal static class OrderProcessor
         }
 
         var implementationFactor =
-            PoliticalCalculations.GetImplementationFactor(treasurer, willingness);
+            PoliticalCalculations.GetImplementationFactor(treasurer, willingness) *
+            AdministrativeSystem.GetImplementationModifier(
+                order.Country,
+                AdministrativeFunction.Revenue);
+        implementationFactor = Math.Min(1m, implementationFactor);
 
         var oldArmyFunding = order.Country.ArmyFunding;
         var oldAdministrationFunding = order.Country.AdministrationFunding;
