@@ -548,7 +548,36 @@ internal static class DomesticPoliticsSystem
 
         if (qualifyingBases.Count < 2)
         {
-            DissolveBloc(state, bloc, reports, "too few important groups remain committed to it");
+            var linkedStandoff =
+                state.PoliticalCrises.Any(crisis =>
+                    crisis.Status ==
+                        PoliticalCrisisStatus.Active &&
+                    crisis.Type ==
+                        PoliticalCrisisType.PoliticalStandoff &&
+                    crisis.RelatedBlocId ==
+                        bloc.Id);
+
+            if (!linkedStandoff)
+            {
+                DissolveBloc(
+                    state,
+                    bloc,
+                    reports,
+                    "too few important groups remain committed to it");
+                return;
+            }
+
+            // A succession or other explicit confrontation can keep a bloc
+            // politically real even before the generic constituency model
+            // fully reflects the new grievance. Let it decay rather than
+            // disappear in the same month the crisis is created.
+            bloc.Cohesion =
+                Math.Max(
+                    45,
+                    bloc.Cohesion - 4);
+            UpdateBlocMembership(
+                state,
+                bloc);
             return;
         }
 
