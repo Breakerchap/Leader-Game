@@ -89,8 +89,10 @@ internal static class ElectionSystem
             return new SimulationReport(
                 state.Date,
                 ReportCategory.Politics,
-                "No active election campaign",
-                "A public campaign promise can only be made during the official campaign period.");
+                "No active election contest",
+                IsCouncilElection(country)
+                    ? "An electoral pledge can only be made during the council-election manoeuvring period."
+                    : "A public campaign promise can only be made during the official campaign period.");
         }
 
         if (GetActivePromise(state, country) is not null)
@@ -98,8 +100,8 @@ internal static class ElectionSystem
             return new SimulationReport(
                 state.Date,
                 ReportCategory.Politics,
-                "Campaign promise already made",
-                "The party has already made its principal public commitment for this election.");
+                "Electoral pledge already made",
+                "The political coalition has already made its principal commitment for this election.");
         }
 
         var nominee = GetPlayerLineageNominee(state, country);
@@ -109,7 +111,7 @@ internal static class ElectionSystem
             return new SimulationReport(
                 state.Date,
                 ReportCategory.Politics,
-                "No party nominee available",
+                "No coalition nominee available",
                 "The political lineage has no active candidate able to make an electoral commitment.");
         }
 
@@ -139,14 +141,14 @@ internal static class ElectionSystem
         return promise.Type switch
         {
             ElectionPromiseType.TaxRelief =>
-                $"Promise to reduce the tax rate to {promise.TargetValue:P0} or lower.",
+                $"Promise to reduce the effective fiscal burden to {promise.TargetValue:P0} or lower.",
             ElectionPromiseType.AdministrativeInvestment =>
                 $"Promise to raise administration funding to at least {promise.TargetValue:P0}.",
             ElectionPromiseType.MilitaryInvestment =>
                 $"Promise to raise army funding to at least {promise.TargetValue:P0}.",
             ElectionPromiseType.CoalitionPatronage =>
                 $"Promise to raise court and patronage funding to at least {promise.TargetValue:P0}.",
-            _ => "Public campaign commitment."
+            _ => "Electoral commitment."
         };
     }
 
