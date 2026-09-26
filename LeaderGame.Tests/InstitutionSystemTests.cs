@@ -12,7 +12,7 @@ namespace LeaderGame.Tests;
 public class InstitutionSystemTests
 {
     [Fact]
-    public void ValerianFiscalOrder_BecomesAssemblyProposalBeforeTakingEffect()
+    public void ValerianFiscalOrder_BecomesGreatCouncilProposalBeforeTakingEffect()
     {
         var state = DemoScenario.Create(ScenarioCatalog.ValeriaId);
         var country = state.Player.Country;
@@ -46,7 +46,7 @@ public class InstitutionSystemTests
     }
 
     [Fact]
-    public void Assembly_CanDefeatGovernmentWithWeakInstitutionalBacking()
+    public void GreatCouncil_CanDefeatGovernmentWithWeakInstitutionalBacking()
     {
         var state = DemoScenario.Create(ScenarioCatalog.ValeriaId);
         var country = state.Player.Country;
@@ -86,12 +86,12 @@ public class InstitutionSystemTests
         Assert.Contains(
             state.Reports,
             report => report.Title.Contains(
-                "Assembly rejects",
+                "Great Council rejects",
                 StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
-    public void FeudalCrown_OnlyNeedsCouncilForExtraordinaryFiscalChange()
+    public void FeudalCrown_OnlyNeedsEstatesForExtraordinaryFiscalChange()
     {
         var state = DemoScenario.Create();
         var country = state.Player.Country;
@@ -127,7 +127,7 @@ public class InstitutionSystemTests
         var proposal = Assert.Single(state.LegislativeProposals);
         Assert.Equal(LegislativeProposalStatus.Pending, proposal.Status);
         Assert.Equal(beforeExtraordinaryChange, country.TaxRate);
-        Assert.Equal(LegislativeBodyType.RoyalCouncil, country.Government.LegislativeBody);
+        Assert.Equal(LegislativeBodyType.EstatesAssembly, country.Government.LegislativeBody);
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public class InstitutionSystemTests
             loaded.Player.Country.GetOfficeHolder(Position.Treasurer),
             proposal.Drafter);
         Assert.Equal(
-            LegislativeBodyType.Assembly,
+            LegislativeBodyType.GreatCouncil,
             loaded.Player.Country.Government.LegislativeBody);
         Assert.Equal(
             75,
@@ -177,9 +177,9 @@ public class InstitutionSystemTests
         var state = DemoScenario.Create(ScenarioCatalog.ValeriaId);
         var session = new GameSession(new GameSimulation(state));
 
-        Assert.Equal("Assembly", session.View.Government.LegislativeBody);
+        Assert.Equal("Great Council", session.View.Government.LegislativeBody);
         Assert.Contains(
-            "require Assembly approval",
+            "require approval of the Great Council",
             session.View.Government.LegislativeAuthority,
             StringComparison.OrdinalIgnoreCase);
         Assert.Empty(session.View.Government.Legislation);
