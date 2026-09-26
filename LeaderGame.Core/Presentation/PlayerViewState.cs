@@ -186,7 +186,11 @@ public sealed record GovernmentPolicyView(
     string Regime,
     string PoliticalCycle,
     string PoliticalCycleDetail,
-    bool HasElection);
+    bool HasElection,
+    bool IsElectionCampaignActive,
+    bool CanMakeElectionPromise,
+    string ElectionPromise,
+    string ElectionPromiseStatus);
 
 public sealed record OfficeView(
     string Position,
