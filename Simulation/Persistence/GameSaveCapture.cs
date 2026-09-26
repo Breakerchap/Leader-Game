@@ -283,6 +283,7 @@ public static partial class GameSaveService
             ElectionIntervalMonths = country.Government.ElectionIntervalMonths,
             MonthsUntilElection = country.Government.MonthsUntilElection,
             ElectionCampaignMonths = country.Government.ElectionCampaignMonths,
+            ElectionMethod = country.Government.ElectionMethod,
             LegislativeBody = country.Government.LegislativeBody,
             LegislativeIndependence = country.Government.LegislativeIndependence,
             RulerId = country.Ruler.Id,
